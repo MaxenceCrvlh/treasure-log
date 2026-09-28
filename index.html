@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.TL_STANDALONE=true;window.TL_VERSION="d40cccf1";</script>
+<script>window.TL_STANDALONE=true;window.TL_VERSION="d7ec6f82";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -164,6 +164,11 @@ table.t td.r,table.t th.r{text-align:right}
 .newrow{display:grid;grid-template-columns:1.1fr 1.3fr 1fr 1fr auto;gap:6px;margin-top:6px;align-items:center}
 .newrow input,.newrow select{padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);min-width:0;width:100%;font-size:13.5px}
 @media (max-width:520px){.newrow{grid-template-columns:1fr 1fr}.newrow .rm{grid-column:2;justify-self:end}}
+.vpick{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;min-height:40px;align-items:flex-start}
+.vpick button{border:2px solid transparent;border-radius:9px;padding:2px;background:none;cursor:pointer;flex-shrink:0;width:88px;text-align:center;font-size:11px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;gap:3px;align-items:center}
+.vpick button img{width:80px;aspect-ratio:63/88;object-fit:cover;border-radius:6px;display:block;background:var(--surface2)}
+.vpick button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.vpick .none{width:80px;aspect-ratio:63/88;border:1px dashed var(--line);border-radius:6px;display:grid;place-items:center;font-size:11px}
 .check{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
 .check input{width:18px;height:18px;accent-color:var(--accent)}
 @media (max-width:420px){.detail-top{grid-template-columns:100px 1fr}.kv{grid-template-columns:repeat(2,1fr)}}
@@ -273,8 +278,37 @@ const offerFor=m=>Math.floor(n(m)*n(S.settings.offerPct)/100);
 function lastCompDate(c){return (c.comps||[]).map(x=>x.date||"").sort().pop()||c.marketDate||"";}
 const PHOTO_URLS={};
 function blobUrl(id){return PHOTO_URLS[id]||"/_blob/"+id;}
-function imgSrc(c){if(c.photoId)return blobUrl(c.photoId);if(c.photoUrl)return c.photoUrl;return null;}
-function thumb(c,cls2){const s=imgSrc(c);return s?`<img class="${cls2||"thumb"}" src="${esc(s)}" alt="${esc(c.name||c.code)}" loading="lazy">`:`<div class="${cls2||"thumb"}">${esc(c.code||"?")}</div>`;}
+function photoSrc(c){if(c.photoId)return blobUrl(c.photoId);if(c.photoUrl)return c.photoUrl;return null;}
+function imgSrc(c){if(c.officialImg&&CAN_OFFICIAL)return c.officialImg;return photoSrc(c);}
+/* official card pictures (standalone app only: the Claude viewer blocks outside images) */
+const CAN_OFFICIAL=!!window.TL_STANDALONE;
+const OFFICIAL={EN:"https://en.onepiece-cardgame.com/images/cardlist/card/",JP:"https://www.onepiece-cardgame.com/images/cardlist/card/"};
+const codeOk=c=>/^[A-Z]{1,5}\d{0,2}-\d{3}$/.test(String(c||"").trim().toUpperCase());
+const officialUrl=(code,lang,suf)=>OFFICIAL[lang==="JP"?"JP":"EN"]+encodeURIComponent(String(code).trim().toUpperCase())+(suf||"")+".png";
+function probeImg(url){return new Promise(res=>{const i=new Image();let done=false;const fin=v=>{if(!done){done=true;clearTimeout(t);res(v);}};const t=setTimeout(()=>fin(false),9000);i.referrerPolicy="no-referrer";i.onload=()=>fin(i.naturalWidth>10);i.onerror=()=>fin(false);i.src=url+"?probe=1";});}
+const VCACHE={};
+async function findVersions(code,lang){
+  const key=code+"|"+lang;if(VCACHE[key])return VCACHE[key];
+  const sufs=["","_p1","_p2","_p3","_p4","_p5","_p6","_p7","_p8"];
+  const tryLang=async L=>(await Promise.all(sufs.map(async s=>{const u=officialUrl(code,L,s);return (await probeImg(u))?{suf:s,url:u,lang:L}:null;}))).filter(Boolean);
+  let v=await tryLang(lang),other=false;
+  if(!v.length){v=await tryLang(lang==="JP"?"EN":"JP");other=v.length>0;}
+  const out={v,other};if(v.length)VCACHE[key]=out;return out;
+}
+const vLabel=s=>s?"Version "+s.replace("_",""):"Regular";
+/* renders the version strip; onPick({suf,url}|null) */
+async function mountPicker(el,code,lang,selected,onPick){
+  code=String(code||"").trim().toUpperCase();
+  if(!codeOk(code)){el.innerHTML=`<span class="hint">Type a card code like OP05-119 to see its versions.</span>`;return;}
+  el.innerHTML=`<span class="hint">Looking up ${esc(code)} on the official card list…</span>`;
+  const token=(el._tok=(el._tok||0)+1);
+  let res;try{res=await findVersions(code,lang);}catch(e){res={v:[],other:false};}
+  if(el._tok!==token)return;
+  if(!res.v.length){el.innerHTML=`<span class="hint">No official picture found for ${esc(code)}${navigator.onLine===false?" (you're offline)":""}. New cards and some promos aren't listed yet. Use your own photo.</span>`;return;}
+  el.innerHTML=(res.other?`<span class="hint" style="align-self:center;width:90px;flex-shrink:0">Only on the ${res.v[0].lang==="JP"?"Japanese":"English"} site:</span>`:"")+res.v.map((x,k)=>`<button type="button" data-k="${k}" aria-pressed="${x.url===selected}"><img src="${esc(x.url)}" alt="${esc(code)} ${esc(vLabel(x.suf))}" referrerpolicy="no-referrer" loading="lazy">${esc(vLabel(x.suf))}</button>`).join("")+`<button type="button" data-k="none" aria-pressed="${!selected}"><span class="none">✕</span>No picture</button>`;
+  el.querySelectorAll("button").forEach(b=>b.onclick=()=>{el.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");onPick(b.dataset.k==="none"?null:res.v[+b.dataset.k]);});
+}
+function thumb(c,cls2){const s=imgSrc(c);return s?`<img class="${cls2||"thumb"}" src="${esc(s)}" alt="${esc(c.name||c.code)}" loading="lazy" referrerpolicy="no-referrer">`:`<div class="${cls2||"thumb"}">${esc(c.code||"?")}</div>`;}
 function gradeLabel(c){return c.kind==="graded"?`${c.grader||"Graded"} ${c.grade||""}`.trim():(c.cond||"Raw");}
 function chips(c){
   let h=`<span class="chip ${c.lang==="JP"?"jp":""}">${esc(c.lang||"EN")}</span>`;
@@ -340,6 +374,7 @@ function compLinks(c){
     ["130point",`https://130point.com/sales/`],
     ["Card Ladder",`https://app.cardladder.com/`]
   ];
+  if(c.lang==="JP")L.push(["TCG Republic (JP)",`https://www.google.com/search?q=${encodeURIComponent("site:tcgrepublic.com "+c.code)}`]);
   if(c.lang==="JP")L.push(["Yuyu-tei (JP)",`https://yuyu-tei.jp/sell/opc/s/search?search_word=${encodeURIComponent(c.code)}`]);
   return L.map(([t,u])=>`<a class="btn sm" href="${esc(u)}" target="_blank" rel="noopener" data-copyq="${esc(searchQuery(c))}">${esc(t)} ↗</a>`).join("");
 }
@@ -755,6 +790,7 @@ const SHEETS={
         <div class="field"><label for="f-name">Name</label><input id="f-name" name="name" placeholder="Monkey.D.Luffy" value="${esc(c.name||"")}"></div>
         <div class="field"><label for="f-var">Variant</label><select id="f-var" name="variant">${opt(VARIANTS,c.variant)}</select></div>
         <div class="field"><label for="f-rar">Rarity</label><select id="f-rar" name="rarity">${opt(RARITIES,c.rarity||"")}</select></div>
+        <div class="field full" ${CAN_OFFICIAL?"":"hidden"}><label>Pick your version (official pictures)</label><div id="vp" class="vpick"></div><input type="hidden" name="officialImg" value="${esc(c.officialImg||"")}"><input type="hidden" name="imgSuffix" value="${esc(c.imgSuffix??"")}"></div>
         <div class="field full"><label for="f-vnote">Variant notes</label><input id="f-vnote" name="variantNote" placeholder="e.g. _p1, gold stamp, box topper" value="${esc(c.variantNote||"")}"></div>
         <div class="field"><label>Language</label>${seg("lang",[["EN","English"],["JP","Japanese"]],c.lang)}</div>
         <div class="field"><label>Type</label>${seg("kind",[["raw","Raw"],["graded","Graded"]],c.kind)}</div>
@@ -786,6 +822,19 @@ const SHEETS={
       form.addEventListener("change",e=>{if(e.target.name==="kind"){form.querySelector("#rawBox").hidden=e.target.value==="graded";form.querySelector("#gradedBox").hidden=e.target.value!=="graded";}});
       form.querySelector("#f-photo").addEventListener("change",async e=>{const file=e.target.files[0];if(!file)return;try{const blob=await shrink(file);S.pendingPhoto={blob,url:URL.createObjectURL(blob)};document.getElementById("phPrev").innerHTML=`<img class="thumb" src="${S.pendingPhoto.url}" alt="">`;form.querySelector("#f-read").hidden=!S.sampleImg;}catch(err){toast("Couldn't read that image. Try a JPG or PNG.");}});
       form.querySelector("#f-read").addEventListener("click",()=>readCardPhoto(form));
+      if(CAN_OFFICIAL){
+        const vp=form.querySelector("#vp");let tm;
+        const refresh=()=>{const lang=(form.querySelector('input[name="lang"]:checked')||{}).value||"EN";mountPicker(vp,form.code.value,lang,form.officialImg.value,v=>{
+          form.officialImg.value=v?v.url:"";form.imgSuffix.value=v?v.suf:"";
+          if(v&&v.suf){if(form.variant.value==="Regular")form.variant.value="Alt art (parallel)";if(!form.variantNote.value)form.variantNote.value=v.suf.replace("_","");}
+          if(v&&!v.suf&&form.variant.value==="Alt art (parallel)")form.variant.value="Regular";
+          if(!S.pendingPhoto){const pv=document.getElementById("phPrev");const s=v?v.url:photoSrc(c);pv.innerHTML=s?`<img class="thumb" src="${esc(s)}" alt="" referrerpolicy="no-referrer">`:`<div class="thumb">No photo</div>`;}
+        });};
+        form._refreshPicker=refresh;
+        form.code.addEventListener("input",()=>{clearTimeout(tm);tm=setTimeout(()=>{if(form.officialImg.value&&!form.officialImg.value.includes("/"+form.code.value.trim().toUpperCase()))form.officialImg.value="";refresh();},450);});
+        form.addEventListener("change",e=>{if(e.target.name==="lang"){form.officialImg.value="";refresh();}});
+        refresh();
+      }
     }};
   },
   card(id){
@@ -797,7 +846,9 @@ const SHEETS={
     const comps=[...(c.comps||[])].map((x,i)=>({...x,i})).sort((a,b)=>(b.date||"")>(a.date||"")?1:-1);
     const L=cardLot(c);const gr=c.status==="grading"?(c.grading||{}):null;
     return{live:true,title:`<span class="mono">${esc(c.code)}</span> ${esc(c.name||"")}`,body:`
-      <div class="detail-top">${imgSrc(c)?`<img class="big" src="${esc(imgSrc(c))}" alt="${esc(c.name||c.code)}">`:`<div class="big">${esc(c.code)}</div>`}
+      <div class="detail-top"><div>${imgSrc(c)?`<img class="big" src="${esc(imgSrc(c))}" alt="${esc(c.name||c.code)}" referrerpolicy="no-referrer">`:`<div class="big">${esc(c.code)}</div>`}
+        ${CAN_OFFICIAL&&c.officialImg&&photoSrc(c)?`<div style="margin-top:6px"><span class="label">Your photo</span><img class="thumb" style="width:56px;display:block;margin-top:3px" src="${esc(photoSrc(c))}" alt="Your photo"></div>`:""}
+        ${CAN_OFFICIAL&&codeOk(c.code)?`<button class="btn sm" data-act="find-official" data-id="${esc(c.id)}" style="margin-top:6px;width:100%">${c.officialImg?"Change picture":"Find picture"}</button>`:""}</div>
         <div><div class="m" style="display:flex;gap:6px;flex-wrap:wrap">${chips(c)}${c.status==="pc"?`<span class="chip ok">My collection</span>`:""}${c.status==="sold"||n(c.qty)<=0?`<span class="chip">Sold out</span>`:""}</div>
         <div class="stat-line muted"><span>Set ${esc(setCode(c.code))}</span>${c.variantNote?`<span>${esc(c.variantNote)}</span>`:""}${c.kind==="graded"&&c.cert?`<span>Cert <span class="mono">${esc(c.cert)}</span></span>`:""}</div>
         <div class="stat-line muted"><span>${esc(c.source||"")}</span>${c.buyDate?`<span>bought ${fdate(c.buyDate)} (${age}d)</span>`:""}${c.location?`<span>in ${esc(c.location)}</span>`:""}</div>
@@ -1145,6 +1196,17 @@ const SHEETS={
       <div class="field"><label for="si-fees">Fees ($)</label><input id="si-fees" name="fees" type="number" step="0.01" min="0" value="0"></div>
     </div><div class="bar" style="margin-top:14px"><button class="btn pri" type="submit">Record sale</button><button class="btn" type="button" data-act="close">Cancel</button></div></form>`};
   },
+  pickOfficial(id){
+    const c=byId("cards",id);if(!c)return null;
+    return{title:`Pick the version · <span class="mono">${esc(c.code)}</span>`,body:`<p class="hint" style="margin:0 0 8px">Official ${c.lang==="JP"?"Japanese":"English"} card pictures for ${esc(c.code)}. Tap the one that matches your card.</p><div id="vp2" class="vpick"></div>`,after(){
+      mountPicker(document.getElementById("vp2"),c.code,c.lang,c.officialImg,async v=>{
+        const cur=byId("cards",id);const upd={...cur,officialImg:v?v.url:"",imgSuffix:v?v.suf:""};
+        if(v&&v.suf&&cur.variant==="Regular")upd.variant="Alt art (parallel)";
+        if(v&&v.suf&&!cur.variantNote)upd.variantNote=v.suf.replace("_","");
+        await put("cards",upd);toast(v?"Picture set":"Picture removed");openSheet("card",id);
+      });
+    }};
+  },
   pasteComps(id){
     const c=byId("cards",id);if(!c)return null;
     return{title:`Paste comps · <span class="mono">${esc(c.code)}</span>`,body:`<p class="hint" style="margin:0 0 8px">Open eBay sold listings (or 130point, PriceCharting), select the results, copy, and paste them here. ${S.sample?"Claude reads the prices and dates and checks which listings match this exact card.":"The app pulls out the prices and dates."}</p>
@@ -1244,6 +1306,7 @@ Reply with only JSON: {"code":"OP05-119","name":"Monkey.D.Luffy","rarity":"one o
 The card code is printed in the bottom-right corner (like OP05-119 or ST01-012). Japanese cards have Japanese text. Use null for anything you can't read.`,{images:[S.pendingPhoto.blob]});
     const set=(name,v)=>{if(v===null||v===undefined||v==="")return;const el=form.elements[name];if(!el)return;if(el instanceof RadioNodeList){[...el].forEach(x=>x.checked=x.value===v);}else el.value=v;};
     set("code",r.code?String(r.code).toUpperCase():null);set("name",r.name);
+    setTimeout(()=>{if(form._refreshPicker)form._refreshPicker();},0);
     if(RARITIES.includes(r.rarity))set("rarity",r.rarity);
     if(r.lang==="EN"||r.lang==="JP")set("lang",r.lang);
     if(VARIANTS.includes(r.variant))set("variant",r.variant);
@@ -1309,6 +1372,7 @@ document.addEventListener("click",async e=>{
     case"del-supply":if(exBlock())return;if(!confirmTap(el,"dsu"+id,"Tap again to delete"))return;await del("supplies",id);closeSheet();toast("Supply deleted. Its purchases stay in expenses.");break;
     case"want-toggle":{if(exBlock())return;const w=byId("wants",id);await put("wants",{...w,done:!w.done});break;}
     case"want-del":if(exBlock())return;await del("wants",id);break;
+    case"find-official":if(exBlock())return;openSheet("pickOfficial",id);break;
     case"paste-comps":if(exBlock())return;openSheet("pasteComps",id);break;
     case"deal":if(exBlock())return;openSheet("deal",{showId:id||""});break;
     case"sell-lot":if(exBlock())return;openSheet("sellLot",{id,showId:el.dataset.show||""});break;
@@ -1395,7 +1459,7 @@ document.addEventListener("submit",async e=>{
   try{
   if(t==="card"){
     const prev=id?byId("cards",id):null;
-    const c={...(prev||{}),id,code:g("code").toUpperCase(),name:g("name"),variant:g("variant"),variantNote:g("variantNote"),rarity:g("rarity"),lang:g("lang")||"EN",kind:g("kind")||"raw",
+    const c={...(prev||{}),id,officialImg:CAN_OFFICIAL?g("officialImg"):((prev&&prev.officialImg)||""),imgSuffix:CAN_OFFICIAL?g("imgSuffix"):((prev&&prev.imgSuffix)||""),code:g("code").toUpperCase(),name:g("name"),variant:g("variant"),variantNote:g("variantNote"),rarity:g("rarity"),lang:g("lang")||"EN",kind:g("kind")||"raw",
       cond:g("cond"),grader:g("grader"),grade:g("grade"),cert:g("cert"),qty:Math.max(0,Math.round(n(g("qty")))),cost:n(g("cost")),buyDate:g("buyDate"),source:g("source"),showId:g("showId"),
       market:g("market")===""?null:n(g("market")),list:g("list")===""?null:n(g("list")),location:g("location"),status:prev&&prev.status==="grading"?"grading":(g("status")||"stock"),lotId:prev&&prev.status==="grading"?"":g("lotId"),tags:g("tags"),notes:g("notes"),comps:(prev&&prev.comps)||[]};
     if(c.kind==="raw"){c.grader="";c.grade="";c.cert="";}else c.cond="";
