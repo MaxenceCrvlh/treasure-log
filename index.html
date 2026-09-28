@@ -14,12 +14,12 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
-:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:0}
 body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.TL_STANDALONE=true;window.TL_VERSION="4ab212fb";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="d673ab26";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -51,9 +51,13 @@ img{max-width:100%}
   --s1:#5A93D6; --s2:#E8574E;
 }
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+html{height:100%;box-sizing:border-box;overflow:hidden}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;height:100%;overflow:hidden;margin:0;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+.app{height:100%;display:flex;flex-direction:column;position:relative}
+.scroller{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+button,a,label,select{touch-action:manipulation}
 button,input,select,textarea{font:inherit;color:inherit}
-.wrap{max-width:880px;margin:0 auto;padding-inline:16px;padding-block:0 110px}
+.wrap{max-width:880px;margin:0 auto;padding-inline:16px;padding-block:0 88px}
 header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-block:18px 10px}
 .brand{font-family:var(--display);font-weight:700;font-size:30px;letter-spacing:.02em;line-height:1;text-transform:uppercase}
 .brand span{color:var(--accent)}
@@ -100,16 +104,38 @@ h3{font-family:var(--display);font-weight:600;font-size:18px;text-transform:uppe
 .filters button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:13px;cursor:pointer;white-space:nowrap}
 .filters button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 select.small{padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:13px}
-nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
+nav.tabs{position:relative;flex:0 0 auto;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:0;z-index:20}
 nav.tabs .in{display:flex;width:100%;max-width:880px}
+@supports ((-webkit-backdrop-filter:blur(8px)) or (backdrop-filter:blur(8px))){nav.tabs{background:color-mix(in srgb,var(--surface) 88%,transparent);-webkit-backdrop-filter:saturate(1.4) blur(14px);backdrop-filter:saturate(1.4) blur(14px)}}
 nav.tabs button{flex:1;border:0;background:none;padding:10px 4px 9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.03em;text-transform:uppercase}
 nav.tabs button svg{width:22px;height:22px}
 nav.tabs button[aria-current="page"]{color:var(--accent)}
-.fab{position:fixed;right:18px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:21;border-radius:999px;padding:13px 18px;box-shadow:var(--shadow)}
+.fab{position:absolute;right:16px;bottom:78px;z-index:21;border-radius:999px;padding:13px 18px;box-shadow:var(--shadow)}
 /* sheet */
 .scrim{position:fixed;inset:0;background:rgba(10,14,20,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;border-radius:16px 16px 0 0;padding-inline:16px;padding-block:6px calc(24px + env(safe-area-inset-bottom,0px));box-shadow:var(--shadow)}
-@media (min-width:700px){.scrim{align-items:center}.sheet{border-radius:16px;max-height:88vh}}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;max-height:92dvh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border-radius:16px 16px 0 0;padding-inline:16px;padding-block:6px calc(24px + env(safe-area-inset-bottom,0px));box-shadow:var(--shadow)}
+@media (min-width:700px){.scrim{align-items:center}.sheet{border-radius:16px;max-height:88vh;max-height:88dvh}}
+/* installed app: the tab bar runs into the home-indicator area */
+:root.standalone{padding-bottom:0}
+.standalone nav.tabs{padding-bottom:env(safe-area-inset-bottom,0px)}
+.standalone .fab{bottom:calc(78px + env(safe-area-inset-bottom,0px))}
+/* touch screens: 16px fields stop iPhone from zooming in, bigger tap targets */
+@media (pointer:coarse){
+  input,select,textarea,.search,.field input,.field select,.field textarea,.newrow input,.newrow select,.trow input,.trow select{font-size:16px}
+  .btn{min-height:42px}
+  .btn.sm{min-height:36px;padding:7px 12px}
+  .row{padding:12px}
+  .filters button{padding:7px 13px;font-size:14px}
+  nav.tabs button{padding:9px 4px 8px;font-size:11.5px}
+  nav.tabs button svg{width:24px;height:24px}
+  .x{width:38px;height:38px}
+}
+@media (max-width:699px){header.top{padding-block:10px 4px}.brand{font-size:26px}.sub{display:none}h2{margin:18px 0 8px}}
+/* big phones (Pro Max ~440px): a little more room */
+@media (min-width:420px) and (max-width:699px){
+  .wrap{padding-inline:18px}
+  .tile .v{font-size:30px}
+}
 .sheet-head{position:sticky;top:0;background:var(--bg);display:flex;justify-content:space-between;align-items:center;padding-block:12px 10px;z-index:2;border-bottom:1px solid var(--line);margin-bottom:12px;gap:10px}
 .sheet-head h3{margin:0;font-size:21px}
 .x{border:0;background:var(--surface2);border-radius:999px;width:34px;height:34px;cursor:pointer;font-size:18px;flex-shrink:0}
@@ -191,7 +217,7 @@ table.t td.r,table.t th.r{text-align:right}
 </head>
 <body>
 
-<div class="wrap">
+<div class="app" id="app"><div class="scroller" id="scroller"><div class="wrap">
   <header class="top">
     <div>
       <div class="brand">Treasure <span>Log</span></div>
@@ -201,8 +227,10 @@ table.t td.r,table.t th.r{text-align:right}
   <div id="status"></div>
   <main id="main"></main>
 </div>
+</div>
 <button class="btn pri fab" data-act="add-card" aria-label="Add a card">+ Add card</button>
 <nav class="tabs"><div class="in" id="tabs"></div></nav>
+</div>
 <div id="sheetRoot"></div>
 <div id="toastRoot"></div>
 
@@ -239,7 +267,7 @@ const EX={
   expenses:[{id:"ex-e1",date:ago(25),cat:"Supplies",amount:34,note:"",supplyId:"ex-su1",qty:200,showId:""},{id:"ex-e2",date:ago(15),cat:"Supplies",amount:9,note:"",supplyId:"ex-su3",qty:60,showId:""}]
 };
 const isEx=()=>!S.exampleOff&&!S.cards.length&&!S.sales.length&&!S.shows.length&&!S.expenses.length&&!S.lots.length&&!S.items.length&&!S.supplies.length&&!S.wants.length&&!S.trades.length;
-const D=k=>isEx()?EX[k]:S[k];
+const D=k=>isEx()?(EX[k]||[]):(S[k]||[]);
 const exId=id=>String(id||"").startsWith("ex-");
 
 /* ---------- helpers ---------- */
@@ -1588,7 +1616,7 @@ document.addEventListener("click",async e=>{
   const a=el.dataset.act,id=el.dataset.id;
   if(a==="scrim"){if(e.target===el)closeSheet();return;}
   switch(a){
-    case"tab":S.tab=el.dataset.v;try{localStorage.setItem("tl-tab",S.tab);}catch(_){}window.scrollTo(0,0);render();break;
+    case"tab":S.tab=el.dataset.v;try{localStorage.setItem("tl-tab",S.tab);}catch(_){}const sc=document.getElementById("scroller");if(sc)sc.scrollTop=0;render();break;
     case"close":closeSheet();break;
     case"hide-install":try{localStorage.setItem("tl-hide-install","1");}catch(_){}render();break;
     case"hide-ex":S.exampleOff=true;render();break;
