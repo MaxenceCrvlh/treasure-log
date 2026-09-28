@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.TL_STANDALONE=true;window.TL_VERSION="2ac7eef3";</script>
+<script>window.TL_STANDALONE=true;window.TL_VERSION="0fd84d32";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -308,30 +308,57 @@ async function findVersions(code,lang){
   const out={v,other};if(v.length)VCACHE[key]=out;return out;
 }
 function linkToImage(u){
-  u=String(u||"").trim();
+  u=String(u||"").trim();const found=u.match(/https?:\/\/\S+/i);if(found)u=found[0].replace(/[)\].,]+$/,"");
   const m=u.match(/tcgplayer\.com\/product\/(\d+)/i);if(m)return`https://tcgplayer-cdn.tcgplayer.com/product/${m[1]}_in_1000x1000.jpg`;
   if(/^https:\/\/tcgplayer-cdn\.tcgplayer\.com\/product\/\d+/i.test(u))return u.split("?")[0];
   if(/^https:\/\/\S+\.(jpe?g|png|webp|gif)(\?\S*)?$/i.test(u))return u;
   return null;
 }
-function linkBox(id){return`<div class="bar" style="margin-top:4px"><input id="${id}" class="search" type="url" inputmode="url" placeholder="…or paste a TCGplayer card link" aria-label="Picture link" style="min-width:0"><button type="button" class="btn sm" data-linkfor="${id}">Use picture</button></div><span class="hint" id="${id}-st">For DON!! cards, promos or anything not on the official list.</span>`;}
+function linkBox(id){return`<div class="bar" style="margin-top:6px"><span class="hint">Get a picture from:</span><button type="button" class="btn sm" data-site="tcg" data-for="${id}">TCGplayer ↗</button><button type="button" class="btn sm" data-site="pc" data-for="${id}">PriceCharting ↗</button><button type="button" class="btn sm" data-site="img" data-for="${id}">Google Images ↗</button></div>
+  <div class="bar" style="margin-top:6px"><button type="button" class="btn sm pri" data-paste="${id}">Paste picture or link</button><input id="${id}" class="search" type="url" inputmode="url" placeholder="…or paste a link here" aria-label="Picture link" style="min-width:0"><button type="button" class="btn sm" data-linkfor="${id}">Use</button></div>
+  <span class="hint" id="${id}-st">On the site, long-press the card picture and tap Copy, or tap Share → Copy for the page link. Then come back and tap Paste.</span>`;}
+function siteSearchUrl(site,code,name,lang){
+  const base=[code&&!/DON$/i.test(code)?code:"",name].filter(Boolean).join(" ").trim();
+  if(site==="tcg")return`https://www.tcgplayer.com/search/one-piece-card-game/product?q=${encodeURIComponent(base)}`;
+  if(site==="pc")return`https://www.pricecharting.com/search-products?q=${encodeURIComponent("one piece "+base)}&type=prices`;
+  return`https://www.google.com/search?tbm=isch&q=${encodeURIComponent("one piece card "+base+(lang==="JP"?" japanese":""))}`;
+}
 async function useLink(inputId,onOk){
   const inp=document.getElementById(inputId),st=document.getElementById(inputId+"-st");const url=linkToImage(inp.value);
-  if(!url){st.textContent="Paste a TCGplayer card page link, or a link that ends in .jpg or .png.";return;}
+  if(!url){st.textContent="That link doesn't lead to a picture. Use a TCGplayer card page link, or copy the picture itself (long-press → Copy).";return;}
   st.textContent="Checking the picture…";
   if(!(await probeImg(url))){st.textContent="Couldn't load a picture from that link.";return;}
   st.textContent="Picture set.";onOk(url);
+}
+async function pasteClipboard(inputId,onUrl,onBlob){
+  const st=document.getElementById(inputId+"-st");
+  try{
+    if(navigator.clipboard&&navigator.clipboard.read){
+      const items=await navigator.clipboard.read();
+      for(const it of items){const t=it.types.find(x=>x.startsWith("image/"));if(t){st.textContent="Saving the picture…";const blob=await shrink(await it.getType(t));st.textContent="Picture set.";onBlob(blob);return;}}
+      for(const it of items){if(it.types.includes("text/plain")){const txt=await (await it.getType("text/plain")).text();document.getElementById(inputId).value=txt.trim();return useLink(inputId,onUrl);}}
+      st.textContent="Nothing to paste. Copy the picture or the page link first.";return;
+    }
+    if(navigator.clipboard&&navigator.clipboard.readText){const txt=await navigator.clipboard.readText();document.getElementById(inputId).value=txt.trim();return useLink(inputId,onUrl);}
+    st.textContent="Your browser won't let the app read the clipboard. Long-press the link box and tap Paste.";
+  }catch(e){st.textContent="Couldn't read what you copied. Long-press the link box, tap Paste, then Use.";}
+}
+/* ctx() -> {code,name,lang}; onUrl(url); onBlob(blob) */
+function wireLinkBox(id,ctx,onUrl,onBlob){
+  document.querySelectorAll(`[data-for="${id}"]`).forEach(b=>b.onclick=()=>{const c=ctx();const u=siteSearchUrl(b.dataset.site,c.code,c.name,c.lang);const w=window.open(u,"_blank","noopener");if(!w)location.href=u;});
+  const pb=document.querySelector(`[data-paste="${id}"]`);if(pb)pb.onclick=()=>pasteClipboard(id,onUrl,onBlob);
+  const ub=document.querySelector(`[data-linkfor="${id}"]`);if(ub)ub.onclick=()=>useLink(id,onUrl);
 }
 const vLabel=s=>s?"Version "+s.replace("_",""):"Regular";
 /* renders the version strip; onPick({suf,url}|null) */
 async function mountPicker(el,code,lang,selected,onPick){
   code=String(code||"").trim().toUpperCase();
-  if(!codeOk(code)){el.innerHTML=`<span class="hint">${code?"The official list has no pictures for this code. Paste a TCGplayer link below.":"Type a card code like OP05-119 to see its versions."}</span>`;return;}
+  if(!codeOk(code)){el.innerHTML=`<span class="hint">${code?"The official list has no pictures for this code. Get one from another site below.":"Type a card code like OP05-119 to see its versions."}</span>`;return;}
   el.innerHTML=`<span class="hint">Looking up ${esc(code)} on the official card list…</span>`;
   const token=(el._tok=(el._tok||0)+1);
   let res;try{res=await findVersions(code,lang);}catch(e){res={v:[],other:false};}
   if(el._tok!==token)return;
-  if(!res.v.length){el.innerHTML=`<span class="hint">No official picture found for ${esc(code)}${navigator.onLine===false?" (you're offline)":""}. New cards and some promos aren't listed yet. Use your own photo.</span>`;return;}
+  if(!res.v.length){el.innerHTML=`<span class="hint">No official picture found for ${esc(code)}${navigator.onLine===false?" (you're offline)":""}. New cards and some promos aren't listed yet. Get one from another site below, or use your own photo.</span>`;return;}
   el.innerHTML=(res.other?`<span class="hint" style="align-self:center;width:90px;flex-shrink:0">Only on the ${res.v[0].lang==="JP"?"Japanese":"English"} site:</span>`:"")+res.v.map((x,k)=>`<button type="button" data-k="${k}" aria-pressed="${x.url===selected}"><img src="${esc(x.url)}" alt="${esc(code)} ${esc(vLabel(x.suf))}" referrerpolicy="no-referrer" loading="lazy">${esc(vLabel(x.suf))}</button>`).join("")+`<button type="button" data-k="none" aria-pressed="${!selected}"><span class="none">✕</span>No picture</button>`;
   el.querySelectorAll("button").forEach(b=>b.onclick=()=>{el.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");onPick(b.dataset.k==="none"?null:res.v[+b.dataset.k]);});
 }
@@ -938,9 +965,12 @@ const SHEETS={
           if(!S.pendingPhoto){const pv=document.getElementById("phPrev");const s=v?v.url:photoSrc(c);pv.innerHTML=s?`<img class="thumb" src="${esc(s)}" alt="" referrerpolicy="no-referrer">`:`<div class="thumb">No photo</div>`;}
         });};
         form._refreshPicker=refresh;
-        form.querySelector('[data-linkfor="f-link"]').onclick=()=>useLink("f-link",url=>{
+        wireLinkBox("f-link",()=>({code:form.code.value.trim(),name:form.name.value.trim(),lang:(form.querySelector('input[name="lang"]:checked')||{}).value||"EN"}),url=>{
           form.officialImg.value=url;form.imgSuffix.value="link";vp.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));
           if(!S.pendingPhoto)document.getElementById("phPrev").innerHTML=`<img class="thumb" src="${esc(url)}" alt="" referrerpolicy="no-referrer">`;
+        },blob=>{
+          S.pendingPhoto={blob,url:URL.createObjectURL(blob)};form.officialImg.value="";form.imgSuffix.value="";vp.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));
+          document.getElementById("phPrev").innerHTML=`<img class="thumb" src="${S.pendingPhoto.url}" alt="">`;
         });
         form.code.addEventListener("input",()=>{clearTimeout(tm);tm=setTimeout(()=>{if(form.officialImg.value&&form.imgSuffix.value!=="link"&&!form.officialImg.value.includes("/"+form.code.value.trim().toUpperCase()))form.officialImg.value="";refresh();},450);});
         form.addEventListener("change",e=>{if(e.target.name==="lang"){if(form.imgSuffix.value!=="link")form.officialImg.value="";refresh();}});
@@ -1309,8 +1339,9 @@ const SHEETS={
   },
   pickOfficial(id){
     const c=byId("cards",id);if(!c)return null;
-    return{title:`Pick the version · <span class="mono">${esc(c.code)}</span>`,body:`<p class="hint" style="margin:0 0 8px">Official ${c.lang==="JP"?"Japanese":"English"} card pictures for ${esc(c.code)}. Tap the one that matches your card.</p><div id="vp2" class="vpick"></div>${linkBox("p-link")}`,after(){
-      document.querySelector('[data-linkfor="p-link"]').onclick=()=>useLink("p-link",async url=>{const cur=byId("cards",id);await put("cards",{...cur,officialImg:url,imgSuffix:"link"});toast("Picture set");openSheet("card",id);});
+    return{title:`Pick the version · <span class="mono">${esc(c.code)}</span>`,body:`<p class="hint" style="margin:0 0 8px">Official ${c.lang==="JP"?"Japanese":"English"} card pictures for ${esc(c.code)}. Tap the one that matches your card, or get one from another site below.</p><div id="vp2" class="vpick"></div>${linkBox("p-link")}`,after(){
+      wireLinkBox("p-link",()=>({code:c.code,name:c.name,lang:c.lang}),async url=>{const cur=byId("cards",id);await put("cards",{...cur,officialImg:url,imgSuffix:"link"});toast("Picture set");openSheet("card",id);},
+        async blob=>{const cur=byId("cards",id);try{const r=await S.assets.upload(blob,{type:"image/jpeg"});await put("cards",{...cur,photoId:r.id,officialImg:"",imgSuffix:""});toast("Picture set");openSheet("card",id);}catch(e){toast("Couldn't save the picture.");}});
       mountPicker(document.getElementById("vp2"),c.code,c.lang,c.officialImg,async v=>{
         const cur=byId("cards",id);const upd={...cur,officialImg:v?v.url:"",imgSuffix:v?v.suf:""};
         if(v&&v.suf&&cur.variant==="Regular")upd.variant="Alt art (parallel)";
