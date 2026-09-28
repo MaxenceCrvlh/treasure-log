@@ -1,6 +1,6 @@
 // Treasure Log service worker: keeps the app working offline.
 // App files are fetched fresh when online (so updates arrive), with the saved copy as fallback.
-const CACHE = "tl-ee23c4eb";
+const CACHE = "tl-5e32542f";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
