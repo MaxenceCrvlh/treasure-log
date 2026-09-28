@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.TL_STANDALONE=true;window.TL_VERSION="0fd84d32";</script>
+<script>window.TL_STANDALONE=true;window.TL_VERSION="ee23c4eb";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -325,6 +325,7 @@ function siteSearchUrl(site,code,name,lang){
 }
 async function useLink(inputId,onOk){
   const inp=document.getElementById(inputId),st=document.getElementById(inputId+"-st");const url=linkToImage(inp.value);
+  if(!url&&/pricecharting\.com/i.test(inp.value)){st.textContent="PriceCharting page links can't be read by the app. Take a screenshot of the card instead, then use \"Photo of the card\" → Photo Library.";return;}
   if(!url){st.textContent="That link doesn't lead to a picture. Use a TCGplayer card page link, or copy the picture itself (long-press → Copy).";return;}
   st.textContent="Checking the picture…";
   if(!(await probeImg(url))){st.textContent="Couldn't load a picture from that link.";return;}
