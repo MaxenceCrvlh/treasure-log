@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.TL_STANDALONE=true;window.TL_VERSION="c7da9ba1";</script>
+<script>window.TL_STANDALONE=true;window.TL_VERSION="2ac7eef3";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -821,7 +821,8 @@ function vTools(){
     <p>One code like <span class="mono">OP05-119</span> can be a regular print, a parallel alt art, a manga rare, an SP or a stamped promo. Treasure Log keeps them apart with the <b>Variant</b> field, so pick it every time you log a card.</p>
     <p>Bandai's own card list marks alternate arts with a suffix: <span class="mono">_p1</span>, <span class="mono">_p2</span>. If you know it, put it in Variant notes. Add a photo from your phone and you'll never mix them up at the table.</p>
     <p>For comps, search with the variant words (the app adds "alt art", "manga" or "japanese" to comp links for you) and log only sales of the exact same version.</p>
-  </div>`;
+  </div>
+  <p class="hint" style="margin-top:18px">Treasure Log · version <span class="mono">${esc(window.TL_VERSION||"claude")}</span></p>`;
 }
 
 function render(){
@@ -958,7 +959,7 @@ const SHEETS={
     return{live:true,title:`<span class="mono">${esc(c.code)}</span> ${esc(c.name||"")}`,body:`
       <div class="detail-top"><div>${imgSrc(c)?`<img class="big" src="${esc(imgSrc(c))}" alt="${esc(c.name||c.code)}" referrerpolicy="no-referrer">`:`<div class="big">${esc(c.code)}</div>`}
         ${CAN_OFFICIAL&&c.officialImg&&photoSrc(c)?`<div style="margin-top:6px"><span class="label">Your photo</span><img class="thumb" style="width:56px;display:block;margin-top:3px" src="${esc(photoSrc(c))}" alt="Your photo"></div>`:""}
-        ${CAN_OFFICIAL?`<button class="btn sm" data-act="find-official" data-id="${esc(c.id)}" style="margin-top:6px;width:100%">${c.officialImg?"Change picture":"Find picture"}</button>`:""}</div>
+        ${CAN_OFFICIAL?`<button class="btn sm" data-act="find-official" data-id="${esc(c.id)}" style="margin-top:6px;width:100%">${c.officialImg?"Change picture":"Add picture"}</button>`:""}</div>
         <div><div class="m" style="display:flex;gap:6px;flex-wrap:wrap">${chips(c)}${c.status==="pc"?`<span class="chip ok">My collection</span>`:""}${c.status==="sold"||n(c.qty)<=0?`<span class="chip">Sold out</span>`:""}</div>
         <div class="stat-line muted"><span>Set ${esc(setCode(c.code))}</span>${c.variantNote?`<span>${esc(c.variantNote)}</span>`:""}${c.kind==="graded"&&c.cert?`<span>Cert <span class="mono">${esc(c.cert)}</span></span>`:""}</div>
         <div class="stat-line muted"><span>${esc(c.source||"")}</span>${c.buyDate?`<span>bought ${fdate(c.buyDate)} (${age}d)</span>`:""}${c.location?`<span>in ${esc(c.location)}</span>`:""}</div>
@@ -1322,7 +1323,7 @@ const SHEETS={
     const c=byId("cards",id);if(!c)return null;
     return{title:`Paste comps · <span class="mono">${esc(c.code)}</span>`,body:`<p class="hint" style="margin:0 0 8px">Open eBay sold listings (or 130point, PriceCharting), select the results, copy, and paste them here. ${S.sample?"Claude reads the prices and dates and checks which listings match this exact card.":"The app pulls out the prices and dates."}</p>
       <div class="field"><label for="pc-src">From</label><select id="pc-src">${opt(["eBay sold","130point","PriceCharting","TCGplayer","Card Ladder","Yuyu-tei","Other"],"eBay sold")}</select></div>
-      <div class="field" style="margin-top:8px"><label for="pc-text">Pasted text</label><textarea id="pc-text" style="min-height:140px" placeholder="Paste here"></textarea></div>
+      <div class="field" style="margin-top:8px"><label for="pc-text">Pasted text</label><textarea id="pc-text" style="min-height:140px" placeholder="Paste the listings here, or type one sale per line:&#10;70 9/9&#10;41 8/29&#10;54.99 Jul 15"></textarea></div>
       <div class="bar" style="margin-top:10px"><button class="btn pri" type="button" id="pc-read">Read prices</button><span class="hint" id="pc-status"></span></div>
       <div id="pc-out" style="margin-top:12px"></div>`,after(){
       const out=document.getElementById("pc-out"),stat=document.getElementById("pc-status"),btn=document.getElementById("pc-read");
@@ -1344,7 +1345,7 @@ ${text.slice(0,30000)}`,{modelTier:"quick"});
         }
         if(!rows)rows=parseCompsText(text);
         btn.disabled=false;
-        if(!rows.length){stat.textContent="No prices found in that text.";out.innerHTML="";return;}
+        if(!rows.length){stat.textContent=/^\s*https?:\/\/\S+\s*$/.test(text)?"That's a link to the page, not the listings. Select the sold listings' text on the page and copy that, or type them in, one per line.":"No prices found. You can type them in instead, one per line, like: 70 9/9";out.innerHTML="";return;}
         stat.textContent=`Found ${rows.length}. Untick anything that isn't this exact card.`;
         out.innerHTML=`<div class="picklist">${rows.map((r,k)=>`<label><input type="checkbox" data-k="${k}" ${r.match?"checked":""}><span style="flex:1;min-width:0"><b class="num">${money(r.price)}</b> <span class="hint">${fdate(r.date)} · ${r.kind==="listed"?"listed":"sold"}${r.match?"":" · may not match"}</span><br><span class="hint">${esc(r.title.slice(0,90))}</span></span></label>`).join("")}</div><div class="bar" style="margin-top:10px"><button class="btn pri" type="button" id="pc-add">Add ticked comps</button></div>`;
         document.getElementById("pc-add").onclick=async()=>{
@@ -1469,21 +1470,44 @@ The card code is printed in the bottom-right corner (like OP05-119 or ST01-012).
 }
 /* ---------- comp text parser (fallback when Claude isn't available) ---------- */
 const MONTHS={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,sept:9,oct:10,nov:11,dec:12};
+function yearFor(mo,da){const t=new Date();let y=t.getFullYear();const d=new Date(y,mo-1,da);if(d.getTime()-t.getTime()>2*864e5)y--;return y;}
+function isoOf(y,mo,da){if(!(mo>=1&&mo<=12&&da>=1&&da<=31))return null;return `${y}-${String(mo).padStart(2,"0")}-${String(da).padStart(2,"0")}`;}
 function findDate(line){
-  let m=line.match(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})/i);
-  if(m)return `${m[3]}-${String(MONTHS[m[1].toLowerCase().slice(0,3)]).padStart(2,"0")}-${m[2].padStart(2,"0")}`;
-  m=line.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);if(m)return m[0];
-  m=line.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);if(m){const y=m[3].length===2?"20"+m[3]:m[3];return `${y}-${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}`;}
+  let m=line.match(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/i);
+  if(m)return isoOf(m[3],MONTHS[m[1].toLowerCase().slice(0,3)],+m[2]);
+  m=line.match(/\b(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?,?\s+(\d{4})/i);
+  if(m)return isoOf(m[3],MONTHS[m[2].toLowerCase().slice(0,3)],+m[1]);
+  m=line.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);if(m)return isoOf(m[1],+m[2],+m[3]);
+  m=line.match(/\b(\d{4})\/(\d{1,2})\/(\d{1,2})\b/);if(m)return isoOf(m[1],+m[2],+m[3]);
+  m=line.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);if(m){const y=m[3].length===2?"20"+m[3]:m[3];return isoOf(y,+m[1],+m[2]);}
+  m=line.match(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+(\d{1,2})\b(?!\s*,?\s*\d{4})/i);
+  if(m){const mo=MONTHS[m[1].toLowerCase().slice(0,3)];return isoOf(yearFor(mo,+m[2]),mo,+m[2]);}
+  m=line.match(/(?:^|\s)(\d{1,2})\/(\d{1,2})(?:\s|$)/);if(m)return isoOf(yearFor(+m[1],+m[2]),+m[1],+m[2]);
   return null;
+}
+/* finds a price in a line: $70, $ 70.00, US $70, USD 70, 70.00 USD, ¥7,000 is skipped */
+function findPrice(line){
+  const clean=line.replace(/ /g," ");
+  let m=clean.match(/(?:US\s*)?\$\s?(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/i)||clean.match(/\bUSD\s?(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/i)||clean.match(/(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\s?USD\b/i);
+  return m?n(m[1].replace(/,/g,"")):0;
 }
 function parseCompsText(text){
   const out=[];let date=null,title="";
-  text.split(/\n+/).map(l=>l.trim()).filter(Boolean).forEach(line=>{
+  const lines=String(text).replace(/\r/g,"").split(/\n+/).map(l=>l.trim()).filter(Boolean);
+  lines.forEach(line=>{
     const d=findDate(line);if(d)date=d;
-    if(/shipping|delivery|postage|\+\s*\$|was:|list price|or best offer|coupon/i.test(line)&&!/sold/i.test(line)){if(!/\$/.test(line))title=line;return;}
-    const pm=line.match(/\$\s?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?|\d+(?:\.\d{2})?)/);
-    if(pm&&!/\bto\b\s*\$/i.test(line)){const price=n(pm[1].replace(/,/g,""));if(price>0)out.push({price,date:date||today(),title:title||line,kind:/sold/i.test(line+" "+title)||date?"sold":"listed",match:true});}
+    if(/shipping|delivery|postage|\+\s*\$|was:|list price|or best offer|coupon|free returns/i.test(line)&&!/sold/i.test(line)){if(!/\$/.test(line))title=line;return;}
+    if(/\bto\b\s*\$|\$\s?[\d.,]+\s*(?:-|–|to)\s*\$/i.test(line))return;
+    const price=findPrice(line);
+    if(price>0)out.push({price,date:date||today(),title:line.replace(/(?:US\s*)?\$\s?[\d.,]+|\d{4}-\d{1,2}-\d{1,2}/g,"").trim().length>12?line:(title||line),kind:/sold/i.test(line+" "+title)||d||date?"sold":"listed",match:true});
     else if(line.length>18&&!d)title=line;
+  });
+  if(out.length)return out;
+  /* quick typing: one sale per line, like "70 9/9" or "54.99 Jul 15" or just "41" */
+  lines.forEach(line=>{
+    const m=line.match(/^\$?\s?(\d+(?:\.\d{1,2})?)\b\s*(.*)$/);if(!m)return;
+    const price=n(m[1]);if(!(price>0))return;
+    out.push({price,date:findDate(m[2]||"")||today(),title:"Typed in",kind:"sold",match:true});
   });
   return out;
 }
