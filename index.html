@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.TL_STANDALONE=true;window.TL_VERSION="d7ec6f82";</script>
+<script>window.TL_STANDALONE=true;window.TL_VERSION="35c5e934";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -29,6 +29,7 @@ img{max-width:100%}
   --accent:#C4352D; --accent-soft:#F8E3E1; --on-accent:#FFFFFF; --gold:#9A6B00; --gold-soft:#F6ECD2;
   --good:#1D8456; --good-soft:#DDF1E7; --warn:#A8670F; --warn-soft:#F7EAD5; --bad:#C4352D;
   --shadow:0 1px 2px rgba(24,32,44,.06),0 6px 20px rgba(24,32,44,.08);
+  --s1:#2B6CB0; --s2:#C4352D;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -39,6 +40,7 @@ img{max-width:100%}
   --accent:#E8574E; --accent-soft:#3A1D1C; --on-accent:#FFFFFF; --gold:#E2B24D; --gold-soft:#342A15;
   --good:#44B883; --good-soft:#15301F; --warn:#E3A541; --warn-soft:#3A2A12; --bad:#F06B61;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  --s1:#5A93D6; --s2:#E8574E;
 }}
 :root[data-theme="dark"]{
   color-scheme:dark;
@@ -46,6 +48,7 @@ img{max-width:100%}
   --accent:#E8574E; --accent-soft:#3A1D1C; --on-accent:#FFFFFF; --gold:#E2B24D; --gold-soft:#342A15;
   --good:#44B883; --good-soft:#15301F; --warn:#E3A541; --warn-soft:#3A2A12; --bad:#F06B61;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  --s1:#5A93D6; --s2:#E8574E;
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
@@ -164,6 +167,14 @@ table.t td.r,table.t th.r{text-align:right}
 .newrow{display:grid;grid-template-columns:1.1fr 1.3fr 1fr 1fr auto;gap:6px;margin-top:6px;align-items:center}
 .newrow input,.newrow select{padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);min-width:0;width:100%;font-size:13.5px}
 @media (max-width:520px){.newrow{grid-template-columns:1fr 1fr}.newrow .rm{grid-column:2;justify-self:end}}
+.trow{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-top:8px}
+.trow input,.trow select{padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);min-width:0;width:100%;font-size:13.5px}
+.trow .rm{justify-self:end}
+.chart{position:relative;margin-top:8px}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart .tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px;box-shadow:var(--shadow);white-space:nowrap;z-index:3}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
 .vpick{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;min-height:40px;align-items:flex-start}
 .vpick button{border:2px solid transparent;border-radius:9px;padding:2px;background:none;cursor:pointer;flex-shrink:0;width:88px;text-align:center;font-size:11px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;gap:3px;align-items:center}
 .vpick button img{width:80px;aspect-ratio:63/88;object-fit:cover;border-radius:6px;display:block;background:var(--surface2)}
@@ -196,9 +207,9 @@ table.t td.r,table.t th.r{text-align:right}
 (function(){
 "use strict";
 /* ---------- state ---------- */
-const COLS=["cards","sales","shows","expenses","lots","items","supplies","wants"];
+const COLS=["cards","sales","shows","expenses","lots","items","supplies","wants","trades","snapshots"];
 const DEFAULT_SETTINGS={offerPct:70,markupPct:10,seqPremiumPct:25,ebayFeePct:13.25,staleDays:30,agingDays:60,compDays:90};
-const S={cards:[],sales:[],shows:[],expenses:[],lots:[],items:[],supplies:[],wants:[],sample:null,sampleImg:false,settings:{...DEFAULT_SETTINGS},db:null,assets:null,downloads:null,live:false,loaded:false,
+const S={cards:[],sales:[],shows:[],expenses:[],lots:[],items:[],supplies:[],wants:[],trades:[],snapshots:[],bootAt:Date.now(),sample:null,sampleImg:false,settings:{...DEFAULT_SETTINGS},db:null,assets:null,downloads:null,live:false,loaded:false,
   tab:"home",q:"",f:{lang:"all",kind:"all",status:"stock"},sort:"new",sheet:null,pendingPhoto:null,exampleOff:false};
 try{const t=localStorage.getItem("tl-tab");if(t)S.tab=t;}catch(e){}
 
@@ -224,7 +235,7 @@ const EX={
          {id:"ex-sh2",name:"Harbor TCG Expo",date:ahead(12),venue:"Convention hall",tableFee:75,costs:[],bulkRevenue:0,notes:"",createdAt:ago(2)}],
   expenses:[{id:"ex-e1",date:ago(25),cat:"Supplies",amount:34,note:"",supplyId:"ex-su1",qty:200,showId:""},{id:"ex-e2",date:ago(15),cat:"Supplies",amount:9,note:"",supplyId:"ex-su3",qty:60,showId:""}]
 };
-const isEx=()=>!S.exampleOff&&!S.cards.length&&!S.sales.length&&!S.shows.length&&!S.expenses.length&&!S.lots.length&&!S.items.length&&!S.supplies.length&&!S.wants.length;
+const isEx=()=>!S.exampleOff&&!S.cards.length&&!S.sales.length&&!S.shows.length&&!S.expenses.length&&!S.lots.length&&!S.items.length&&!S.supplies.length&&!S.wants.length&&!S.trades.length;
 const D=k=>isEx()?EX[k]:S[k];
 const exId=id=>String(id||"").startsWith("ex-");
 
@@ -250,10 +261,11 @@ function showNumbers(sh){
   const fees=sales.reduce((a,s)=>a+n(s.fees),0);
   const bulk=n(sh.bulkRevenue);
   const costs=showCosts(sh)+exps.reduce((a,e)=>a+n(e.amount),0);
-  const buyCash=buys.filter(c=>!c.dealId).reduce((a,c)=>a+n(c.cost)*n(c.qtyBought||c.qty),0);
-  const tradeIn=buys.filter(c=>c.dealId).reduce((a,c)=>a+n(c.cost)*n(c.qtyBought||c.qty),0);
+  const buyCash=buys.filter(c=>!c.dealId&&!c.tradeId).reduce((a,c)=>a+n(c.cost)*n(c.qtyBought||c.qty),0);
+  const legacyTrade=buys.filter(c=>c.dealId&&!c.tradeId).reduce((a,c)=>a+n(c.cost)*n(c.qtyBought||c.qty),0);
+  const tradeIn=legacyTrade+D("trades").filter(t=>t.showId===sh.id).reduce((a,t)=>a+n(t.valueIn),0);
   const net=rev-cogs-fees+bulk-costs;
-  return {sales,exps,buys,rev,cogs,fees,bulk,costs,buyCash,tradeIn,net,cashIn:rev+bulk-tradeIn,units:sales.reduce((a,s)=>a+n(s.qty),0)};
+  return {sales,exps,buys,rev,cogs,fees,bulk,costs,buyCash,tradeIn,net,cashIn:rev+bulk-legacyTrade,units:sales.reduce((a,s)=>a+n(s.qty),0)};
 }
 function compStats(c){
   const all=(c.comps||[]).filter(x=>n(x.price)>0);
@@ -411,7 +423,7 @@ async function saveSettings(){
 
 /* ---------- on-device storage (standalone app) ---------- */
 const IDB={db:null,
-  open(){return new Promise((res,rej)=>{let r;try{r=indexedDB.open("treasure-log",1);}catch(e){rej(e);return;}
+  open(){return new Promise((res,rej)=>{let r;try{r=indexedDB.open("treasure-log",2);}catch(e){rej(e);return;}
     r.onupgradeneeded=()=>{const d=r.result;[...COLS,"settings","photos"].forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s);});};
     r.onsuccess=()=>{IDB.db=r.result;res(r.result);};r.onerror=()=>rej(r.error);});},
   tx(store,mode,fn){return new Promise((res,rej)=>{const t=IDB.db.transaction(store,mode);const r=fn(t.objectStore(store));let out;if(r)r.onsuccess=()=>{out=r.result;};t.oncomplete=()=>res(out);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error);});},
@@ -526,7 +538,7 @@ function vHome(){
     <div class="tile"><div class="label">In stock</div><div class="v num">${t.units}</div><div class="d">${t.lines} listings${t.lotsN?` · ${t.lotsN} lot${t.lotsN>1?"s":""}`:""}${t.gradingN?` · ${t.gradingN} grading`:""}${t.itemUnits?` · ${t.itemUnits} side items`:""}</div></div>
     <div class="tile"><div class="label">Cost basis</div><div class="v num">${money(t.cost,0)}</div><div class="d">what you paid</div></div>
     <div class="tile"><div class="label">Market value</div><div class="v num">${money(t.mkt,0)}</div><div class="d ${cls(t.unreal)}">${signed(t.unreal)} unrealized</div></div>
-    <div class="tile"><div class="label">Profit, all time</div><div class="v num ${cls(t.realized)}">${money(t.realized,0)}</div><div class="d">${money(t.mReal,0)} this month</div></div>
+    <div class="tile"><div class="label">Profit, all time</div><div class="v num ${cls(t.realized)}">${money(t.realized,0)}</div><div class="d">${money(t.mReal,0)} this month · <span class="${cls(t.realized+t.unreal)}">${signed(t.realized+t.unreal)}</span> with stock growth</div></div>
   </div>`;
   if(up){const d=daysSince(up.date);const inD=-d;h+=`<h2>Next show</h2><div class="panel"><button class="row" data-act="show" data-id="${esc(up.id)}"><div class="main"><div class="t">${esc(up.name)}</div><div class="m">${fdate(up.date)} · ${esc(up.venue||"")} · table ${money(up.tableFee,0)}</div></div><div class="r"><div class="num" style="font-family:var(--display);font-size:22px;font-weight:700">${inD===0?"Today":inD+"d"}</div><div class="hint">break-even ≈ ${money(breakEven(up),0)} sales</div></div></button></div>`;}
   if(grading.length){
@@ -570,7 +582,7 @@ function lotRow(L,act){
 }
 function saleRow(s){
   const p=saleProfit(s);const sh=s.showId?byId("shows",s.showId):null;
-  return `<button class="row" data-act="sale" data-id="${esc(s.id)}"><div class="main"><div class="t">${s.lotId?`<span class="chip lot">Lot · ${(s.items||[]).reduce((a,x)=>a+n(x.qty),0)}</span> `:s.itemId?`<span class="chip gr">Item</span> `:`<span class="mono">${esc(s.code)}</span> `}${esc(s.name||"")}${n(s.qty)>1?` ×${n(s.qty)}`:""}</div><div class="m">${fdate(s.date)} · ${esc(sh?sh.name:s.channel||"")}</div></div><div class="r num"><div style="font-weight:600">${money(saleRev(s))}</div><div class="hint ${cls(p)}">${signed(p)}</div></div></button>`;
+  return `<button class="row" data-act="sale" data-id="${esc(s.id)}"><div class="main"><div class="t">${s.tradeId?`<span class="chip ok">Traded</span> `:""}${s.lotId?`<span class="chip lot">Lot · ${(s.items||[]).reduce((a,x)=>a+n(x.qty),0)}</span> `:s.itemId?`<span class="chip gr">Item</span> `:`<span class="mono">${esc(s.code)}</span> `}${esc(s.name||"")}${n(s.qty)>1?` ×${n(s.qty)}`:""}</div><div class="m">${fdate(s.date)} · ${esc(sh?sh.name:s.channel||"")}</div></div><div class="r num">${s.tradeId?`<div style="font-weight:600">${saleRev(s)?money(saleRev(s)):"Trade"}</div><div class="hint">value ${money(s.tradeValue)}</div>`:`<div style="font-weight:600">${money(saleRev(s))}</div><div class="hint ${cls(p)}">${signed(p)}</div>`}</div></button>`;
 }
 
 function matchCard(c,words){
@@ -654,6 +666,60 @@ function vItems(){
   <p class="hint">Things you sell besides cards: your 3D prints, stickers, playmats. Sold ${sold.reduce((a,s)=>a+n(s.qty),0)} for ${money(rev,0)}, profit ${signed(pr)}.</p>
   <div class="panel">${L.length?L.map(i=>itemRow(i)).join(""):`<div class="empty">Add your first side item, like a 3D print.</div>`}</div>`;
 }
+function dailyRealized(){
+  const m={};const add=(d,v)=>{if(!d)return;m[d]=(m[d]||0)+v;};
+  D("sales").forEach(s=>add(s.date,saleProfit(s)));
+  D("shows").filter(s=>(s.date||"")<=today()).forEach(s=>add(s.date,n(s.bulkRevenue)-showCosts(s)));
+  D("expenses").forEach(e=>add(e.date,-n(e.amount)));
+  return m;
+}
+function valueChart(){
+  const snaps=[...D("snapshots")].filter(s=>s.date).sort((a,b)=>a.date<b.date?-1:1);
+  const dr=dailyRealized();const evDates=Object.keys(dr).sort();
+  const start=[snaps[0]&&snaps[0].date,evDates[0]].filter(Boolean).sort()[0];
+  const T=today();
+  if(!start||start>=T)return `<div class="legend"><span><i style="background:var(--s1)"></i>Inventory value</span><span><i style="background:var(--s2)"></i>Cash profit</span></div><p class="hint" style="margin:8px 0 0">The chart fills in as you use the app. It records your inventory value once a day, so come back in a few days to see the trend.</p>`;
+  const days=[];for(let d=new Date(start+"T12:00:00");;d.setDate(d.getDate()+1)){const s=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");days.push(s);if(s>=T||days.length>1500)break;}
+  let cum=0,si=0,lastV=null;const inv=[],cash=[];
+  days.forEach(d=>{cum+=dr[d]||0;cash.push(cum);while(si<snaps.length&&snaps[si].date<=d){lastV=n(snaps[si].value);si++;}inv.push(lastV);});
+  const vals=[...cash,...inv.filter(v=>v!==null)];let lo=Math.min(0,...vals),hi=Math.max(1,...vals);
+  const step=(()=>{const raw=(hi-lo)/4;const p=Math.pow(10,Math.floor(Math.log10(raw||1)));const f=raw/p;return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p;})();
+  lo=Math.floor(lo/step)*step;hi=Math.ceil(hi/step)*step;
+  const W=Math.round(Math.max(330,Math.min(640,(window.innerWidth||640)-70))),H=W<500?210:230,L=50,R=78,Tp=12,B=26,pw=W-L-R,ph=H-Tp-B;
+  const x=i=>L+(days.length>1?i*pw/(days.length-1):pw/2),y=v=>Tp+ph-(v-lo)/(hi-lo)*ph;
+  const path=(arr)=>{let d="",pen=false,prev=null;arr.forEach((v,i)=>{if(v===null){pen=false;return;}if(!pen){d+=`M${x(i).toFixed(1)},${y(v).toFixed(1)}`;pen=true;}else{d+=`H${x(i).toFixed(1)}V${y(v).toFixed(1)}`;}prev=v;});return d;};
+  let grid="";for(let v=lo;v<=hi+1e-9;v+=step){grid+=`<line x1="${L}" x2="${W-R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--line)" stroke-width="1"${Math.abs(v)<1e-9?"":' stroke-dasharray="2 4"'}/><text x="${L-8}" y="${(y(v)+4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--muted)">${esc(money(v,0))}</text>`;}
+  const fmtD=d=>new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});
+  const ticks=[0,Math.floor((days.length-1)/2),days.length-1].filter((v,i,a)=>a.indexOf(v)===i);
+  const xl=ticks.map(i=>`<text x="${x(i).toFixed(1)}" y="${H-6}" text-anchor="${i===0?"start":i===days.length-1?"end":"middle"}" font-size="11" fill="var(--muted)">${fmtD(days[i])}</text>`).join("");
+  const li=inv.length-1,lastInv=inv[li],lastCash=cash[cash.length-1];
+  let ly1=lastInv!==null?y(lastInv):null,ly2=y(lastCash);if(ly1!==null&&Math.abs(ly1-ly2)<14){if(ly1<ly2){ly1-=7;ly2+=7;}else{ly1+=7;ly2-=7;}}
+  const end=(v,yy,col,lab)=>v===null?"":`<circle cx="${x(li).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4" fill="${col}" stroke="var(--surface)" stroke-width="2"/><text x="${(x(li)+9).toFixed(1)}" y="${(yy+4).toFixed(1)}" font-size="11.5" font-weight="600" fill="var(--ink)">${esc(money(v,0))}</text><text x="${(x(li)+9).toFixed(1)}" y="${(yy+16).toFixed(1)}" font-size="10" fill="var(--muted)">${lab}</text>`;
+  S.chartData={days,inv,cash};
+  return `<div class="legend"><span><i style="background:var(--s1)"></i>Inventory value (market)</span><span><i style="background:var(--s2)"></i>Cash profit, cumulative</span></div>
+  <div class="chart" id="vchart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Inventory value and cumulative cash profit over time">${grid}${xl}
+    <path d="${path(inv)}" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round"/>
+    <path d="${path(cash)}" fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round"/>
+    ${end(lastInv,ly1,"var(--s1)","inventory")}${end(lastCash,ly2,"var(--s2)","cash profit")}
+    <line id="vc-x" x1="0" x2="0" y1="${Tp}" y2="${Tp+ph}" stroke="var(--muted)" stroke-width="1" visibility="hidden"/>
+    <rect id="vc-hit" x="${L}" y="${Tp}" width="${pw}" height="${ph}" fill="transparent" data-l="${L}" data-pw="${pw}" data-w="${W}"/>
+  </svg><div class="tip" id="vc-tip" hidden></div></div>
+  <details style="margin-top:6px"><summary class="hint" style="cursor:pointer">Show as a table</summary><div class="scroll"><table class="t num"><thead><tr><th>Date</th><th class="r">Inventory value</th><th class="r">Cash profit</th></tr></thead><tbody>${days.map((d,i)=>({d,i})).filter(o=>o.i===days.length-1||snaps.some(s=>s.date===o.d)||dr[o.d]).reverse().slice(0,60).map(o=>`<tr><td>${fdate(o.d)}</td><td class="r">${inv[o.i]!==null?money(inv[o.i],0):"—"}</td><td class="r">${money(cash[o.i],0)}</td></tr>`).join("")}</tbody></table></div></details>`;
+}
+function chartHover(e){
+  const hit=document.getElementById("vc-hit");const cd=S.chartData;if(!hit||!cd)return;
+  const svg=hit.ownerSVGElement;const r=svg.getBoundingClientRect();const k=r.width/Number(hit.dataset.w);
+  const px=(e.clientX-r.left)/k;const L=Number(hit.dataset.l),pw=Number(hit.dataset.pw);
+  const i=Math.max(0,Math.min(cd.days.length-1,Math.round((px-L)/(pw/Math.max(1,cd.days.length-1)))));
+  const xx=L+(cd.days.length>1?i*pw/(cd.days.length-1):pw/2);
+  const ln=document.getElementById("vc-x");ln.setAttribute("x1",xx);ln.setAttribute("x2",xx);ln.setAttribute("visibility","visible");
+  const tip=document.getElementById("vc-tip");tip.hidden=false;
+  tip.innerHTML=`<b>${esc(fdate(cd.days[i]))}</b><br><span style="color:var(--s1)">■</span> Inventory ${cd.inv[i]!==null?esc(money(cd.inv[i],0)):"—"}<br><span style="color:var(--s2)">■</span> Cash profit ${esc(money(cd.cash[i],0))}`;
+  const left=Math.min(r.width-tip.offsetWidth-4,Math.max(4,xx*k+10));tip.style.left=left+"px";tip.style.top="18px";
+}
+function chartLeave(){const t=document.getElementById("vc-tip"),l=document.getElementById("vc-x");if(t)t.hidden=true;if(l)l.setAttribute("visibility","hidden");}
+document.addEventListener("pointermove",e=>{if(e.target&&e.target.id==="vc-hit")chartHover(e);else if(document.getElementById("vc-tip")&&!document.getElementById("vc-tip").hidden)chartLeave();});
+document.addEventListener("pointerdown",e=>{if(e.target&&e.target.id==="vc-hit")chartHover(e);});
 function supplyStats(s){
   const ex=D("expenses").filter(e=>e.supplyId===s.id);
   const spent=ex.reduce((a,e)=>a+n(e.amount),0),bought=ex.reduce((a,e)=>a+n(e.qty),0);
@@ -673,7 +739,17 @@ function vMoney(){
   const ms=Object.keys(months).sort().reverse();
   const sales=[...D("sales")].sort((a,b)=>(b.date||"")>(a.date||"")?1:-1);
   const exps=[...D("expenses")].sort((a,b)=>(b.date||"")>(a.date||"")?1:-1);
-  return `<h2>Profit & loss</h2><div class="panel pad">
+  const trades=[...D("trades")].sort((a,b)=>(b.date||"")>(a.date||"")?1:-1);
+  const tradeGain=trades.reduce((a,x)=>a+n(x.valueIn)+n(x.cashNet)-n(x.valueOut),0);
+  return `<h2>Where you stand</h2>
+  <div class="tiles">
+    <div class="tile"><div class="label">Cash profit</div><div class="v num ${cls(t.realized)}">${money(t.realized,0)}</div><div class="d">money actually made</div></div>
+    <div class="tile"><div class="label">Inventory growth</div><div class="v num ${cls(t.unreal)}">${signed(t.unreal)}</div><div class="d">market value − what you paid</div></div>
+    <div class="tile"><div class="label">Total gain</div><div class="v num ${cls(t.realized+t.unreal)}">${money(t.realized+t.unreal,0)}</div><div class="d">cash + inventory growth</div></div>
+    <div class="tile"><div class="label">Inventory value</div><div class="v num">${money(t.mkt,0)}</div><div class="d">cost ${money(t.cost,0)}</div></div>
+  </div>
+  <div class="panel pad" style="margin-top:10px">${valueChart()}</div>
+  <h2>Profit & loss</h2><div class="panel pad">
     <div class="pl"><span>Revenue (cards, items, bulk)</span><span class="num">${money(t.rev,0)}</span></div>
     <div class="pl"><span>Profit on card sales</span><span class="num ${cls(t.cardP)}">${signed(t.cardP)}</span></div>
     <div class="pl"><span>Profit on side items</span><span class="num ${cls(t.itemP)}">${signed(t.itemP)}</span></div>
@@ -688,6 +764,8 @@ function vMoney(){
   <div class="panel">${D("supplies").length?D("supplies").map(supplyRow).join(""):`<div class="empty">Log a supply purchase to start counting.</div>`}</div>
   <div class="bar spread" style="margin-top:22px"><h2 style="margin:0">Expenses</h2><button class="btn" data-act="add-expense">+ Expense</button></div>
   <div class="panel" style="margin-top:10px">${exps.length?exps.map(e=>`<button class="row" data-act="expense" data-id="${esc(e.id)}"><div class="main"><div class="t">${esc(e.cat)}${e.supplyId&&byId("supplies",e.supplyId)?` · ${esc(byId("supplies",e.supplyId).name)}${e.qty?` ×${n(e.qty)}`:""}`:""}${e.note?` · <span class="muted">${esc(e.note)}</span>`:""}</div><div class="m">${fdate(e.date)}${e.showId&&byId("shows",e.showId)?" · "+esc(byId("shows",e.showId).name):""}</div></div><div class="r num neg">${money(-e.amount)}</div></button>`).join(""):`<div class="empty">Supplies, grading fees, shipping and gas go here.</div>`}</div>
+  <h2>Trades</h2>${trades.length?`<p class="hint" style="margin:-4px 0 8px">${trades.length} trade${trades.length>1?"s":""} · value change ${signed(tradeGain)}. Trade value isn't counted as cash profit; it shows up as inventory growth.</p>`:""}
+  <div class="panel">${trades.length?trades.map(x=>{const ch=n(x.valueIn)+n(x.cashNet)-n(x.valueOut);return `<button class="row" data-act="trade" data-id="${esc(x.id)}"><div class="main"><div class="t">Gave ${(x.give||[]).reduce((a,y)=>a+n(y.qty),0)} · got ${(x.get||[]).length}${n(x.cashNet)?` · ${n(x.cashNet)>0?"+":"−"}${money(Math.abs(x.cashNet))} cash`:""}</div><div class="m">${fdate(x.date)}${x.showId&&byId("shows",x.showId)?" · "+esc(byId("shows",x.showId).name):""}${x.note?" · "+esc(x.note):""}</div></div><div class="r num"><div style="font-weight:600" class="${cls(ch)}">${signed(ch)}</div><div class="hint">value</div></div></button>`;}).join(""):`<div class="empty">Trades you record with Deal / trade show up here.</div>`}</div>
   <h2>All sales</h2><div class="panel">${sales.length?sales.map(saleRow).join(""):`<div class="empty">No sales yet.</div>`}</div>`;
 }
 
@@ -718,7 +796,7 @@ function vTools(){
   </div>
   ${window.TL_STANDALONE?`<h2>Claude features (optional)</h2><div class="panel pad"><p class="hint" style="margin:0 0 8px">Reading card photos and pasted comps with Claude needs your own Anthropic API key (get one at console.anthropic.com). It stays on this phone and costs about a cent or less per use. Without a key, pasted comps are still read by the app itself.</p>
     <form data-form="apikey" class="bar"><input id="k-key" name="key" type="password" autocomplete="off" class="search" placeholder="${getApiKey()?"Key saved ••••"+esc(getApiKey().slice(-4)):"sk-ant-…"}" aria-label="Anthropic API key"><button class="btn" type="submit">Save key</button>${getApiKey()?`<button class="btn danger" type="button" data-act="key-remove">Remove</button>`:""}</form></div>`:""}
-  <h2>Export</h2><div class="panel pad bar"><button class="btn" data-act="export" data-what="cards">Cards CSV</button><button class="btn" data-act="export" data-what="sales">Sales CSV</button><button class="btn" data-act="export" data-what="shows">Shows CSV</button><button class="btn" data-act="export" data-what="items">Side items CSV</button><span class="hint">Opens in Excel or Google Sheets. Handy for taxes.</span></div>
+  <h2>Export</h2><div class="panel pad bar"><button class="btn" data-act="export" data-what="cards">Cards CSV</button><button class="btn" data-act="export" data-what="sales">Sales CSV</button><button class="btn" data-act="export" data-what="shows">Shows CSV</button><button class="btn" data-act="export" data-what="items">Side items CSV</button><button class="btn" data-act="export" data-what="trades">Trades CSV</button><span class="hint">Opens in Excel or Google Sheets. Handy for taxes.</span></div>
   <h2>Pricing a lot</h2><div class="panel pad guide">
     <p>A lot's value starts as the sum of its cards' market values. Cards with no market value count at what you paid, so add comps to each card first.</p>
     <p>On top of that you set a lot premium. Sequential slabs (consecutive cert numbers from the same grader) default to +${esc(st.seqPremiumPct)}%, because a matched run is harder to put together than the same cards bought one by one. The app checks the cert numbers for you and marks the lot "Sequential ✓" when they really are consecutive.</p>
@@ -752,6 +830,19 @@ function render(){
   if(S.tab==="cards"){const s=document.getElementById("sort");if(s)s.value=S.sort;if(focusQ){const q=document.getElementById("q");q.focus();q.setSelectionRange(q.value.length,q.value.length);}}
   if(S.tab==="tools")calc();
   if(S.sheet&&S.sheet.live)openSheet(S.sheet.type,S.sheet.arg,true);
+  scheduleSnapshot();
+}
+
+/* ---------- daily inventory snapshots (for the value chart) ---------- */
+let snapT;
+function scheduleSnapshot(){clearTimeout(snapT);snapT=setTimeout(takeSnapshot,1500);}
+async function takeSnapshot(){
+  if(!S.live||isEx()||(!S.cards.length&&!S.items.length))return;
+  if(S.db&&Date.now()-S.bootAt<5000){scheduleSnapshot();return;}
+  const t=totals();const snap={id:today(),date:today(),value:r2(t.mkt),cost:r2(t.cost),realized:r2(t.realized)};
+  const cur=S.snapshots.find(x=>x.id===snap.id);
+  if(cur&&cur.value===snap.value&&cur.cost===snap.cost&&cur.realized===snap.realized)return;
+  try{await put("snapshots",snap);}catch(_){}
 }
 
 /* ---------- sheets ---------- */
@@ -922,7 +1013,7 @@ const SHEETS={
       <div class="pl"><span>Cost</span><span>${money(-n(s.qty)*n(s.costEach))}</span></div>
       ${n(s.fees)?`<div class="pl"><span>Fees</span><span>${money(-s.fees)}</span></div>`:""}
       <div class="pl total"><span>Profit</span><span class="${cls(saleProfit(s))}">${signed(saleProfit(s))}</span></div></div>
-      <div class="bar" style="margin-top:14px">${s.itemId&&byId("items",s.itemId)?`<button class="btn" data-act="item" data-id="${esc(s.itemId)}">Open item</button>`:""}${s.dealId?`<span class="chip">Part of a deal</span>`:""}${s.lotId&&byId("lots",s.lotId)?`<button class="btn" data-act="lot" data-id="${esc(s.lotId)}">Open lot</button>`:""}${s.cardId&&byId("cards",s.cardId)?`<button class="btn" data-act="card" data-id="${esc(s.cardId)}">Open card</button>`:""}<button class="btn danger" data-act="undo-sale" data-id="${esc(s.id)}">Undo sale (return to stock)</button></div>`};
+      <div class="bar" style="margin-top:14px">${s.itemId&&byId("items",s.itemId)?`<button class="btn" data-act="item" data-id="${esc(s.itemId)}">Open item</button>`:""}${s.dealId?`<span class="chip">Part of a deal</span>`:""}${s.lotId&&byId("lots",s.lotId)?`<button class="btn" data-act="lot" data-id="${esc(s.lotId)}">Open lot</button>`:""}${s.cardId&&byId("cards",s.cardId)?`<button class="btn" data-act="card" data-id="${esc(s.cardId)}">Open card</button>`:""}${s.tradeId?(byId("trades",s.tradeId)?`<button class="btn" data-act="trade" data-id="${esc(s.tradeId)}">Open trade</button>`:""):`<button class="btn danger" data-act="undo-sale" data-id="${esc(s.id)}">Undo sale (return to stock)</button>`}</div>`};
   },
   showForm(arg){
     const s=arg&&arg.id?{...byId("shows",arg.id)}:{date:today(),tableFee:75,costs:[]};
@@ -1250,50 +1341,91 @@ ${text.slice(0,30000)}`,{modelTier:"quick"});
   deal(arg){
     const up=D("shows").find(s=>s.date===today());const showId=(arg&&arg.showId)||(up?up.id:"");
     return{title:"Deal or trade",body:`<form data-form="deal">
-      <p class="hint" style="margin:0 0 8px">Several items for one price, and/or cards taken in trade. Add what the customer is getting.</p>
-      <input id="dl-q" class="search" style="width:100%" type="search" placeholder="Add: type a code, name, lot or item" aria-label="Find items to add">
+      <p class="hint" style="margin:0 0 8px">Sell several things at once, or trade: cards, lots or side items going out, cards or a set coming in, and cash either way.</p>
+      <h3>You give</h3>
+      <input id="dl-q" class="search" style="width:100%" type="search" placeholder="Add from your stock: code, name, lot or item" aria-label="Find items to give">
       <div id="dl-res" class="panel" style="margin-top:6px" hidden></div>
-      <h3 style="margin-top:14px">They're getting</h3><div id="dl-cart" class="panel"></div>
-      <div class="section"><h3>Cards you take in trade</h3><div id="dl-trade"></div><button class="btn sm" type="button" id="dl-tadd" style="margin-top:8px">+ Add traded card</button><p class="hint">Each traded card goes into your inventory at the value you gave it.</p></div>
+      <div id="dl-cart" class="panel" style="margin-top:8px"></div>
+      <div class="section"><h3>You get</h3><div id="dl-trade"></div>
+        <button class="btn sm" type="button" id="dl-tadd" style="margin-top:8px">+ Add a card you get</button>
+        <div class="field" id="dl-lotbox" hidden style="margin-top:10px"><label for="dl-lotname">Name for the set you get</label><input id="dl-lotname" name="lotName" value="Lot ${D("lots").length+1}"></div>
+        <p class="hint">Tick "Part of a set" on cards that came together. They're kept as one lot. Value is what each card is worth to you (market).</p></div>
       <div class="section grid">
-        <div class="field"><label for="dl-total">Deal price ($)</label><input id="dl-total" name="total" type="number" inputmode="decimal" step="0.01" min="0" placeholder="sum of stickers"></div>
-        <div class="field"><label for="dl-pay">Rest paid with</label><select id="dl-pay" name="pay">${opt(["Cash","Card","Venmo","Cash App","Zelle","PayPal"],"Cash")}</select></div>
+        <div class="field full"><label>Cash</label>${seg("cashDir",[["in","They pay me"],["out","I pay them"]],"in")}</div>
+        <div class="field"><label for="dl-cash">Amount ($)</label><input id="dl-cash" name="cash" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0"></div>
+        <div class="field"><label for="dl-pay">Paid with</label><select id="dl-pay" name="pay">${opt(["Cash","Card","Venmo","Cash App","Zelle","PayPal"],"Cash")}</select></div>
         <div class="field full"><label for="dl-show">Show</label><select id="dl-show" name="showId">${showOpts(showId)}</select></div>
         <div class="field"><label for="dl-date">Date</label><input id="dl-date" name="date" type="date" value="${today()}"></div>
+        <div class="field"><label for="dl-note">Note</label><input id="dl-note" name="note" placeholder="Who, anything to remember"></div>
       </div>
       <div id="dl-sum" class="panel pad num" style="margin-top:12px"></div>
-      <div class="bar" style="margin-top:14px"><button class="btn pri" type="submit">Record deal</button><button class="btn" type="button" data-act="close">Cancel</button></div></form>`,after(){
+      <div class="bar" style="margin-top:14px"><button class="btn pri" type="submit" id="dl-submit">Record</button><button class="btn" type="button" data-act="close">Cancel</button></div></form>`,after(){
       const f=document.querySelector('form[data-form="deal"]');const cart=[];S.dealCart=cart;
       const q=document.getElementById("dl-q"),res=document.getElementById("dl-res"),cartEl=document.getElementById("dl-cart"),tr=document.getElementById("dl-trade");
       const inCart=(t,id)=>cart.find(x=>x.t===t&&x.id===id);
       function search(){const w=q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);if(!w.length){res.hidden=true;return;}
         const hit=hay=>w.every(x=>hay.toLowerCase().includes(x));
-        const L=[...openLots().filter(x=>!inCart("lot",x.id)&&hit([x.name,...lotCards(x).map(c=>c.code+" "+c.name)].join(" "))).map(x=>({t:"lot",id:x.id,label:x.name,sub:"Lot · "+lotStats(x).units+" cards",sticker:lotStats(x).sticker,max:1})),
-          ...stockCards().filter(c=>sellable(c)&&!inCart("card",c.id)&&hit([c.code,c.name,c.variant,c.location].join(" "))).map(c=>({t:"card",id:c.id,label:c.code+" "+(c.name||""),sub:c.lang+" · "+gradeLabel(c)+(c.variant&&c.variant!=="Regular"?" · "+c.variant:""),sticker:n(c.list)||suggestList(c.market)||n(c.cost),max:n(c.qty)})),
-          ...D("items").filter(i=>n(i.qty)>0&&!inCart("item",i.id)&&hit([i.name,i.sku,i.category].join(" "))).map(i=>({t:"item",id:i.id,label:i.name,sub:"Side item · "+n(i.qty)+" on hand",sticker:n(i.price),max:n(i.qty)}))].slice(0,12);
-        res.hidden=false;res.innerHTML=L.length?L.map((x,k)=>`<button type="button" class="row" data-k="${k}"><div class="main"><div class="t">${esc(x.label)}</div><div class="m">${esc(x.sub)}</div></div><div class="r num">${money(x.sticker)}</div></button>`).join(""):`<div class="empty">Nothing in stock matches.</div>`;
+        const L=[...openLots().filter(x=>!inCart("lot",x.id)&&hit([x.name,...lotCards(x).map(c=>c.code+" "+c.name)].join(" "))).map(x=>{const st=lotStats(x);return{t:"lot",id:x.id,label:x.name,sub:"Lot · "+st.units+" cards",value:st.value,sticker:st.sticker,cost:st.cost,max:1};}),
+          ...stockCards().filter(c=>sellable(c)&&!inCart("card",c.id)&&hit([c.code,c.name,c.variant,c.location].join(" "))).map(c=>({t:"card",id:c.id,label:c.code+" "+(c.name||""),sub:c.lang+" · "+gradeLabel(c)+(c.variant&&c.variant!=="Regular"?" · "+c.variant:""),value:n(c.market)||n(c.list)||n(c.cost),sticker:n(c.list)||suggestList(c.market)||n(c.cost),cost:n(c.cost),max:n(c.qty)})),
+          ...D("items").filter(i=>n(i.qty)>0&&!inCart("item",i.id)&&hit([i.name,i.sku,i.category].join(" "))).map(i=>({t:"item",id:i.id,label:i.name,sub:"Side item · "+n(i.qty)+" on hand",value:n(i.price),sticker:n(i.price),cost:n(i.cost),max:n(i.qty)}))].slice(0,12);
+        res.hidden=false;res.innerHTML=L.length?L.map((x,k)=>`<button type="button" class="row" data-k="${k}"><div class="main"><div class="t">${esc(x.label)}</div><div class="m">${esc(x.sub)}</div></div><div class="r num">${money(x.value)}</div></button>`).join(""):`<div class="empty">Nothing in stock matches.</div>`;
         res.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{cart.push({...L[+b.dataset.k],qty:1});q.value="";res.hidden=true;draw();q.focus();});
       }
       q.addEventListener("input",search);
-      function addTrade(){const d=document.createElement("div");d.className="newrow";d.innerHTML=`<input name="tcode" placeholder="Code" class="mono" aria-label="Traded card code" autocapitalize="characters"><input name="tname" placeholder="Name" aria-label="Traded card name"><select name="tlang" aria-label="Language"><option>EN</option><option>JP</option></select><input name="tval" type="number" step="0.01" min="0" placeholder="Value $" aria-label="Trade value"><button type="button" class="btn sm rm" aria-label="Remove">×</button>`;d.querySelector(".rm").onclick=()=>{d.remove();draw();};tr.appendChild(d);}
-      document.getElementById("dl-tadd").onclick=()=>{addTrade();draw();};
+      function addGet(){const d=document.createElement("div");d.className="trow";d.innerHTML=`<input name="tcode" placeholder="Code" class="mono" aria-label="Card code" autocapitalize="characters"><input name="tname" placeholder="Name" aria-label="Card name"><select name="tlang" aria-label="Language"><option value="EN">English</option><option value="JP">Japanese</option></select><select name="tgrader" aria-label="Raw or graded"><option value="">Raw</option>${GRADERS.map(g=>`<option>${esc(g)}</option>`).join("")}</select><input name="tgrade" placeholder="Grade or condition" aria-label="Grade or condition"><input name="tval" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Value $" aria-label="Value"><label class="check"><input type="checkbox" name="tset"> Part of a set</label><button type="button" class="btn sm rm" aria-label="Remove card">Remove</button>`;d.querySelector(".rm").onclick=()=>{d.remove();sum();};tr.appendChild(d);d.querySelector('[name="tcode"]').focus();}
+      document.getElementById("dl-tadd").onclick=()=>{addGet();sum();};
       function draw(){
-        cartEl.innerHTML=cart.length?cart.map((x,k)=>`<div class="row" style="cursor:default"><div class="main"><div class="t">${esc(x.label)}</div><div class="m">${esc(x.sub)} · ${money(x.sticker)} each</div></div>${x.max>1?`<input type="number" min="1" max="${x.max}" value="${x.qty}" data-q="${k}" aria-label="Quantity" style="width:56px;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--surface)">`:""}<button type="button" class="x" data-rm="${k}" aria-label="Remove">×</button></div>`).join(""):`<div class="empty">Search above to add cards, lots or side items.</div>`;
+        cartEl.innerHTML=cart.length?cart.map((x,k)=>`<div class="row" style="cursor:default"><div class="main"><div class="t">${esc(x.label)}</div><div class="m">${esc(x.sub)} · ${money(x.value)} each</div></div>${x.max>1?`<input type="number" min="1" max="${x.max}" value="${x.qty}" data-q="${k}" aria-label="Quantity" style="width:56px;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--surface)">`:""}<button type="button" class="x" data-rm="${k}" aria-label="Remove">×</button></div>`).join(""):`<div class="empty">Search above to add cards, lots or side items you're giving.</div>`;
         cartEl.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{cart.splice(+b.dataset.rm,1);draw();});
         cartEl.querySelectorAll("[data-q]").forEach(b=>b.onchange=()=>{const x=cart[+b.dataset.q];x.qty=Math.min(x.max,Math.max(1,Math.round(n(b.value))));draw();});
         sum();
       }
+      function gets(){return [...tr.querySelectorAll(".trow")].map(r=>({code:r.querySelector('[name="tcode"]').value.trim().toUpperCase(),name:r.querySelector('[name="tname"]').value.trim(),val:n(r.querySelector('[name="tval"]').value),set:r.querySelector('[name="tset"]').checked})).filter(x=>x.code||x.name||x.val);}
       function sum(){
-        const st=cart.reduce((a,x)=>a+x.sticker*x.qty,0);const total=f.total.value===""?st:n(f.total.value);
-        f.total.placeholder=st?money(st):"sum of stickers";
-        const trade=[...tr.querySelectorAll('[name="tval"]')].reduce((a,x)=>a+n(x.value),0);
-        const cash=total-trade;
-        document.getElementById("dl-sum").innerHTML=`<div class="pl"><span>Stickers</span><span>${money(st)}</span></div>${total!==st?`<div class="pl"><span>Discount</span><span>${signed(total-st)}</span></div>`:""}<div class="pl"><span>Deal price</span><span>${money(total)}</span></div>${trade?`<div class="pl"><span>Trade credit</span><span>${money(-trade)}</span></div>`:""}<div class="pl total"><span>${cash>=0?"Customer pays":"You pay the customer"}</span><span>${money(Math.abs(cash))}</span></div>`;
+        const G=gets();const valueOut=cart.reduce((a,x)=>a+x.value*x.qty,0),costOut=cart.reduce((a,x)=>a+x.cost*x.qty,0),stickerOut=cart.reduce((a,x)=>a+x.sticker*x.qty,0);
+        const valueIn=G.reduce((a,x)=>a+x.val,0);
+        const dir=(f.querySelector('input[name="cashDir"]:checked')||{}).value||"in";
+        const cashRaw=f.cash.value===""?(G.length?0:stickerOut):n(f.cash.value);const cashNet=dir==="out"?-cashRaw:cashRaw;
+        f.cash.placeholder=G.length?"0":(stickerOut?money(stickerOut)+" (stickers)":"0");
+        document.getElementById("dl-lotbox").hidden=!G.some(x=>x.set);
+        document.getElementById("dl-submit").textContent=G.length?(cart.length?"Record trade":"Record buy"):"Record sale";
+        const m=tradeMath(costOut,valueIn,cashNet);const change=valueIn+cashNet-valueOut;
+        const el=document.getElementById("dl-sum");
+        if(G.length){
+          el.innerHTML=`<div class="pl"><span>You give (${cart.reduce((a,x)=>a+x.qty,0)} · market value)</span><span>${money(valueOut)}</span></div>
+          <div class="pl"><span>You get (${G.length} card${G.length>1?"s":""})</span><span>${money(valueIn)}</span></div>
+          ${cashNet?`<div class="pl"><span>${cashNet>0?"Cash you receive":"Cash you pay"}</span><span>${signed(cashNet)}</span></div>`:""}
+          <div class="pl total"><span>Value change</span><span class="${cls(change)}">${signed(change)}</span></div>
+          ${cart.length?`<div class="pl"><span>What you paid for what you give</span><span>${money(costOut)}</span></div>`:""}
+          ${m.realized?`<div class="pl"><span>Cash profit now</span><span class="${cls(m.realized)}">${signed(m.realized)}</span></div>`:""}
+          <div class="pl"><span>Cost carried into the cards you get</span><span>${money(m.basisIn)}</span></div>
+          <p class="hint" style="margin:6px 0 0">A trade isn't cash profit. The value change shows up as inventory growth, and turns into cash when you sell.</p>`;
+        }else{
+          el.innerHTML=cart.length?`<div class="pl"><span>Stickers</span><span>${money(stickerOut)}</span></div>${cashRaw!==stickerOut?`<div class="pl"><span>Discount</span><span>${signed(cashRaw-stickerOut)}</span></div>`:""}<div class="pl total"><span>Customer pays</span><span>${money(cashRaw)}</span></div><div class="pl"><span>Profit</span><span class="${cls(cashRaw-costOut)}">${signed(cashRaw-costOut)}</span></div>`:`<div class="hint">Add what you give and/or what you get.</div>`;
+        }
       }
       f.addEventListener("input",e=>{if(!e.target.closest("#dl-cart")&&e.target!==q)sum();});
-      if(arg&&arg.add){const a0=arg.add;cart.push(a0);}
+      f.addEventListener("change",e=>{if(e.target.name==="cashDir"||e.target.name==="tset")sum();});
+      if(arg&&arg.add)cart.push(arg.add);
       draw();setTimeout(()=>q.focus(),50);
     }};
+  },
+  trade(id){
+    const T=byId("trades",id);if(!T)return null;
+    const got=(T.get||[]).map(cid=>byId("cards",cid)).filter(Boolean);const change=n(T.valueIn)+n(T.cashNet)-n(T.valueOut);
+    const sh=T.showId?byId("shows",T.showId):null;
+    return{live:true,title:"Trade",body:`<p class="hint" style="margin:0 0 10px">${fdate(T.date)}${sh?" · "+esc(sh.name):""}${T.note?" · "+esc(T.note):""}</p>
+      <div class="panel pad num">
+        <div class="pl"><span>You gave (market value)</span><span>${money(T.valueOut)}</span></div>
+        <div class="pl"><span>You got</span><span>${money(T.valueIn)}</span></div>
+        ${n(T.cashNet)?`<div class="pl"><span>${n(T.cashNet)>0?"Cash received":"Cash paid"}</span><span>${signed(T.cashNet)}</span></div>`:""}
+        <div class="pl total"><span>Value change</span><span class="${cls(change)}">${signed(change)}</span></div>
+        ${n(T.realized)?`<div class="pl"><span>Cash profit</span><span class="${cls(T.realized)}">${signed(T.realized)}</span></div>`:""}
+        <div class="pl"><span>Cost carried into what you got</span><span>${money(T.basisIn)}</span></div>
+      </div>
+      <div class="section"><h3>You gave</h3><div class="panel">${(T.give||[]).map(x=>`<div class="row" style="cursor:default"><div class="main"><div class="t">${esc(x.label)}${n(x.qty)>1?" ×"+n(x.qty):""}</div><div class="m">${x.t==="lot"?"Lot":x.t==="item"?"Side item":"Card"} · you paid ${money(x.cost)}</div></div><div class="r num">${money(x.value)}</div></div>`).join("")||`<div class="empty">Nothing. This was a buy.</div>`}</div></div>
+      <div class="section"><h3>You got</h3>${T.lotId&&byId("lots",T.lotId)?`<div class="panel" style="margin-bottom:8px">${lotRow(byId("lots",T.lotId))}</div>`:""}<div class="panel">${got.map(c=>cardRow(c)).join("")||`<div class="empty">Those cards are no longer in your log.</div>`}</div><p class="hint">Open each card to add its picture, grade details and comps.</p></div>
+      <div class="bar" style="margin-top:14px"><button class="btn danger" data-act="undo-trade" data-id="${esc(T.id)}">Undo trade</button></div>`};
   },
 };
 
@@ -1388,9 +1520,16 @@ document.addEventListener("click",async e=>{
     case"grade-cancel":{if(exBlock())return;if(!confirmTap(el,"gc"+id,"Tap again to cancel"))return;const c=byId("cards",id);const x={...c,status:"stock"};delete x.grading;await put("cards",x);toast("Back in stock as raw");break;}
     case"sale":openSheet("sale",id);break;
     case"undo-sale":{if(exBlock())return;if(!confirmTap(el,"us"+id,"Tap again to undo"))return;const s=byId("sales",id);
-      if(s.itemId){const i=byId("items",s.itemId);if(i)await put("items",{...i,qty:n(i.qty)+n(s.qty)});await del("sales",id);closeSheet();toast("Sale undone. Item is back in stock.");break;}
-      if(s.lotId){for(const it of (s.items||[])){const c=byId("cards",it.cardId);if(c)await put("cards",{...c,qty:n(c.qty)+n(it.qty),status:c.prevStatus||"stock"});}const L=byId("lots",s.lotId);if(L)await put("lots",{...L,status:"stock",soldDate:""});await del("sales",id);closeSheet();toast("Lot sale undone. Lot is back in stock.");break;}
-      const c=s.cardId&&byId("cards",s.cardId);if(c){const qty=n(c.qty)+n(s.qty);await put("cards",{...c,qty,status:c.status==="sold"?"stock":c.status});}await del("sales",id);closeSheet();toast("Sale undone. Card is back in stock.");break;}
+      await undoSaleCore(s);closeSheet();toast(s.itemId?"Sale undone. Item is back in stock.":s.lotId?"Lot sale undone. Lot is back in stock.":"Sale undone. Card is back in stock.");break;}
+    case"trade":openSheet("trade",id);break;
+    case"undo-trade":{if(exBlock())return;const T=byId("trades",id);if(!T)break;
+      const got=(T.get||[]).map(cid=>byId("cards",cid)).filter(Boolean);
+      if(got.some(c=>c.status==="sold"||n(c.qty)<1||D("sales").some(s=>s.cardId===c.id))){toast("Some cards from this trade were sold already. Undo those sales first.");break;}
+      if(!confirmTap(el,"ut"+id,"Tap again to undo the trade"))return;
+      for(const s of D("sales").filter(s=>s.tradeId===id))await undoSaleCore(s);
+      for(const c of got)await del("cards",c.id);
+      if(T.lotId&&byId("lots",T.lotId))await del("lots",T.lotId);
+      await del("trades",id);closeSheet();toast("Trade undone. Your cards are back.");break;}
     case"add-show":if(exBlock())return;openSheet("showForm",{});break;
     case"show":openSheet("show",id);break;
     case"edit-show":if(exBlock())return;openSheet("showForm",{id});break;
@@ -1571,24 +1710,44 @@ document.addEventListener("submit",async e=>{
     await put("wants",{text:g("text"),who:g("who"),contact:g("contact"),date:today(),showId:up?up.id:"",done:false});f.reset();toast("Added to the want list");
   }else if(t==="deal"){
     const cart=S.dealCart||[];
-    const trades=[...f.querySelectorAll("#dl-trade .newrow")].map(r=>({code:r.querySelector('[name="tcode"]').value.trim().toUpperCase(),name:r.querySelector('[name="tname"]').value.trim(),lang:r.querySelector('[name="tlang"]').value,val:n(r.querySelector('[name="tval"]').value)})).filter(x=>x.code||x.name);
-    if(!cart.length&&!trades.length){toast("Add something to the deal first.");return;}
-    const stTot=cart.reduce((a,x)=>a+x.sticker*x.qty,0);const total=g("total")===""?stTot:n(g("total"));
-    const tradeVal=trades.reduce((a,x)=>a+x.val,0);
-    const dealId="d"+Date.now().toString(36);
-    const meta={fees:0,channel:"Show",showId:g("showId"),date:g("date")||today(),pay:tradeVal?(total>tradeVal?g("pay")+" + trade":"Trade"):g("pay"),dealId};
-    let left=total;
+    const rows=[...f.querySelectorAll("#dl-trade .trow")].map(r=>({code:r.querySelector('[name="tcode"]').value.trim().toUpperCase(),name:r.querySelector('[name="tname"]').value.trim(),lang:r.querySelector('[name="tlang"]').value,grader:r.querySelector('[name="tgrader"]').value,grade:r.querySelector('[name="tgrade"]').value.trim(),val:n(r.querySelector('[name="tval"]').value),set:r.querySelector('[name="tset"]').checked})).filter(x=>x.code||x.name||x.val);
+    if(!cart.length&&!rows.length){toast("Add what you give or what you get first.");return;}
+    const stickerOut=cart.reduce((a,x)=>a+x.sticker*x.qty,0),costOut=cart.reduce((a,x)=>a+x.cost*x.qty,0),valueOut=cart.reduce((a,x)=>a+x.value*x.qty,0),valueIn=rows.reduce((a,x)=>a+x.val,0);
+    const cashRaw=g("cash")===""?(rows.length?0:stickerOut):n(g("cash"));const cashNet=g("cashDir")==="out"?-cashRaw:cashRaw;
+    if(!rows.length&&cashNet<0){toast("For a sale, set cash to \"They pay me\".");return;}
+    if(isEx())S.exampleOff=true;
+    const isTrade=rows.length>0;const m=tradeMath(costOut,valueIn,cashNet);
+    const date=g("date")||today(),showId=g("showId");
+    const tradeId=isTrade?"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,5):"";
+    const meta={fees:0,channel:showId?"Show":(isTrade?"Trade":"Other"),showId,date,pay:isTrade?(cashNet>0?g("pay")+" + trade":"Trade"):g("pay"),dealId:"d"+Date.now().toString(36)};
+    if(tradeId)meta.tradeId=tradeId;
+    const weights=cart.map(x=>(isTrade?x.value:x.sticker)*x.qty);const wSum=weights.reduce((a,b)=>a+b,0);
+    const cashIn=Math.max(0,cashNet);let left=cashIn;
     for(let k=0;k<cart.length;k++){const x=cart[k];
-      let share=stTot>0?total*(x.sticker*x.qty)/stTot:total/cart.length;share=Math.round(share*100)/100;if(k===cart.length-1)share=Math.round(left*100)/100;left-=share;
-      if(x.t==="card"){const c=byId("cards",x.id);if(c)await sellCardCore(c,x.qty,share/x.qty,meta);}
-      else if(x.t==="lot"){const L=byId("lots",x.id);if(L)await sellLotCore(L,share,meta);}
-      else if(x.t==="item"){const i=byId("items",x.id);if(i)await sellItemCore(i,x.qty,share/x.qty,meta);}
+      let share=wSum>0?cashIn*weights[k]/wSum:cashIn/cart.length;share=r2(share);if(k===cart.length-1)share=r2(left);left-=share;
+      const lineCost=x.cost*x.qty;const realizedCost=lineCost*m.soldFrac;
+      const extra=isTrade?{costEach:r2(realizedCost/x.qty),tradeValue:r2(x.value*x.qty),basisMoved:r2(lineCost-realizedCost)}:{};
+      const mm={...meta,...extra};
+      if(x.t==="card"){const c=byId("cards",x.id);if(c)await sellCardCore(c,x.qty,share/x.qty,mm);}
+      else if(x.t==="lot"){const L=byId("lots",x.id);if(L)await sellLotCore(L,share,mm);}
+      else if(x.t==="item"){const i=byId("items",x.id);if(i)await sellItemCore(i,x.qty,share/x.qty,mm);}
     }
-    for(const x of trades)await put("cards",{code:x.code,name:x.name,variant:"Regular",lang:x.lang,kind:"raw",cond:"NM",qty:1,qtyBought:1,cost:x.val,market:x.val||null,marketDate:x.val?today():"",buyDate:meta.date,source:"Trade",showId:meta.showId,status:"stock",dealId,comps:[]});
+    const ids=[];let lotId="";
+    if(isTrade){
+      if(rows.some(x=>x.set))lotId=await put("lots",{name:g("lotName")||("Lot "+(D("lots").length+1)),sequential:false,premiumPct:0,status:"stock",location:"",buyDate:date,tradeId,notes:"From a trade"});
+      const vSum=valueIn;let bLeft=m.basisIn;
+      for(let k=0;k<rows.length;k++){const x=rows[k];
+        let basis=vSum>0?m.basisIn*x.val/vSum:m.basisIn/rows.length;basis=r2(basis);if(k===rows.length-1)basis=r2(bLeft);bLeft-=basis;
+        const graded=!!x.grader;
+        const cid=await put("cards",{code:x.code,name:x.name,variant:"Regular",lang:x.lang,kind:graded?"graded":"raw",grader:x.grader,grade:graded?x.grade:"",cond:graded?"":(CONDS.includes(x.grade.toUpperCase())?x.grade.toUpperCase():"NM"),cert:"",qty:1,qtyBought:1,cost:basis,market:x.val||null,marketDate:x.val?today():"",buyDate:date,source:"Trade",showId,status:"stock",tradeId,lotId:x.set?lotId:"",comps:[]});
+        ids.push(cid);
+      }
+      await put("trades",{id:tradeId,date,showId,give:cart.map(x=>({t:x.t,id:x.id,label:x.label,qty:x.qty,value:r2(x.value*x.qty),cost:r2(x.cost*x.qty)})),get:ids,lotId,cashNet:r2(cashNet),valueOut:r2(valueOut),valueIn:r2(valueIn),basisIn:r2(m.basisIn),realized:r2(m.realized),note:g("note"),pay:g("pay")});
+    }
     S.dealCart=null;closeSheet();
-    const cash=total-tradeVal;
-    toast(`Deal saved · ${cash>=0?"collect "+money(cash):"pay out "+money(-cash)}${trades.length?` · ${trades.length} card${trades.length>1?"s":""} added from trade`:""}`);
-    if(meta.showId&&byId("shows",meta.showId))openSheet("show",meta.showId);
+    const change=valueIn+cashNet-valueOut;
+    toast(isTrade?`Trade saved · value ${signed(change)}${cashNet>0?" · collect "+money(cashNet):cashNet<0?" · pay "+money(-cashNet):""}`:`Sale saved · collect ${money(cashNet)}`);
+    if(isTrade)openSheet("trade",tradeId);else if(showId&&byId("shows",showId))openSheet("show",showId);
   }else if(t==="apikey"){
     const k=g("key");if(!k)return;try{localStorage.setItem("tl-apikey",k);}catch(_){toast("Couldn't save the key");return;}useApiKey();toast("Key saved. Photo reading is on.");render();
   }else if(t==="settings"){
@@ -1613,6 +1772,21 @@ async function sellItemCore(i,qty,priceEach,meta){
   await put("sales",sale);await put("items",{...i,qty:Math.max(0,n(i.qty)-qty)});return sale;
 }
 
+async function undoSaleCore(s){
+  if(s.itemId){const i=byId("items",s.itemId);if(i)await put("items",{...i,qty:n(i.qty)+n(s.qty)});}
+  else if(s.lotId){for(const it of (s.items||[])){const c=byId("cards",it.cardId);if(c)await put("cards",{...c,qty:n(c.qty)+n(it.qty),status:c.prevStatus||"stock"});}const L=byId("lots",s.lotId);if(L)await put("lots",{...L,status:"stock",soldDate:""});}
+  else{const c=s.cardId&&byId("cards",s.cardId);if(c)await put("cards",{...c,qty:n(c.qty)+n(s.qty),status:c.status==="sold"?"stock":c.status});}
+  await del("sales",s.id);
+}
+/* Trade math: cost basis carries over. Cash received realizes profit on the share of what you gave
+   that the cash "bought"; the rest of your cost moves into the cards you get. Cash you pay adds to their cost. */
+function tradeMath(costOut,valueIn,cashNet){
+  const soldFrac=cashNet>0?(cashNet+valueIn>0?cashNet/(cashNet+valueIn):1):0;
+  const realizedCost=costOut*soldFrac;
+  return{soldFrac,realizedCost,realized:cashNet>0?cashNet-realizedCost:0,basisIn:costOut-realizedCost+(cashNet<0?-cashNet:0)};
+}
+const r2=v=>Math.round(n(v)*100)/100;
+
 /* ---------- export ---------- */
 async function exportCsv(what){
   const rows={
@@ -1622,6 +1796,8 @@ async function exportCsv(what){
       ...D("sales").map(s=>[s.date,s.code,s.name,s.variant,s.lang,s.qty,s.price,s.costEach,s.fees,saleProfit(s).toFixed(2),s.channel,(byId("shows",s.showId)||{}).name||"",s.pay])],
     items:[["Name","SKU","Category","Description","Price","Cost each","On hand","Sold"],
       ...D("items").map(i=>[i.name,i.sku,i.category,i.desc,i.price,i.cost,i.qty,D("sales").filter(s=>s.itemId===i.id).reduce((a,s)=>a+n(s.qty),0)])],
+    trades:[["Date","Gave","Value given","Got","Value received","Cash (+ received / − paid)","Value change","Cash profit","Cost carried","Note"],
+      ...D("trades").map(x=>[x.date,(x.give||[]).map(y=>y.label+(n(y.qty)>1?" x"+n(y.qty):"")).join("; "),x.valueOut,(x.get||[]).map(id=>{const c=byId("cards",id);return c?c.code+" "+(c.name||""):"";}).join("; "),x.valueIn,x.cashNet,r2(n(x.valueIn)+n(x.cashNet)-n(x.valueOut)),x.realized,x.basisIn,x.note])],
     shows:[["Date","Show","Venue","Table fee","Other costs","Card sales","Bulk sales","Net profit"],
       ...D("shows").map(s=>{const x=showNumbers(s);return[s.date,s.name,s.venue,s.tableFee,showCosts(s)-n(s.tableFee),x.rev,x.bulk,x.net.toFixed(2)];})]
   }[what];
