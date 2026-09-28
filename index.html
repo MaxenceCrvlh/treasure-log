@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.TL_STANDALONE=true;window.TL_VERSION="5e32542f";</script>
+<script>window.TL_STANDALONE=true;window.TL_VERSION="4ab212fb";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -117,6 +117,9 @@ form .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
 form .full{grid-column:1/-1}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .field label{font-size:12px;font-weight:600;color:var(--muted)}
+input[type="date"]{-webkit-appearance:none;appearance:none;min-width:0;display:block;min-height:40px}
+.sheet{overflow-x:hidden}
+.sheet .mono{overflow-wrap:anywhere}
 .field input,.field select,.field textarea{padding:9px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);width:100%;min-width:0}
 .field textarea{min-height:64px;resize:vertical}
 .hint{font-size:12px;color:var(--muted)}
@@ -1187,6 +1190,7 @@ const SHEETS={
       <div class="field"><label for="lt-list">Sticker price ($)</label><input id="lt-list" name="list" type="number" inputmode="decimal" step="0.01" min="0" value="${esc(L.list??"")}" placeholder="auto"></div>
       <div class="field"><label class="check" style="margin-top:22px"><input type="checkbox" id="lt-seq" name="sequential" ${L.sequential?"checked":""}> Sequential certs</label></div>
       <div class="field"><label for="lt-prem">Lot premium (%)</label><input id="lt-prem" name="premiumPct" type="number" step="1" value="${esc(L.premiumPct??0)}"></div>
+      <div class="field full"><label for="lt-paid">What you paid for the whole lot ($)</label><input id="lt-paid" name="lotPaid" type="number" inputmode="decimal" step="0.01" min="0" value="${editing&&lotStats(L).cost>0?esc(r2(lotStats(L).cost)):""}" placeholder="total, including grading and fees"><span class="hint">Split across the cards by market value, or evenly if they don't all have one. Leave empty to keep each card's own cost.</span></div>
       <div class="field full"><label for="lt-mkt">Whole lot market value ($)</label><input id="lt-mkt" name="market" type="number" inputmode="decimal" step="0.01" min="0" value="${esc(L.market??"")}" placeholder="optional"><span class="hint">Know what the whole lot is worth? Enter it here and skip pricing each card. Leave it empty to add up the cards instead. You can also set it later from the lot's comps.</span></div>
       <div class="field full"><label for="lt-notes">Notes</label><input id="lt-notes" name="notes" value="${esc(L.notes||"")}"></div>
     </div>
@@ -1194,13 +1198,12 @@ const SHEETS={
       ${pool.length?`<input id="lt-q" class="search" style="width:100%;margin-bottom:8px" type="search" placeholder="Filter" aria-label="Filter inventory"><div class="picklist" id="lt-pool">${pool.map(c=>`<label data-hay="${esc([c.code,c.name,c.variant,c.cert,gradeLabel(c)].join(" ").toLowerCase())}"><input type="checkbox" name="member" value="${esc(c.id)}" ${members.includes(c.id)?"checked":""}>${thumb(c)}<span style="flex:1;min-width:0"><span class="mono">${esc(c.code)}</span> ${esc(c.name||"")}<br><span class="hint">${esc(c.lang)} · ${esc(gradeLabel(c))}${c.cert?` · #${esc(c.cert)}`:""}${n(c.qty)>1?` · ×${n(c.qty)}`:""}</span></span><span class="num hint">${n(c.market)?money(c.market):"—"}</span></label>`).join("")}</div>`:`<p class="hint">No loose cards in stock. Add the lot's cards below.</p>`}
     </div>
     <div class="section"><h3>New cards bought as this lot</h3>
-      <p class="hint" style="margin:0 0 8px">Bought a lot all at once? Enter what the cards have in common, the total you paid, and one row per card. The price is split across the cards by market value, or evenly if you leave card values empty.</p>
+      <p class="hint" style="margin:0 0 8px">Bought a lot all at once? Enter what the cards have in common and one row per card. Put what you paid in "What you paid for the whole lot" above.</p>
       <div class="grid">
         <div class="field"><label>Language</label>${seg("nlang",[["EN","English"],["JP","Japanese"]],"EN")}</div>
         <div class="field"><label>Type</label>${seg("nkind",[["raw","Raw"],["graded","Graded"]],"graded")}</div>
         <div class="field"><label for="ln-grader">Grader</label><select id="ln-grader" name="ngrader">${opt(GRADERS,"PSA")}</select></div>
         <div class="field"><label for="ln-grade">Grade (or condition if raw)</label><input id="ln-grade" name="ngrade" placeholder="10"></div>
-        <div class="field"><label for="ln-paid">Total paid for these ($)</label><input id="ln-paid" name="npaid" type="number" inputmode="decimal" step="0.01" min="0"></div>
         <div class="field"><label for="ln-date">Bought on</label><input id="ln-date" name="ndate" type="date" value="${today()}"></div>
         <div class="field"><label for="ln-src">Source</label><select id="ln-src" name="nsource">${opt(SOURCES,"eBay")}</select></div>
         <div class="field"><label for="ln-show">Bought at a show?</label><select id="ln-show" name="nshow">${showOpts("")}</select></div>
@@ -1224,7 +1227,7 @@ const SHEETS={
         const chosen=[...f.querySelectorAll('input[name="member"]:checked')].map(x=>byId("cards",x.value)).filter(Boolean);
         const nr=[...rows.children].filter(r=>r.querySelector('[name="rcode"]').value.trim());
         const base=chosen.reduce((a,c)=>a+n(c.qty)*(n(c.market)||n(c.cost)),0)+nr.reduce((a,r)=>a+n(r.querySelector('[name="rmkt"]').value),0);
-        const cost=chosen.reduce((a,c)=>a+n(c.qty)*n(c.cost),0)+n(f.npaid.value);
+        const cost=f.lotPaid.value!==""?n(f.lotPaid.value):chosen.reduce((a,c)=>a+n(c.qty)*n(c.cost),0);
         const units=chosen.reduce((a,c)=>a+n(c.qty),0)+nr.length;
         const kind=f.querySelector('input[name="nkind"]:checked').value;
         const fake=chosen.concat(nr.map(r=>({kind,grader:f.ngrader.value,cert:r.querySelector('[name="rcert"]').value.trim()})));
@@ -1755,18 +1758,27 @@ document.addEventListener("submit",async e=>{
     const prev=id?byId("lots",id):null;
     const L={...(prev||{}),id,name:g("name"),location:g("location"),list:g("list")===""?null:n(g("list")),sequential:!!fd.get("sequential"),premiumPct:n(g("premiumPct")),market:g("market")===""?null:n(g("market")),marketDate:g("market")===""?"":((prev&&n(prev.market)===n(g("market"))&&prev.marketDate)||today()),notes:g("notes"),status:(prev&&prev.status)||"stock",buyDate:(prev&&prev.buyDate)||g("ndate")||today()};
     const lid=await put("lots",L)||id;
-    const chosen=new Set(fd.getAll("member"));
-    for(const c of D("cards")){const inIt=c.lotId===lid;if(chosen.has(c.id)&&!inIt)await put("cards",{...c,lotId:lid});else if(!chosen.has(c.id)&&inIt)await put("cards",{...c,lotId:""});}
+    const chosen=new Set(fd.getAll("member"));const members=[];
+    for(const c of [...D("cards")]){const inIt=c.lotId===lid;if(chosen.has(c.id)){members.push({...c,lotId:lid});if(!inIt)await put("cards",{...c,lotId:lid});}else if(inIt)await put("cards",{...c,lotId:""});}
     const codes=fd.getAll("rcode"),names=fd.getAll("rname"),certs=fd.getAll("rcert"),mkts=fd.getAll("rmkt");
     const rowsIn=codes.map((code,i)=>({code:code.trim().toUpperCase(),name:names[i].trim(),cert:certs[i].trim(),market:mkts[i]===""?null:n(mkts[i])})).filter(r=>r.code);
     if(rowsIn.length){
-      const paid=n(g("npaid"));const mSum=rowsIn.reduce((a,r)=>a+n(r.market),0);
+      const paid=0;const mSum=rowsIn.reduce((a,r)=>a+n(r.market),0);
       const kind=g("nkind")||"graded";const gv=g("ngrade");
       let assigned=0;
       for(let i=0;i<rowsIn.length;i++){const r=rowsIn[i];
         let share=mSum>0?paid*n(r.market)/mSum:paid/rowsIn.length;share=Math.round(share*100)/100;if(i===rowsIn.length-1)share=Math.round((paid-assigned)*100)/100;assigned+=share;
-        await put("cards",{code:r.code,name:r.name,variant:"Regular",lang:g("nlang")||"EN",kind,grader:kind==="graded"?g("ngrader"):"",grade:kind==="graded"?gv:"",cond:kind==="raw"?(gv||"NM"):"",cert:kind==="graded"?r.cert:"",
-          qty:1,qtyBought:1,cost:share,buyDate:g("ndate")||today(),source:g("nsource"),showId:g("nshow"),market:r.market,marketDate:r.market?today():"",location:g("location"),status:"stock",lotId:lid,comps:[]});}
+        const nc={code:r.code,name:r.name,variant:"Regular",lang:g("nlang")||"EN",kind,grader:kind==="graded"?g("ngrader"):"",grade:kind==="graded"?gv:"",cond:kind==="raw"?(gv||"NM"):"",cert:kind==="graded"?r.cert:"",
+          qty:1,qtyBought:1,cost:share,buyDate:g("ndate")||today(),source:g("nsource"),showId:g("nshow"),market:r.market,marketDate:r.market?today():"",location:g("location"),status:"stock",lotId:lid,comps:[]};
+        const nid=await put("cards",nc);members.push({...nc,id:nid||nc.id});}
+    }
+    if(g("lotPaid")!==""&&members.length){
+      const total=n(g("lotPaid"));const cur=r2(members.reduce((a,c)=>a+n(c.qty||1)*n(c.cost),0));
+      if(Math.abs(cur-total)>0.009){
+        const allM=members.every(c=>n(c.market)>0);const w=members.map(c=>(allM?n(c.market):1)*n(c.qty||1));const ws=w.reduce((a,b)=>a+b,0)||1;
+        let left=total;
+        for(let k=0;k<members.length;k++){const c=members[k];const q=n(c.qty||1)||1;const share=k===members.length-1?left:r2(total*w[k]/ws);left=r2(left-share);await put("cards",{...(byId("cards",c.id)||c),lotId:lid,cost:r2(share/q)});}
+      }
     }
     openSheet("lot",lid);toast(prev?"Lot saved":"Lot created");
   }else if(t==="sellLot"){
