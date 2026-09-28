@@ -1,0 +1,1605 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F1F3F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1219" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Treasure Log">
+<meta name="description" content="Inventory, lots, grading, sales and show tracker for a One Piece card table.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<script>window.TL_STANDALONE=true;window.TL_VERSION="d40cccf1";</script>
+<title>Treasure Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{
+  --bg:#F1F3F7; --surface:#FFFFFF; --surface2:#E7EBF1; --ink:#18202C; --muted:#5A6475; --line:#D6DCE5;
+  --accent:#C4352D; --accent-soft:#F8E3E1; --on-accent:#FFFFFF; --gold:#9A6B00; --gold-soft:#F6ECD2;
+  --good:#1D8456; --good-soft:#DDF1E7; --warn:#A8670F; --warn-soft:#F7EAD5; --bad:#C4352D;
+  --shadow:0 1px 2px rgba(24,32,44,.06),0 6px 20px rgba(24,32,44,.08);
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#0E1219; --surface:#161C26; --surface2:#202837; --ink:#E6EAF0; --muted:#97A1B2; --line:#2A3343;
+  --accent:#E8574E; --accent-soft:#3A1D1C; --on-accent:#FFFFFF; --gold:#E2B24D; --gold-soft:#342A15;
+  --good:#44B883; --good-soft:#15301F; --warn:#E3A541; --warn-soft:#3A2A12; --bad:#F06B61;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E1219; --surface:#161C26; --surface2:#202837; --ink:#E6EAF0; --muted:#97A1B2; --line:#2A3343;
+  --accent:#E8574E; --accent-soft:#3A1D1C; --on-accent:#FFFFFF; --gold:#E2B24D; --gold-soft:#342A15;
+  --good:#44B883; --good-soft:#15301F; --warn:#E3A541; --warn-soft:#3A2A12; --bad:#F06B61;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:880px;margin:0 auto;padding-inline:16px;padding-block:0 110px}
+header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-block:18px 10px}
+.brand{font-family:var(--display);font-weight:700;font-size:30px;letter-spacing:.02em;line-height:1;text-transform:uppercase}
+.brand span{color:var(--accent)}
+.sub{color:var(--muted);font-size:13px}
+h2{font-family:var(--display);font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:.03em;margin:22px 0 10px;text-wrap:balance}
+h3{font-family:var(--display);font-weight:600;font-size:18px;text-transform:uppercase;letter-spacing:.03em;margin:0 0 8px}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono);font-size:.9em;letter-spacing:-.01em}
+.muted{color:var(--muted)}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+.banner{border:1px dashed var(--gold);background:var(--gold-soft);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (min-width:640px){.tiles{grid-template-columns:repeat(4,1fr)}}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.tile .v{font-family:var(--display);font-weight:700;font-size:28px;line-height:1.1;margin-top:4px}
+.tile .d{font-size:12px;color:var(--muted);margin-top:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.row{display:flex;gap:12px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);cursor:pointer;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left}
+.row:first-child{border-top:0}
+.row:hover{background:var(--surface2)}
+.row .main{flex:1;min-width:0}
+.row .t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .m{font-size:12.5px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:2px}
+.row .r{text-align:right;flex-shrink:0}
+.thumb{width:44px;aspect-ratio:63/88;border-radius:4px;background:var(--surface2);border:1px solid var(--line);flex-shrink:0;object-fit:cover;display:grid;place-items:center;font-family:var(--mono);font-size:8px;color:var(--muted);overflow:hidden;text-align:center;line-height:1.1}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--surface2);color:var(--ink);letter-spacing:.02em;white-space:nowrap}
+.chip.jp{background:var(--accent-soft);color:var(--accent)}
+.chip.gr{background:var(--gold-soft);color:var(--gold)}
+.chip.ok{background:var(--good-soft);color:var(--good)}
+.chip.warn{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn)}
+.empty{padding:22px 14px;text-align:center;color:var(--muted);font-size:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-weight:600;cursor:pointer;font-size:14px;white-space:nowrap;text-decoration:none;color:var(--ink)}
+.btn:hover{background:var(--surface2)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.pri:hover{filter:brightness(1.07)}
+.btn.danger{color:var(--bad)}
+.btn.sm{padding:6px 10px;font-size:13px}
+.btn:focus-visible,.row:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.seg label:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bar.spread{justify-content:space-between}
+.search{flex:1;min-width:160px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface)}
+.filters{display:flex;gap:6px;overflow-x:auto;padding-block:8px;scrollbar-width:none}
+.filters button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:13px;cursor:pointer;white-space:nowrap}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+select.small{padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:13px}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
+nav.tabs .in{display:flex;width:100%;max-width:880px}
+nav.tabs button{flex:1;border:0;background:none;padding:10px 4px 9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.03em;text-transform:uppercase}
+nav.tabs button svg{width:22px;height:22px}
+nav.tabs button[aria-current="page"]{color:var(--accent)}
+.fab{position:fixed;right:18px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:21;border-radius:999px;padding:13px 18px;box-shadow:var(--shadow)}
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(10,14,20,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;border-radius:16px 16px 0 0;padding-inline:16px;padding-block:6px calc(24px + env(safe-area-inset-bottom,0px));box-shadow:var(--shadow)}
+@media (min-width:700px){.scrim{align-items:center}.sheet{border-radius:16px;max-height:88vh}}
+.sheet-head{position:sticky;top:0;background:var(--bg);display:flex;justify-content:space-between;align-items:center;padding-block:12px 10px;z-index:2;border-bottom:1px solid var(--line);margin-bottom:12px;gap:10px}
+.sheet-head h3{margin:0;font-size:21px}
+.x{border:0;background:var(--surface2);border-radius:999px;width:34px;height:34px;cursor:pointer;font-size:18px;flex-shrink:0}
+form .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+form .full{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:12px;font-weight:600;color:var(--muted)}
+.field input,.field select,.field textarea{padding:9px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);width:100%;min-width:0}
+.field textarea{min-height:64px;resize:vertical}
+.hint{font-size:12px;color:var(--muted)}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface)}
+.seg label{flex:1;text-align:center;padding:8px 6px;cursor:pointer;font-size:13.5px;font-weight:600;border-left:1px solid var(--line)}
+.seg label:first-child{border-left:0}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--ink);color:var(--bg)}
+fieldset{border:0;padding:0;margin:0;min-width:0}
+.section{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.photo-drop{display:flex;gap:12px;align-items:center}
+.photo-drop .thumb{width:72px;font-size:10px}
+.detail-top{display:grid;grid-template-columns:130px 1fr;gap:14px;align-items:start}
+.detail-top .big{width:100%;aspect-ratio:63/88;border-radius:8px;object-fit:cover;background:var(--surface2);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--mono);color:var(--muted);font-size:13px}
+.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.kv div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.kv b{display:block;font-family:var(--display);font-size:20px;font-weight:700;line-height:1.15}
+.links{display:flex;flex-wrap:wrap;gap:6px}
+table.t{width:100%;border-collapse:collapse;font-size:13.5px}
+table.t th,table.t td{padding:8px 10px;border-top:1px solid var(--line);text-align:left;white-space:nowrap}
+table.t th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-top:0}
+table.t td.r,table.t th.r{text-align:right}
+.scroll{overflow-x:auto}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:10px;font-size:14px;z-index:60;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+.pl{display:flex;justify-content:space-between;padding:7px 0;border-top:1px dashed var(--line);font-size:14px}
+.pl:first-child{border-top:0}
+.pl.total{border-top:2px solid var(--ink);font-weight:700;font-size:16px;margin-top:4px}
+.cols{display:grid;gap:14px}
+@media (min-width:700px){.cols.two{grid-template-columns:1fr 1fr}}
+.pad{padding:12px}
+.stat-line{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;margin-top:6px}
+.guide p{margin:6px 0;font-size:14px;max-width:65ch}
+.chip.lot{background:var(--ink);color:var(--bg)}
+.chip.grd{background:var(--surface);color:var(--warn);border:1px solid var(--warn)}
+.stack{position:relative;width:44px;flex-shrink:0;aspect-ratio:63/88}
+.stack .thumb{position:absolute;width:40px;inset:auto}
+.stack .thumb:nth-child(1){left:6px;top:0;opacity:.55}
+.stack .thumb:nth-child(2){left:3px;top:2px;opacity:.8}
+.stack .thumb:nth-child(3){left:0;top:4px}
+.stack .count{position:absolute;right:-4px;bottom:-4px;background:var(--ink);color:var(--bg);font-size:10px;font-weight:700;border-radius:999px;padding:1px 6px;z-index:2}
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;font-size:13.5px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:12px}
+.note.lotn{border-color:var(--ink)}
+.note.grdn{border-color:var(--warn);background:var(--warn-soft)}
+.picklist{max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.picklist label{display:flex;gap:10px;align-items:center;padding:8px 10px;border-top:1px solid var(--line);cursor:pointer;font-size:13.5px}
+.picklist label:first-child{border-top:0}
+.picklist input{width:18px;height:18px;accent-color:var(--accent);flex-shrink:0}
+.newrow{display:grid;grid-template-columns:1.1fr 1.3fr 1fr 1fr auto;gap:6px;margin-top:6px;align-items:center}
+.newrow input,.newrow select{padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);min-width:0;width:100%;font-size:13.5px}
+@media (max-width:520px){.newrow{grid-template-columns:1fr 1fr}.newrow .rm{grid-column:2;justify-self:end}}
+.check{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+@media (max-width:420px){.detail-top{grid-template-columns:100px 1fr}.kv{grid-template-columns:repeat(2,1fr)}}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .2s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="brand">Treasure <span>Log</span></div>
+      <div class="sub" id="subline">Inventory, sales and shows for your card table</div>
+    </div>
+  </header>
+  <div id="status"></div>
+  <main id="main"></main>
+</div>
+<button class="btn pri fab" data-act="add-card" aria-label="Add a card">+ Add card</button>
+<nav class="tabs"><div class="in" id="tabs"></div></nav>
+<div id="sheetRoot"></div>
+<div id="toastRoot"></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- state ---------- */
+const COLS=["cards","sales","shows","expenses","lots","items","supplies","wants"];
+const DEFAULT_SETTINGS={offerPct:70,markupPct:10,seqPremiumPct:25,ebayFeePct:13.25,staleDays:30,agingDays:60,compDays:90};
+const S={cards:[],sales:[],shows:[],expenses:[],lots:[],items:[],supplies:[],wants:[],sample:null,sampleImg:false,settings:{...DEFAULT_SETTINGS},db:null,assets:null,downloads:null,live:false,loaded:false,
+  tab:"home",q:"",f:{lang:"all",kind:"all",status:"stock"},sort:"new",sheet:null,pendingPhoto:null,exampleOff:false};
+try{const t=localStorage.getItem("tl-tab");if(t)S.tab=t;}catch(e){}
+
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+const ago=n=>{const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10);};
+const ahead=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);};
+
+/* Example data: shown only while the log is empty, never saved */
+const EX={
+  cards:[
+    {id:"ex-1",code:"OP05-119",variant:"Alt art (parallel)",name:"Monkey.D.Luffy",rarity:"SEC",lang:"JP",kind:"raw",cond:"NM",qty:1,cost:62,buyDate:ago(40),source:"Mercari JP (proxy)",market:88,list:95,location:"Case 1",status:"stock",comps:[{src:"eBay sold",price:85,date:ago(6),kind:"sold"},{src:"eBay sold",price:92,date:ago(12),kind:"sold"},{src:"Yuyu-tei",price:84,date:ago(3),kind:"listed"}],createdAt:ago(40)},
+    {id:"ex-2",code:"OP01-120",variant:"Regular",name:"Shanks",rarity:"SEC",lang:"EN",kind:"graded",grader:"PSA",grade:"10",cert:"",qty:1,cost:70,buyDate:ago(75),source:"Card show",market:105,list:115,location:"Case 1",status:"stock",comps:[{src:"eBay sold",price:102,date:ago(9),kind:"sold"},{src:"PriceCharting",price:108,date:ago(9),kind:"sold"}],createdAt:ago(75)},
+    {id:"ex-3",code:"OP02-013",variant:"Regular",name:"Portgas.D.Ace",rarity:"SR",lang:"EN",kind:"raw",cond:"NM",qty:3,cost:2.5,buyDate:ago(20),source:"Local collection",market:6,list:6,location:"Binder A",status:"stock",comps:[],createdAt:ago(20)},
+    {id:"ex-4",code:"OP03-122",variant:"Regular",name:"Sogeking",rarity:"SEC",lang:"EN",kind:"raw",cond:"NM",qty:1,cost:18,buyDate:ago(30),source:"Trade night",market:40,location:"Grading box",status:"grading",grading:{company:"PSA",sent:ago(24),fee:25,service:"Value",sub:"12877411"},comps:[],createdAt:ago(30)},
+    ...["Nami","Usopp","Sanji","Robin","Franky","Brook"].map((nm,i)=>({id:"ex-l"+(i+1),code:"ST01-0"+String(7+i).padStart(2,"0"),variant:"Regular",name:nm,rarity:"C",lang:"JP",kind:"graded",grader:"PSA",grade:"10",cert:String(88412030+i),qty:1,cost:14,buyDate:ago(50),source:"eBay",market:[22,18,24,26,16,18][i],location:"Case 2",status:"stock",lotId:"ex-lot1",comps:[],marketDate:ago(5),createdAt:ago(50)}))
+  ],
+  lots:[{id:"ex-lot1",name:"Lot 1 · Straw Hat crew PSA 10",sequential:true,premiumPct:25,list:null,location:"Case 2",status:"stock",notes:"Sequential certs, same submission.",buyDate:ago(50),createdAt:ago(50)}],
+  items:[{id:"ex-i1",name:"Kaizoku Ō desk sign",category:"3D print",sku:"KZ-01",desc:"3D printed plaque that reads 海賊王 (Kaizoku Ō, \"Pirate King\"). Black PLA with red lettering, about 12 cm wide.",cost:2.4,price:15,qty:8,location:"Side tray",batches:[{date:ago(10),qty:10,unitCost:2.4,note:"Black + red PLA"}],createdAt:ago(10)}],
+  supplies:[{id:"ex-su1",name:"Top loaders (35pt)",unit:"pcs",onHand:140,lowAt:50},{id:"ex-su2",name:"Penny sleeves",unit:"pcs",onHand:380,lowAt:100},{id:"ex-su3",name:"Small zip bags",unit:"pcs",onHand:18,lowAt:25}],
+  wants:[{id:"ex-w1",text:"OP05-119 Luffy manga alt art, Japanese",who:"Kevin",contact:"@kevtcg",date:ago(13),showId:"ex-sh1",done:false,createdAt:ago(13)}],
+  sales:[{id:"ex-s2",itemId:"ex-i1",code:"ITEM",name:"Kaizoku Ō desk sign",kind:"item",qty:2,price:15,costEach:2.4,fees:0,channel:"Show",showId:"ex-sh1",date:ago(13),createdAt:ago(13)},{id:"ex-s1",cardId:"ex-3",code:"OP02-013",name:"Portgas.D.Ace",variant:"Regular",lang:"EN",kind:"raw",qty:2,price:6,costEach:2.5,fees:0,channel:"Show",showId:"ex-sh1",date:ago(13),createdAt:ago(13)}],
+  shows:[{id:"ex-sh1",name:"Valley Card Show",date:ago(13),venue:"Community center",tableFee:75,costs:[{label:"Gas",amt:18}],bulkRevenue:42,notes:"Busy after 11am.",createdAt:ago(20)},
+         {id:"ex-sh2",name:"Harbor TCG Expo",date:ahead(12),venue:"Convention hall",tableFee:75,costs:[],bulkRevenue:0,notes:"",createdAt:ago(2)}],
+  expenses:[{id:"ex-e1",date:ago(25),cat:"Supplies",amount:34,note:"",supplyId:"ex-su1",qty:200,showId:""},{id:"ex-e2",date:ago(15),cat:"Supplies",amount:9,note:"",supplyId:"ex-su3",qty:60,showId:""}]
+};
+const isEx=()=>!S.exampleOff&&!S.cards.length&&!S.sales.length&&!S.shows.length&&!S.expenses.length&&!S.lots.length&&!S.items.length&&!S.supplies.length&&!S.wants.length;
+const D=k=>isEx()?EX[k]:S[k];
+const exId=id=>String(id||"").startsWith("ex-");
+
+/* ---------- helpers ---------- */
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const n=v=>{const x=parseFloat(v);return isFinite(x)?x:0;};
+const money=(v,dec)=>{const x=n(v);const d=dec===undefined?(Math.abs(x)<100&&x%1!==0?2:0):dec;return (x<0?"−$":"$")+Math.abs(x).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});};
+const signed=v=>(n(v)>0?"+":"")+money(v);
+const cls=v=>n(v)>0?"pos":n(v)<0?"neg":"";
+const daysSince=d=>d?Math.floor((Date.now()-new Date(d+"T12:00:00").getTime())/864e5):null;
+const fdate=d=>{if(!d)return"";const x=new Date(d+"T12:00:00");return x.toLocaleDateString("en-US",{month:"short",day:"numeric",year:x.getFullYear()!==new Date().getFullYear()?"numeric":undefined});};
+const setCode=c=>(String(c||"").toUpperCase().match(/^[A-Z]+\d*/)||[""])[0];
+const byId=(k,id)=>D(k).find(x=>x.id===id);
+const saleProfit=s=>n(s.qty)*(n(s.price)-n(s.costEach))-n(s.fees);
+const saleRev=s=>n(s.qty)*n(s.price);
+const showCosts=sh=>n(sh.tableFee)+(sh.costs||[]).reduce((a,c)=>a+n(c.amt),0);
+function showNumbers(sh){
+  const sales=D("sales").filter(s=>s.showId===sh.id);
+  const exps=D("expenses").filter(e=>e.showId===sh.id);
+  const buys=D("cards").filter(c=>c.showId===sh.id);
+  const rev=sales.reduce((a,s)=>a+saleRev(s),0);
+  const cogs=sales.reduce((a,s)=>a+n(s.qty)*n(s.costEach),0);
+  const fees=sales.reduce((a,s)=>a+n(s.fees),0);
+  const bulk=n(sh.bulkRevenue);
+  const costs=showCosts(sh)+exps.reduce((a,e)=>a+n(e.amount),0);
+  const buyCash=buys.filter(c=>!c.dealId).reduce((a,c)=>a+n(c.cost)*n(c.qtyBought||c.qty),0);
+  const tradeIn=buys.filter(c=>c.dealId).reduce((a,c)=>a+n(c.cost)*n(c.qtyBought||c.qty),0);
+  const net=rev-cogs-fees+bulk-costs;
+  return {sales,exps,buys,rev,cogs,fees,bulk,costs,buyCash,tradeIn,net,cashIn:rev+bulk-tradeIn,units:sales.reduce((a,s)=>a+n(s.qty),0)};
+}
+function compStats(c){
+  const all=(c.comps||[]).filter(x=>n(x.price)>0);
+  const sold=all.filter(x=>x.kind!=="listed");
+  const cutoff=ago(S.settings.compDays||90);
+  let use=sold.filter(x=>(x.date||"")>=cutoff);
+  if(!use.length)use=sold;
+  const p=use.map(x=>n(x.price)).sort((a,b)=>a-b);
+  if(!p.length)return{n:0,listedN:all.length-sold.length,listedLow:lowListed(all)};
+  const mean=p.reduce((a,b)=>a+b,0)/p.length;
+  const mid=Math.floor(p.length/2);
+  const median=p.length%2?p[mid]:(p[mid-1]+p[mid])/2;
+  let trimmed=mean;
+  if(p.length>=5){const k=Math.floor(p.length*.1)||1;const tp=p.slice(k,p.length-k);trimmed=tp.reduce((a,b)=>a+b,0)/tp.length;}
+  const newest=use.map(x=>x.date||"").sort().pop();
+  return{n:p.length,mean,median,trimmed,low:p[0],high:p[p.length-1],newest,listedN:all.length-sold.length,listedLow:lowListed(all)};
+}
+function lowListed(all){const l=all.filter(x=>x.kind==="listed").map(x=>n(x.price));return l.length?Math.min(...l):null;}
+function niceRound(v){v=n(v);if(v<=0)return 0;if(v<5)return Math.round(v*4)/4;if(v<20)return Math.round(v);if(v<100)return Math.round(v/5)*5;if(v<500)return Math.round(v/10)*10;return Math.round(v/25)*25;}
+const suggestList=m=>niceRound(n(m)*(1+n(S.settings.markupPct)/100));
+const offerFor=m=>Math.floor(n(m)*n(S.settings.offerPct)/100);
+function lastCompDate(c){return (c.comps||[]).map(x=>x.date||"").sort().pop()||c.marketDate||"";}
+const PHOTO_URLS={};
+function blobUrl(id){return PHOTO_URLS[id]||"/_blob/"+id;}
+function imgSrc(c){if(c.photoId)return blobUrl(c.photoId);if(c.photoUrl)return c.photoUrl;return null;}
+function thumb(c,cls2){const s=imgSrc(c);return s?`<img class="${cls2||"thumb"}" src="${esc(s)}" alt="${esc(c.name||c.code)}" loading="lazy">`:`<div class="${cls2||"thumb"}">${esc(c.code||"?")}</div>`;}
+function gradeLabel(c){return c.kind==="graded"?`${c.grader||"Graded"} ${c.grade||""}`.trim():(c.cond||"Raw");}
+function chips(c){
+  let h=`<span class="chip ${c.lang==="JP"?"jp":""}">${esc(c.lang||"EN")}</span>`;
+  h+=`<span class="chip ${c.kind==="graded"?"gr":""}">${esc(gradeLabel(c))}</span>`;
+  if(c.variant&&c.variant!=="Regular")h+=`<span class="chip">${esc(c.variant)}</span>`;
+  if(c.rarity)h+=`<span class="chip">${esc(c.rarity)}</span>`;
+  if(c.status==="grading")h+=`<span class="chip grd">At ${esc((c.grading||{}).company||"grading")} · ${daysSince((c.grading||{}).sent)??0}d</span>`;
+  const L=cardLot(c);if(L)h+=`<span class="chip lot">${esc(shortLot(L))}</span>`;
+  return h;
+}
+/* ---------- lots ---------- */
+function cardLot(c){if(!c||!c.lotId)return null;return byId("lots",c.lotId)||null;}
+const shortLot=L=>String(L.name||"Lot").split("·")[0].trim();
+const lotCards=L=>D("cards").filter(c=>c.lotId===L.id);
+function certsSequential(cards){
+  if(cards.length<2)return false;
+  if(!cards.every(c=>c.kind==="graded"&&/^\d+$/.test(String(c.cert||"").trim())))return false;
+  if(new Set(cards.map(c=>c.grader)).size>1)return false;
+  const nums=cards.map(c=>Number(c.cert)).sort((a,b)=>a-b);
+  return nums.every((v,i)=>i===0||v-nums[i-1]===1);
+}
+function lotStats(L){
+  const cards=lotCards(L);
+  const units=cards.reduce((a,c)=>a+n(c.qty),0);
+  const cost=cards.reduce((a,c)=>a+n(c.qty)*n(c.cost),0);
+  const missing=cards.filter(c=>!(n(c.market)>0)).length;
+  const base=cards.reduce((a,c)=>a+n(c.qty)*(n(c.market)||n(c.cost)),0);
+  const prem=n(L.premiumPct);
+  const value=base*(1+prem/100);
+  const sticker=n(L.list)||suggestList(value);
+  const seqCerts=certsSequential(cards);
+  const langs=[...new Set(cards.map(c=>c.lang))];
+  const grades=[...new Set(cards.map(c=>gradeLabel(c)))];
+  return{cards,units,cost,missing,base,prem,value,sticker,seqCerts,langs,grades};
+}
+function lotChips(L,st){
+  st=st||lotStats(L);
+  let h=`<span class="chip lot">Lot · ${st.units} cards</span>`;
+  if(st.langs.length)h+=`<span class="chip ${st.langs.length===1&&st.langs[0]==="JP"?"jp":""}">${esc(st.langs.join(" + "))}</span>`;
+  if(st.grades.length===1)h+=`<span class="chip ${st.cards[0]&&st.cards[0].kind==="graded"?"gr":""}">${esc(st.grades[0])}</span>`;
+  else if(st.grades.length>1)h+=`<span class="chip">Mixed grades</span>`;
+  if(L.sequential)h+=`<span class="chip ok">Sequential${st.seqCerts?" ✓":""}</span>`;
+  return h;
+}
+const openLots=()=>D("lots").filter(L=>L.status!=="sold");
+const sellable=c=>c.status!=="sold"&&c.status!=="pc"&&c.status!=="grading"&&!c.lotId&&n(c.qty)>0;
+function searchQuery(c,site){
+  const parts=[c.name,c.code];
+  const v=(c.variant||"").toLowerCase();
+  if(v.includes("alt")||v.includes("parallel"))parts.push("alt art");
+  if(v.includes("manga"))parts.push("manga");
+  if(v.includes("sp"))parts.push("SP");
+  if(c.lang==="JP"&&site!=="yuyu")parts.push("japanese");
+  if(c.kind==="graded"&&site!=="yuyu")parts.push((c.grader||"")+" "+(c.grade||""));
+  return parts.filter(Boolean).join(" ").replace(/\s+/g," ").trim();
+}
+function compLinks(c){
+  const q=encodeURIComponent(searchQuery(c));
+  const L=[
+    ["eBay sold",`https://www.ebay.com/sch/i.html?_nkw=${q}&LH_Sold=1&LH_Complete=1&_sop=13`],
+    ["PriceCharting",`https://www.pricecharting.com/search-products?q=${q}&type=prices`],
+    ["TCGplayer",`https://www.tcgplayer.com/search/one-piece-card-game/product?q=${encodeURIComponent(c.code+" "+(c.name||""))}`],
+    ["130point",`https://130point.com/sales/`],
+    ["Card Ladder",`https://app.cardladder.com/`]
+  ];
+  if(c.lang==="JP")L.push(["Yuyu-tei (JP)",`https://yuyu-tei.jp/sell/opc/s/search?search_word=${encodeURIComponent(c.code)}`]);
+  return L.map(([t,u])=>`<a class="btn sm" href="${esc(u)}" target="_blank" rel="noopener" data-copyq="${esc(searchQuery(c))}">${esc(t)} ↗</a>`).join("");
+}
+function toast(msg){const r=document.getElementById("toastRoot");r.innerHTML=`<div class="toast" role="status">${esc(msg)}</div>`;clearTimeout(toast._t);toast._t=setTimeout(()=>r.innerHTML="",2600);}
+function exBlock(){if(isEx()){toast("That's example data. Add your first card to start your own log.");return true;}return false;}
+
+/* ---------- storage ---------- */
+function stripId(o){const x={...o};delete x.id;return x;}
+async function put(col,obj){
+  obj.updatedAt=new Date().toISOString();
+  if(!obj.createdAt)obj.createdAt=obj.updatedAt;
+  if(S.db){
+    try{
+      if(obj.id){await S.db.collection(col).doc(obj.id).set(stripId(obj));return obj.id;}
+      const ref=await S.db.collection(col).add(stripId(obj));return ref.id;
+    }catch(e){toast("Couldn't save: "+(e.message||e.code||"try again"));throw e;}
+  }
+  if(!obj.id){obj.id=Date.now().toString(36)+Math.random().toString(36).slice(2,8);S[col].push(obj);}
+  else{const i=S[col].findIndex(x=>x.id===obj.id);if(i>=0)S[col][i]=obj;else S[col].push(obj);}
+  if(S.idb){try{await IDB.put(col,obj.id,obj);}catch(e){toast("Couldn't save on this phone: "+(e.message||e));throw e;}}
+  render();return obj.id;
+}
+async function del(col,id){
+  if(S.db){try{await S.db.collection(col).doc(id).delete();}catch(e){toast("Couldn't delete: "+(e.message||e.code));throw e;}return;}
+  S[col]=S[col].filter(x=>x.id!==id);
+  if(S.idb){try{await IDB.del(col,id);}catch(e){toast("Couldn't delete on this phone");}}
+  render();
+}
+async function saveSettings(){
+  if(S.db){try{await S.db.doc("settings/main").set({...S.settings});}catch(e){toast("Couldn't save settings");}}
+  if(S.idb){try{await IDB.put("settings","main",{...S.settings});}catch(e){toast("Couldn't save settings");}}
+  render();
+}
+
+/* ---------- on-device storage (standalone app) ---------- */
+const IDB={db:null,
+  open(){return new Promise((res,rej)=>{let r;try{r=indexedDB.open("treasure-log",1);}catch(e){rej(e);return;}
+    r.onupgradeneeded=()=>{const d=r.result;[...COLS,"settings","photos"].forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s);});};
+    r.onsuccess=()=>{IDB.db=r.result;res(r.result);};r.onerror=()=>rej(r.error);});},
+  tx(store,mode,fn){return new Promise((res,rej)=>{const t=IDB.db.transaction(store,mode);const r=fn(t.objectStore(store));let out;if(r)r.onsuccess=()=>{out=r.result;};t.oncomplete=()=>res(out);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error);});},
+  put(s,k,v){return IDB.tx(s,"readwrite",st=>st.put(v,k));},
+  get(s,k){return IDB.tx(s,"readonly",st=>st.get(k));},
+  del(s,k){return IDB.tx(s,"readwrite",st=>st.delete(k));},
+  clear(s){return IDB.tx(s,"readwrite",st=>st.clear());},
+  all(s){return new Promise((res,rej)=>{const out=[];const c=IDB.db.transaction(s).objectStore(s).openCursor();c.onsuccess=()=>{const cur=c.result;if(cur){out.push([cur.key,cur.value]);cur.continue();}else res(out);};c.onerror=()=>rej(c.error);});}
+};
+const localAssets={async upload(blob){const id="p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);await IDB.put("photos",id,blob);PHOTO_URLS[id]=URL.createObjectURL(blob);return{id,url:PHOTO_URLS[id]};}};
+function fileFor(filename,data){return data instanceof Blob?new File([data],filename,{type:data.type}):new File([data],filename,{type:filename.endsWith(".json")?"application/json":"text/csv"});}
+const localDownloads={async save({filename,data}){
+  const file=fileFor(filename,data);
+  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:filename});return{status:"saved"};}}
+  catch(e){if(e&&e.name==="AbortError"){const err=new Error("declined");err.code="declined";throw err;}}
+  const a=document.createElement("a");a.href=URL.createObjectURL(file);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);return{status:"saved"};
+}};
+function getApiKey(){try{return localStorage.getItem("tl-apikey")||"";}catch(e){return"";}}
+function blobToB64(b){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result));r.onerror=()=>rej(r.error);r.readAsDataURL(b);});}
+function dataUrlToBlob(u){const [head,b64]=String(u).split(",");const type=(head.match(/data:([^;]+)/)||[])[1]||"application/octet-stream";const bin=atob(b64||"");const arr=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);return new Blob([arr],{type});}
+function parseLooseJson(t){t=String(t).trim();try{return JSON.parse(t);}catch(_){}const f=t.match(/```(?:json)?\s*([\s\S]*?)```/);if(f){try{return JSON.parse(f[1]);}catch(_){}}const a=t.search(/[\[{]/),b=Math.max(t.lastIndexOf("]"),t.lastIndexOf("}"));if(a>=0&&b>a){try{return JSON.parse(t.slice(a,b+1));}catch(_){}}const e=new Error("invalid_json");e.code="invalid_json";throw e;}
+function apiSample(key){
+  const call=async(prompt,opts)=>{
+    const content=[];
+    for(const img of ((opts&&opts.images)||[])){const d=await blobToB64(img);content.push({type:"image",source:{type:"base64",media_type:img.type||"image/jpeg",data:d.split(",")[1]}});}
+    content.push({type:"text",text:prompt});
+    let r;
+    try{r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:4000,messages:[{role:"user",content}]})});}
+    catch(e){const err=new Error("offline");err.code="unavailable";throw err;}
+    if(r.status===401||r.status===403){const err=new Error("bad key");err.code="bad_key";throw err;}
+    if(r.status===429){const err=new Error("rate");err.code="rate_limited";throw err;}
+    if(!r.ok){const err=new Error("api "+r.status);err.code="unavailable";throw err;}
+    const j=await r.json();return (j.content||[]).filter(x=>x.type==="text").map(x=>x.text).join("");
+  };
+  const f=async(p,o)=>({text:await call(p,o)});
+  f.json=async(p,o)=>parseLooseJson(await call(p,o));
+  return f;
+}
+function useApiKey(){const k=getApiKey();S.sample=k?apiSample(k):null;S.sampleImg=!!k;}
+
+/* ---------- backup & restore ---------- */
+async function buildBackup(){
+  const ids=new Set([...S.cards,...S.items].map(x=>x.photoId).filter(Boolean));
+  const photos={};let missed=0;
+  for(const id of ids){try{const blob=S.idb?await IDB.get("photos",id):await (await fetch(blobUrl(id))).blob();if(blob)photos[id]=await blobToB64(blob);else missed++;}catch(e){missed++;}}
+  const settings={...S.settings};delete settings.lastBackup;
+  const data={app:"treasure-log",version:1,exportedAt:new Date().toISOString(),exportedDate:today(),settings,collections:Object.fromEntries(COLS.map(c=>[c,S[c]])),photos};
+  return{json:JSON.stringify(data),missed,counts:COLS.map(c=>[c,S[c].length])};
+}
+async function restoreBackup(b,progress){
+  const cols=b.collections||{};const idMap={};
+  if(S.idb){await IDB.clear("photos");Object.keys(PHOTO_URLS).forEach(k=>{try{URL.revokeObjectURL(PHOTO_URLS[k]);}catch(_){}delete PHOTO_URLS[k];});}
+  const pics=Object.entries(b.photos||{});let k=0;
+  for(const [pid,u] of pics){progress(`Photos ${++k}/${pics.length}`);try{const r=await S.assets.upload(dataUrlToBlob(u),{type:"image/jpeg"});idMap[pid]=r.id;}catch(e){}}
+  for(const col of ["cards","items"])(cols[col]||[]).forEach(x=>{if(x.photoId){if(idMap[x.photoId])x.photoId=idMap[x.photoId];else delete x.photoId;}delete x.photoUrl;});
+  for(const col of COLS){
+    const docs=(cols[col]||[]).filter(d=>d&&d.id);
+    progress(`Restoring ${col}…`);
+    if(S.db){for(const d of [...S[col]])await S.db.collection(col).doc(d.id).delete();for(const d of docs)await S.db.collection(col).doc(d.id).set(stripId(d));}
+    else if(S.idb){await IDB.clear(col);for(const d of docs)await IDB.put(col,d.id,d);S[col]=docs;}
+    else S[col]=docs;
+  }
+  S.settings={...DEFAULT_SETTINGS,...(b.settings||{}),lastBackup:today()};await saveSettings();
+  S.exampleOff=true;
+}
+
+/* ---------- views ---------- */
+const ICONS={
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>',
+  cards:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="7" y="3" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 0 0 2 2h9"/></svg>',
+  shows:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M3 10h18v4H3z"/><path d="M5 14v6M19 14v6M8 10V6h8v4"/></svg>',
+  money:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>',
+  items:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg>',
+  tools:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h1M14 11h1M9 15h1M14 15h1"/></svg>'
+};
+const TABS=[["home","Home"],["cards","Cards"],["items","Items"],["shows","Shows"],["money","Money"],["tools","Tools"]];
+
+function stockCards(){return D("cards").filter(c=>c.status!=="sold"&&n(c.qty)>0);}
+function totals(){
+  const st=stockCards().filter(c=>c.status!=="pc");
+  const units=st.reduce((a,c)=>a+n(c.qty),0);
+  const cost=st.reduce((a,c)=>a+n(c.qty)*n(c.cost),0);
+  const loose=st.filter(c=>!cardLot(c));
+  const withMkt=loose.filter(c=>n(c.market)>0);
+  const lots=openLots();
+  const mkt=loose.reduce((a,c)=>a+n(c.qty)*(n(c.market)||n(c.cost)),0)+lots.reduce((a,L)=>a+lotStats(L).value,0);
+  const grading=st.filter(c=>c.status==="grading");
+  const inv=D("items").filter(i=>n(i.qty)>0);
+  const itemCost=inv.reduce((a,i)=>a+n(i.qty)*n(i.cost),0),itemVal=inv.reduce((a,i)=>a+n(i.qty)*n(i.price),0);
+  const salesP=D("sales").reduce((a,s)=>a+saleProfit(s),0);
+  const itemP=D("sales").filter(s=>s.itemId).reduce((a,s)=>a+saleProfit(s),0);
+  const bulk=D("shows").reduce((a,s)=>a+n(s.bulkRevenue),0);
+  const showC=D("shows").filter(s=>(s.date||"")<=today()).reduce((a,s)=>a+showCosts(s),0);
+  const exps=D("expenses").reduce((a,e)=>a+n(e.amount),0);
+  const realized=salesP+bulk-showC-exps;
+  const m=today().slice(0,7);
+  const mSales=D("sales").filter(s=>(s.date||"").startsWith(m));
+  const mReal=mSales.reduce((a,s)=>a+saleProfit(s),0)+D("shows").filter(s=>(s.date||"").startsWith(m)&&s.date<=today()).reduce((a,s)=>a+n(s.bulkRevenue)-showCosts(s),0)-D("expenses").filter(e=>(e.date||"").startsWith(m)).reduce((a,e)=>a+n(e.amount),0);
+  return{units,lines:loose.length+lots.length,lotsN:lots.length,gradingN:grading.length,itemUnits:inv.reduce((a,i)=>a+n(i.qty),0),cost:cost+itemCost,mkt:mkt+itemVal,unreal:mkt+itemVal-cost-itemCost,itemP,cardP:salesP-itemP,missing:loose.length-withMkt.length,realized,mReal,salesP,bulk,showC,exps,rev:D("sales").reduce((a,s)=>a+saleRev(s),0)+bulk};
+}
+
+function vHome(){
+  const t=totals();
+  const up=D("shows").filter(s=>(s.date||"")>=today()).sort((a,b)=>a.date<b.date?-1:1)[0];
+  const st=stockCards().filter(c=>c.status!=="pc");
+  const stale=st.filter(c=>c.status!=="grading"&&n(c.market)>0&&(daysSince(lastCompDate(c))??999)>S.settings.staleDays);
+  const aging=st.filter(c=>c.status!=="grading"&&!cardLot(c)&&(daysSince(c.buyDate)??0)>S.settings.agingDays).sort((a,b)=>a.buyDate<b.buyDate?-1:1);
+  const noMkt=st.filter(c=>c.status!=="grading"&&!(n(c.market)>0));
+  const grading=st.filter(c=>c.status==="grading").sort((a,b)=>((a.grading||{}).sent||"")<((b.grading||{}).sent||"")?-1:1);
+  const recent=[...D("sales")].sort((a,b)=>(b.date||"")<(a.date||"")?-1:1).slice(0,5);
+  let h=`<div class="tiles">
+    <div class="tile"><div class="label">In stock</div><div class="v num">${t.units}</div><div class="d">${t.lines} listings${t.lotsN?` · ${t.lotsN} lot${t.lotsN>1?"s":""}`:""}${t.gradingN?` · ${t.gradingN} grading`:""}${t.itemUnits?` · ${t.itemUnits} side items`:""}</div></div>
+    <div class="tile"><div class="label">Cost basis</div><div class="v num">${money(t.cost,0)}</div><div class="d">what you paid</div></div>
+    <div class="tile"><div class="label">Market value</div><div class="v num">${money(t.mkt,0)}</div><div class="d ${cls(t.unreal)}">${signed(t.unreal)} unrealized</div></div>
+    <div class="tile"><div class="label">Profit, all time</div><div class="v num ${cls(t.realized)}">${money(t.realized,0)}</div><div class="d">${money(t.mReal,0)} this month</div></div>
+  </div>`;
+  if(up){const d=daysSince(up.date);const inD=-d;h+=`<h2>Next show</h2><div class="panel"><button class="row" data-act="show" data-id="${esc(up.id)}"><div class="main"><div class="t">${esc(up.name)}</div><div class="m">${fdate(up.date)} · ${esc(up.venue||"")} · table ${money(up.tableFee,0)}</div></div><div class="r"><div class="num" style="font-family:var(--display);font-size:22px;font-weight:700">${inD===0?"Today":inD+"d"}</div><div class="hint">break-even ≈ ${money(breakEven(up),0)} sales</div></div></button></div>`;}
+  if(grading.length){
+    const fees=grading.reduce((a,c)=>a+n((c.grading||{}).fee),0);
+    h+=`<h2>At grading</h2><div class="panel">${grading.map(c=>cardRow(c)).join("")}</div><div class="stat-line muted num"><span>${grading.length} card${grading.length>1?"s":""} out</span><span>${money(fees,0)} in grading fees</span></div>`;
+  }
+  const att=[];
+  noMkt.slice(0,4).forEach(c=>att.push([c,`<span class="chip warn">No market value</span>`]));
+  stale.slice(0,4).forEach(c=>att.push([c,`<span class="chip warn">Comps ${daysSince(lastCompDate(c))??"?"}d old</span>`]));
+  aging.slice(0,4).forEach(c=>att.push([c,`<span class="chip warn">In stock ${daysSince(c.buyDate)}d</span>`]));
+  h+=`<h2>Needs attention</h2><div class="panel">${att.length?att.slice(0,8).map(([c,b])=>cardRow(c,b)).join(""):`<div class="empty">All caught up. Every card has a fresh market value.</div>`}</div>`;
+  const lowSup=D("supplies").filter(s=>n(s.lowAt)>0&&n(s.onHand)<=n(s.lowAt));
+  const lowItems=D("items").filter(i=>i.active!==false&&n(i.qty)<=n(i.lowAt??2));
+  if(lowSup.length||lowItems.length){h+=`<h2>Restock</h2><div class="panel">${lowItems.map(i=>itemRow(i,`<span class="chip warn">${n(i.qty)} left</span>`)).join("")}${lowSup.map(s=>supplyRow(s)).join("")}</div>`;}
+  const openW=D("wants").filter(w=>!w.done);
+  if(openW.length)h+=`<h2>Customers asked for</h2><div class="panel">${openW.slice(0,5).map(wantRow).join("")}</div>${openW.length>5?`<p class="hint">${openW.length-5} more on the Shows tab.</p>`:""}`;
+  h+=`<h2>Recent sales</h2><div class="panel">${recent.length?recent.map(saleRow).join(""):`<div class="empty">No sales yet. Open a card and tap Sell.</div>`}</div>`;
+  return h;
+}
+function breakEven(sh){
+  const s=D("sales").filter(x=>n(x.price)>0);
+  let margin=.3;
+  const rev=s.reduce((a,x)=>a+saleRev(x),0);
+  if(rev>50){margin=Math.max(.1,s.reduce((a,x)=>a+saleProfit(x),0)/rev);}
+  return showCosts(sh)/margin;
+}
+function cardRow(c,badge){
+  const m=n(c.market),cost=n(c.cost);
+  const pct=m>0&&cost>0?Math.round((m-cost)/cost*100):null;
+  const L=cardLot(c);
+  const right=L&&!badge?`<div class="hint">value ${m>0?money(m):"—"}</div><div class="hint">sold in lot</div>`:`<div style="font-weight:600">${m>0?money(m):"—"}</div><div class="hint">cost ${money(cost)}${pct!==null?` · <span class="${cls(pct)}">${pct>0?"+":""}${pct}%</span>`:""}</div>`;
+  return `<button class="row" data-act="card" data-id="${esc(c.id)}">${thumb(c)}<div class="main"><div class="t"><span class="mono">${esc(c.code)}</span> ${esc(c.name||"")}</div><div class="m">${badge||chips(c)}${n(c.qty)>1?`<span class="chip">×${n(c.qty)}</span>`:""}${c.location&&!L?`<span>${esc(c.location)}</span>`:""}</div></div><div class="r num">${right}</div></button>`;
+}
+function lotThumb(st){
+  const cs=st.cards.slice(0,3).reverse();
+  return `<div class="stack">${cs.map(c=>thumb(c)).join("")||`<div class="thumb">LOT</div>`}<span class="count">${st.units}</span></div>`;
+}
+function lotRow(L,act){
+  const st=lotStats(L);const pct=st.cost>0?Math.round((st.value-st.cost)/st.cost*100):null;
+  return `<button class="row" data-act="${act||"lot"}" data-id="${esc(L.id)}">${lotThumb(st)}<div class="main"><div class="t">${esc(L.name||"Lot")}</div><div class="m">${lotChips(L,st)}${L.status==="sold"?`<span class="chip">Sold</span>`:""}${L.location?`<span>${esc(L.location)}</span>`:""}</div></div><div class="r num"><div style="font-weight:600">${money(st.sticker)}</div><div class="hint">cost ${money(st.cost,0)}${pct!==null?` · <span class="${cls(pct)}">${pct>0?"+":""}${pct}%</span>`:""}</div></div></button>`;
+}
+function saleRow(s){
+  const p=saleProfit(s);const sh=s.showId?byId("shows",s.showId):null;
+  return `<button class="row" data-act="sale" data-id="${esc(s.id)}"><div class="main"><div class="t">${s.lotId?`<span class="chip lot">Lot · ${(s.items||[]).reduce((a,x)=>a+n(x.qty),0)}</span> `:s.itemId?`<span class="chip gr">Item</span> `:`<span class="mono">${esc(s.code)}</span> `}${esc(s.name||"")}${n(s.qty)>1?` ×${n(s.qty)}`:""}</div><div class="m">${fdate(s.date)} · ${esc(sh?sh.name:s.channel||"")}</div></div><div class="r num"><div style="font-weight:600">${money(saleRev(s))}</div><div class="hint ${cls(p)}">${signed(p)}</div></div></button>`;
+}
+
+function matchCard(c,words){
+  if(S.f.lang!=="all"&&c.lang!==S.f.lang)return false;
+  if(S.f.kind!=="all"&&c.kind!==S.f.kind)return false;
+  if(words.length){const hay=[c.code,c.name,c.variant,c.rarity,c.location,c.tags,c.grader,c.cert,setCode(c.code),c.status==="grading"?"grading "+((c.grading||{}).company||""):""].join(" ").toLowerCase();if(!words.every(w=>hay.includes(w)))return false;}
+  return true;
+}
+function filteredItems(){
+  const words=S.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const fs=S.f.status;
+  const items=[];
+  D("cards").forEach(c=>{
+    if(cardLot(c))return;
+    const out=c.status==="sold"||n(c.qty)<=0;
+    const ok={stock:!out&&c.status!=="pc",grading:c.status==="grading",lots:false,pc:c.status==="pc",sold:out,all:true}[fs];
+    if(!ok||!matchCard(c,words))return;
+    items.push({t:"card",o:c,created:c.createdAt||"",value:n(c.market)*n(c.qty),cost:n(c.cost)*n(c.qty),units:n(c.qty),buy:c.buyDate||"",code:String(c.code||"")});
+  });
+  D("lots").forEach(L=>{
+    const sold=L.status==="sold";
+    const ok={stock:!sold,grading:false,lots:!sold,pc:false,sold:sold,all:true}[fs];
+    if(!ok)return;
+    const st=lotStats(L);
+    const nameHit=words.length&&words.every(w=>String(L.name||"").toLowerCase().includes(w));
+    const anyCard=st.cards.some(c=>matchCard(c,words));
+    if(!(anyCard||(nameHit&&S.f.lang==="all"&&S.f.kind==="all")))return;
+    items.push({t:"lot",o:L,st,created:L.createdAt||"",value:st.value,cost:st.cost,units:st.units,buy:L.buyDate||"",code:"LOT "+(L.name||"")});
+  });
+  const sorters={new:(a,b)=>b.created>a.created?1:-1,value:(a,b)=>b.value-a.value,
+    margin:(a,b)=>((b.value-b.cost)/(b.cost||1))-((a.value-a.cost)/(a.cost||1)),
+    age:(a,b)=>a.buy<b.buy?-1:1,code:(a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true})};
+  return items.sort(sorters[S.sort]||sorters.new);
+}
+function vCards(){
+  const L=filteredItems();
+  const f=(key,val,label)=>`<button data-act="filter" data-k="${key}" data-v="${val}" aria-pressed="${S.f[key]===val}">${label}</button>`;
+  const units=L.reduce((a,x)=>a+x.units,0),val=L.reduce((a,x)=>a+x.value,0),cost=L.reduce((a,x)=>a+x.cost,0);
+  return `<div class="bar" style="margin-top:6px"><input id="q" class="search" type="search" placeholder="Search code, name, set, binder, lot…" value="${esc(S.q)}" aria-label="Search cards">
+    <select id="sort" class="small" aria-label="Sort"><option value="new">Newest</option><option value="code">Card code</option><option value="value">Highest value</option><option value="margin">Best margin</option><option value="age">Oldest stock</option></select>
+    <button class="btn" data-act="add-lot">+ Lot</button></div>
+  <div class="filters">${f("status","stock","For sale")}${f("status","lots","Lots")}${f("status","grading","At grading")}${f("status","pc","My collection")}${f("status","sold","Sold")}${f("status","all","All")}<span style="width:6px"></span>${f("lang","all","EN + JP")}${f("lang","EN","English")}${f("lang","JP","Japanese")}<span style="width:6px"></span>${f("kind","all","Raw + graded")}${f("kind","raw","Raw")}${f("kind","graded","Graded")}</div>
+  <div class="stat-line muted num"><span>${L.length} listings · ${units} cards</span><span>Cost ${money(cost,0)}</span><span>Value ${money(val,0)}</span></div>
+  <div class="panel" style="margin-top:8px">${L.length?L.map(x=>x.t==="lot"?lotRow(x.o):cardRow(x.o)).join(""):`<div class="empty">${S.f.status==="grading"?"Nothing at grading. Open a raw card and tap Send for grading.":S.f.status==="lots"?"No lots yet. Tap + Lot to build one.":"No cards match. Try clearing the search or filters."}</div>`}</div>`;
+}
+
+function vShows(){
+  const L=[...D("shows")].sort((a,b)=>(b.date||"")>(a.date||"")?1:-1);
+  const past=L.filter(s=>s.date<=today());
+  const tot=past.reduce((a,s)=>a+showNumbers(s).net,0);
+  return `<div class="bar spread" style="margin-top:6px"><div class="muted num">${past.length} shows done · net ${money(tot,0)}</div><button class="btn pri" data-act="add-show">+ New show</button></div>
+  <div class="panel" style="margin-top:10px">${L.length?L.map(s=>{const x=showNumbers(s);const fut=s.date>today();return `<button class="row" data-act="show" data-id="${esc(s.id)}"><div class="main"><div class="t">${esc(s.name)}</div><div class="m">${fdate(s.date)}${s.venue?" · "+esc(s.venue):""}${fut?` <span class="chip ok">Upcoming</span>`:` · ${x.units} sold`}</div></div><div class="r num"><div style="font-weight:600" class="${fut?"":cls(x.net)}">${fut?"−"+money(showCosts(s),0):signed(x.net)}</div><div class="hint">${fut?"table + costs":"net profit"}</div></div></button>`;}).join(""):`<div class="empty">Log your first show to track table fees against what you sell.</div>`}</div>
+  ${vWants()}`;
+}
+function wantRow(w){
+  return `<div class="row" style="cursor:default"><button class="btn sm" data-act="want-toggle" data-id="${esc(w.id)}" aria-label="${w.done?"Mark as open":"Mark as found"}" style="width:34px;padding:6px 0">${w.done?"✓":""}</button><div class="main"><div class="t" style="${w.done?"text-decoration:line-through;color:var(--muted)":""}">${esc(w.text)}</div><div class="m">${w.who?esc(w.who):""}${w.contact?` · <span class="mono">${esc(w.contact)}</span>`:""} · ${fdate(w.date)}${w.showId&&byId("shows",w.showId)?" · "+esc(byId("shows",w.showId).name):""}</div></div><button class="x" data-act="want-del" data-id="${esc(w.id)}" aria-label="Delete request">×</button></div>`;
+}
+function vWants(){
+  const W=[...D("wants")].sort((a,b)=>(b.createdAt||"")>(a.createdAt||"")?1:-1);
+  const open=W.filter(w=>!w.done),done=W.filter(w=>w.done).slice(0,5);
+  return `<h2>Customer want list</h2><p class="hint" style="margin:-4px 0 8px">What people asked for that you didn't have. It's your shopping list, and the app tells you when you log a matching card.</p>
+  <form data-form="want" class="panel pad" style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;align-items:end">
+    <div class="field"><label for="w-text">They want</label><input id="w-text" name="text" required placeholder="OP05-119 manga alt art JP"></div>
+    <div class="field"><label for="w-who">Who</label><input id="w-who" name="who" placeholder="Name"></div>
+    <div class="field"><label for="w-contact">Contact</label><input id="w-contact" name="contact" placeholder="@insta / phone"></div>
+    <button class="btn pri" type="submit">Add</button>
+  </form>
+  <div class="panel" style="margin-top:10px">${open.length?open.map(wantRow).join(""):`<div class="empty">No open requests.</div>`}${done.map(wantRow).join("")}</div>`;
+}
+
+function itemThumb(i){const s=i.photoId?blobUrl(i.photoId):i.photoUrl;return s?`<img class="thumb" style="aspect-ratio:1" src="${esc(s)}" alt="${esc(i.name)}" loading="lazy">`:`<div class="thumb" style="aspect-ratio:1">${esc((i.sku||i.category||"ITEM").slice(0,8))}</div>`;}
+function itemRow(i,badge){
+  const sold=D("sales").filter(s=>s.itemId===i.id).reduce((a,s)=>a+n(s.qty),0);
+  return `<button class="row" data-act="item" data-id="${esc(i.id)}">${itemThumb(i)}<div class="main"><div class="t">${esc(i.name)}</div><div class="m">${badge||`${i.category?`<span class="chip">${esc(i.category)}</span>`:""}<span class="chip ${n(i.qty)<=n(i.lowAt??2)?"warn":""}">${n(i.qty)} on hand</span>${sold?`<span>${sold} sold</span>`:""}`}</div></div><div class="r num"><div style="font-weight:600">${money(i.price)}</div><div class="hint">cost ${money(i.cost)}</div></div></button>`;
+}
+function vItems(){
+  const L=[...D("items")].sort((a,b)=>(b.createdAt||"")>(a.createdAt||"")?1:-1);
+  const units=L.reduce((a,i)=>a+n(i.qty),0),val=L.reduce((a,i)=>a+n(i.qty)*n(i.price),0);
+  const sold=D("sales").filter(s=>s.itemId);const rev=sold.reduce((a,s)=>a+saleRev(s),0),pr=sold.reduce((a,s)=>a+saleProfit(s),0);
+  return `<div class="bar spread" style="margin-top:6px"><div class="muted num">${units} on hand · ${money(val,0)} at your prices</div><button class="btn pri" data-act="add-item">+ Side item</button></div>
+  <p class="hint">Things you sell besides cards: your 3D prints, stickers, playmats. Sold ${sold.reduce((a,s)=>a+n(s.qty),0)} for ${money(rev,0)}, profit ${signed(pr)}.</p>
+  <div class="panel">${L.length?L.map(i=>itemRow(i)).join(""):`<div class="empty">Add your first side item, like a 3D print.</div>`}</div>`;
+}
+function supplyStats(s){
+  const ex=D("expenses").filter(e=>e.supplyId===s.id);
+  const spent=ex.reduce((a,e)=>a+n(e.amount),0),bought=ex.reduce((a,e)=>a+n(e.qty),0);
+  return{ex,spent,bought,unit:bought?spent/bought:0};
+}
+function supplyRow(s){
+  const st=supplyStats(s);const low=n(s.lowAt)>0&&n(s.onHand)<=n(s.lowAt);
+  return `<button class="row" data-act="supply" data-id="${esc(s.id)}"><div class="main"><div class="t">${esc(s.name)}</div><div class="m"><span class="chip ${low?"warn":""}">${n(s.onHand)} ${esc(s.unit||"")} on hand${low?" · low":""}</span>${st.bought?`<span>${money(st.unit,st.unit<1?3:2)} each</span>`:""}</div></div><div class="r num"><div style="font-weight:600">${money(st.spent)}</div><div class="hint">spent</div></div></button>`;
+}
+function vMoney(){
+  const t=totals();
+  const months={};
+  const add=(d,k,v)=>{const m=(d||"").slice(0,7);if(!m)return;months[m]=months[m]||{rev:0,profit:0,shows:0,exp:0};months[m][k]+=v;};
+  D("sales").forEach(s=>{add(s.date,"rev",saleRev(s));add(s.date,"profit",saleProfit(s));});
+  D("shows").filter(s=>s.date<=today()).forEach(s=>{add(s.date,"rev",n(s.bulkRevenue));add(s.date,"profit",n(s.bulkRevenue));add(s.date,"shows",showCosts(s));});
+  D("expenses").forEach(e=>add(e.date,"exp",n(e.amount)));
+  const ms=Object.keys(months).sort().reverse();
+  const sales=[...D("sales")].sort((a,b)=>(b.date||"")>(a.date||"")?1:-1);
+  const exps=[...D("expenses")].sort((a,b)=>(b.date||"")>(a.date||"")?1:-1);
+  return `<h2>Profit & loss</h2><div class="panel pad">
+    <div class="pl"><span>Revenue (cards, items, bulk)</span><span class="num">${money(t.rev,0)}</span></div>
+    <div class="pl"><span>Profit on card sales</span><span class="num ${cls(t.cardP)}">${signed(t.cardP)}</span></div>
+    <div class="pl"><span>Profit on side items</span><span class="num ${cls(t.itemP)}">${signed(t.itemP)}</span></div>
+    <div class="pl"><span>Bulk sales</span><span class="num pos">${signed(t.bulk)}</span></div>
+    <div class="pl"><span>Table fees & show costs</span><span class="num neg">${money(-t.showC,0)}</span></div>
+    <div class="pl"><span>Other expenses</span><span class="num neg">${money(-t.exps,0)}</span></div>
+    <div class="pl total"><span>Net profit</span><span class="num ${cls(t.realized)}">${money(t.realized,0)}</span></div>
+  </div>
+  ${ms.length?`<h2>By month</h2><div class="panel scroll"><table class="t num"><thead><tr><th>Month</th><th class="r">Revenue</th><th class="r">Gross</th><th class="r">Shows</th><th class="r">Expenses</th><th class="r">Net</th></tr></thead><tbody>${ms.map(m=>{const x=months[m];const net=x.profit-x.shows-x.exp;return `<tr><td>${new Date(m+"-15").toLocaleDateString("en-US",{month:"short",year:"numeric"})}</td><td class="r">${money(x.rev,0)}</td><td class="r">${money(x.profit,0)}</td><td class="r">${money(-x.shows,0)}</td><td class="r">${money(-x.exp,0)}</td><td class="r ${cls(net)}"><b>${money(net,0)}</b></td></tr>`;}).join("")}</tbody></table></div>`:""}
+  <div class="bar spread" style="margin-top:22px"><h2 style="margin:0">Supplies</h2><button class="btn" data-act="add-supply-buy">+ Bought supplies</button></div>
+  <p class="hint">Bags, sleeves, top loaders, wrappers. Each purchase counts as an expense and adds to what's on hand.</p>
+  <div class="panel">${D("supplies").length?D("supplies").map(supplyRow).join(""):`<div class="empty">Log a supply purchase to start counting.</div>`}</div>
+  <div class="bar spread" style="margin-top:22px"><h2 style="margin:0">Expenses</h2><button class="btn" data-act="add-expense">+ Expense</button></div>
+  <div class="panel" style="margin-top:10px">${exps.length?exps.map(e=>`<button class="row" data-act="expense" data-id="${esc(e.id)}"><div class="main"><div class="t">${esc(e.cat)}${e.supplyId&&byId("supplies",e.supplyId)?` · ${esc(byId("supplies",e.supplyId).name)}${e.qty?` ×${n(e.qty)}`:""}`:""}${e.note?` · <span class="muted">${esc(e.note)}</span>`:""}</div><div class="m">${fdate(e.date)}${e.showId&&byId("shows",e.showId)?" · "+esc(byId("shows",e.showId).name):""}</div></div><div class="r num neg">${money(-e.amount)}</div></button>`).join(""):`<div class="empty">Supplies, grading fees, shipping and gas go here.</div>`}</div>
+  <h2>All sales</h2><div class="panel">${sales.length?sales.map(saleRow).join(""):`<div class="empty">No sales yet.</div>`}</div>`;
+}
+
+function vTools(){
+  const st=S.settings;
+  return `<div class="cols two" style="margin-top:6px">
+  <div class="panel pad"><h3>Buy offer</h3><p class="hint" style="margin:0 0 10px">Someone brings a card to your table. Type its market value.</p>
+    <div class="field"><label for="calcM">Market value ($)</label><input id="calcM" type="number" inputmode="decimal" step="0.01" placeholder="e.g. 80"></div>
+    <div id="calcOut" class="num" style="margin-top:10px"></div></div>
+  <div class="panel pad"><h3>Your defaults</h3>
+    <form data-form="settings" class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label for="s-offer">Buy offer (% of market)</label><input id="s-offer" name="offerPct" type="number" step="1" value="${esc(st.offerPct)}"></div>
+      <div class="field"><label for="s-mark">Sticker markup (%)</label><input id="s-mark" name="markupPct" type="number" step="1" value="${esc(st.markupPct)}"></div>
+      <div class="field"><label for="s-seq">Sequential lot premium (%)</label><input id="s-seq" name="seqPremiumPct" type="number" step="1" value="${esc(st.seqPremiumPct)}"></div>
+      <div class="field"><label for="s-fee">eBay fee (%)</label><input id="s-fee" name="ebayFeePct" type="number" step="0.01" value="${esc(st.ebayFeePct)}"></div>
+      <div class="field"><label for="s-comp">Comps window (days)</label><input id="s-comp" name="compDays" type="number" step="1" value="${esc(st.compDays)}"></div>
+      <div class="field"><label for="s-stale">Flag comps older than (days)</label><input id="s-stale" name="staleDays" type="number" step="1" value="${esc(st.staleDays)}"></div>
+      <div class="field"><label for="s-age">Flag stock older than (days)</label><input id="s-age" name="agingDays" type="number" step="1" value="${esc(st.agingDays)}"></div>
+      <div class="full"><button class="btn pri" type="submit">Save defaults</button></div>
+    </form></div>
+  </div>
+  <h2>Price stickers</h2><div class="panel pad"><p class="hint" style="margin:0 0 8px">Cards for sale, with a suggested sticker price (market + ${esc(st.markupPct)}%, rounded to a clean number). Tap Apply to set it as the card's list price.</p>
+    <div class="scroll"><table class="t num"><thead><tr><th>Card</th><th>Where</th><th class="r">Market</th><th class="r">Sticker now</th><th class="r">Suggested</th><th></th></tr></thead><tbody>${openLots().map(L=>{const st=lotStats(L);const sg=suggestList(st.value);const diff=n(L.list)!==sg;return `<tr><td><span class="chip lot">Lot · ${st.units}</span> ${esc(L.name||"")}</td><td>${esc(L.location||"")}</td><td class="r">${money(st.value)}</td><td class="r">${L.list?money(L.list):"—"}</td><td class="r"><b>${money(sg)}</b></td><td>${diff?`<button class="btn sm" data-act="apply-lot-list" data-id="${esc(L.id)}">Apply</button>`:`<span class="chip ok">Set</span>`}</td></tr>`;}).join("")}${stockCards().filter(c=>sellable(c)&&n(c.market)>0).sort((a,b)=>String(a.location||"").localeCompare(b.location||"")).map(c=>{const sg=suggestList(c.market);const diff=n(c.list)!==sg;return `<tr><td><span class="mono">${esc(c.code)}</span> ${esc(c.name||"")} <span class="muted">${esc(gradeLabel(c))}${c.lang==="JP"?" · JP":""}</span></td><td>${esc(c.location||"")}</td><td class="r">${money(c.market)}</td><td class="r">${c.list?money(c.list):"—"}</td><td class="r"><b>${money(sg)}</b></td><td>${diff?`<button class="btn sm" data-act="apply-list" data-id="${esc(c.id)}">Apply</button>`:`<span class="chip ok">Set</span>`}</td></tr>`;}).join("")||`<tr><td colspan="6" class="muted">Add market values to your cards to see sticker prices.</td></tr>`}</tbody></table></div></div>
+  <h2>Backup & restore</h2><div class="panel pad">
+    <p class="hint" style="margin:0 0 10px">${S.idb?"Your log lives only on this phone. ":""}A backup is one file with everything in it, photos included. ${S.idb?"Save it to iCloud Drive (Share → Save to Files) about once a week.":"Use it to move your log to the standalone app, or keep a copy."} Last backup: <b>${S.settings.lastBackup?fdate(S.settings.lastBackup):"never"}</b>.</p>
+    <div class="bar"><button class="btn pri" data-act="backup-make" id="bk-make">Create backup</button><button class="btn" data-act="backup-save" id="bk-save" hidden>Save backup file</button><label class="btn" for="bk-file" style="cursor:pointer">Restore from a file</label><input id="bk-file" type="file" accept="application/json,.json" hidden></div>
+    <div id="bk-status" class="hint" style="margin-top:8px"></div>
+  </div>
+  ${window.TL_STANDALONE?`<h2>Claude features (optional)</h2><div class="panel pad"><p class="hint" style="margin:0 0 8px">Reading card photos and pasted comps with Claude needs your own Anthropic API key (get one at console.anthropic.com). It stays on this phone and costs about a cent or less per use. Without a key, pasted comps are still read by the app itself.</p>
+    <form data-form="apikey" class="bar"><input id="k-key" name="key" type="password" autocomplete="off" class="search" placeholder="${getApiKey()?"Key saved ••••"+esc(getApiKey().slice(-4)):"sk-ant-…"}" aria-label="Anthropic API key"><button class="btn" type="submit">Save key</button>${getApiKey()?`<button class="btn danger" type="button" data-act="key-remove">Remove</button>`:""}</form></div>`:""}
+  <h2>Export</h2><div class="panel pad bar"><button class="btn" data-act="export" data-what="cards">Cards CSV</button><button class="btn" data-act="export" data-what="sales">Sales CSV</button><button class="btn" data-act="export" data-what="shows">Shows CSV</button><button class="btn" data-act="export" data-what="items">Side items CSV</button><span class="hint">Opens in Excel or Google Sheets. Handy for taxes.</span></div>
+  <h2>Pricing a lot</h2><div class="panel pad guide">
+    <p>A lot's value starts as the sum of its cards' market values. Cards with no market value count at what you paid, so add comps to each card first.</p>
+    <p>On top of that you set a lot premium. Sequential slabs (consecutive cert numbers from the same grader) default to +${esc(st.seqPremiumPct)}%, because a matched run is harder to put together than the same cards bought one by one. The app checks the cert numbers for you and marks the lot "Sequential ✓" when they really are consecutive.</p>
+    <p>Treat the premium as a starting point. Sold lots are rare, so check eBay for similar sequential sets before you commit. A lot of mixed, lower-value cards often sells best at a small discount (for example −10%), which you can enter as a negative premium.</p>
+  </div>
+  <h2>Same code, different art</h2><div class="panel pad guide">
+    <p>One code like <span class="mono">OP05-119</span> can be a regular print, a parallel alt art, a manga rare, an SP or a stamped promo. Treasure Log keeps them apart with the <b>Variant</b> field, so pick it every time you log a card.</p>
+    <p>Bandai's own card list marks alternate arts with a suffix: <span class="mono">_p1</span>, <span class="mono">_p2</span>. If you know it, put it in Variant notes. Add a photo from your phone and you'll never mix them up at the table.</p>
+    <p>For comps, search with the variant words (the app adds "alt art", "manga" or "japanese" to comp links for you) and log only sales of the exact same version.</p>
+  </div>`;
+}
+
+function render(){
+  const tabs=document.getElementById("tabs");
+  tabs.innerHTML=TABS.map(([k,l])=>`<button data-act="tab" data-v="${k}" ${S.tab===k?'aria-current="page"':""}>${ICONS[k]}<span>${l}</span></button>`).join("");
+  const st=document.getElementById("status");
+  let b="";
+  if(isEx())b+=`<div class="banner"><span><b>Example data.</b> These cards and shows are samples so you can look around. They disappear when you log your first real card.</span><button class="btn sm" data-act="hide-ex">Start empty</button></div>`;
+  if(S.loaded&&!S.live)b+=window.TL_STANDALONE?`<div class="banner"><span>This browser won't let the app save data. Open it in Safari (not a private tab) and add it to your home screen.</span></div>`:`<div class="banner"><span>Saving isn't available in this view, so changes last only until you close the page. Open it in Claude to keep your log.</span></div>`;
+  if(window.TL_STANDALONE&&S.live){
+    const installed=navigator.standalone===true||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
+    let hideInstall=false;try{hideInstall=localStorage.getItem("tl-hide-install")==="1";}catch(_){}
+    if(!installed&&!hideInstall)b+=`<div class="banner"><span><b>Install it:</b> in Safari tap Share, then <b>Add to Home Screen</b>. It opens full-screen and works offline.</span><button class="btn sm" data-act="hide-install">Got it</button></div>`;
+    const hasData=S.cards.length||S.sales.length||S.items.length;const lb=S.settings.lastBackup;const age=lb?daysSince(lb):null;
+    if(hasData&&(age===null||age>=7))b+=`<div class="banner"><span>Your log is only on this phone. Last backup: <b>${lb?age+" days ago":"never"}</b>.</span><button class="btn sm" data-act="tab" data-v="tools">Back up now</button></div>`;
+  }
+  st.innerHTML=b;
+  const main=document.getElementById("main");
+  const focusQ=document.activeElement&&document.activeElement.id==="q";
+  main.innerHTML=({home:vHome,cards:vCards,items:vItems,shows:vShows,money:vMoney,tools:vTools}[S.tab]||vHome)();
+  if(S.tab==="cards"){const s=document.getElementById("sort");if(s)s.value=S.sort;if(focusQ){const q=document.getElementById("q");q.focus();q.setSelectionRange(q.value.length,q.value.length);}}
+  if(S.tab==="tools")calc();
+  if(S.sheet&&S.sheet.live)openSheet(S.sheet.type,S.sheet.arg,true);
+}
+
+/* ---------- sheets ---------- */
+function openSheet(type,arg,refresh){
+  const f=SHEETS[type];if(!f)return;
+  const out=f(arg);if(!out)return;
+  const root=document.getElementById("sheetRoot");
+  const prevScroll=refresh&&root.querySelector(".sheet")?root.querySelector(".sheet").scrollTop:0;
+  S.sheet={type,arg,live:!!out.live};
+  root.innerHTML=`<div class="scrim" data-act="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(out.title)}"><div class="sheet-head"><h3>${out.title}</h3><button class="x" data-act="close" aria-label="Close">×</button></div>${out.body}</div></div>`;
+  if(refresh)root.querySelector(".sheet").scrollTop=prevScroll;
+  if(out.after)out.after();
+  if(!refresh)document.body.style.overflow="hidden";
+}
+function closeSheet(){document.getElementById("sheetRoot").innerHTML="";S.sheet=null;S.pendingPhoto=null;document.body.style.overflow="";}
+
+const VARIANTS=["Regular","Alt art (parallel)","Manga alt art","SP","Treasure rare","Special / box topper","Promo","Pre-release / event stamp","Championship / prize","Other"];
+const RARITIES=["","C","UC","R","SR","SEC","L","SP","TR","P","DON!!"];
+const CONDS=["NM","LP","MP","HP","DMG"];
+const GRADERS=["PSA","BGS (Beckett)","CGC","TAG","ARS","SGC","Other"];
+const SOURCES=["Card show","Mercari JP (proxy)","Yuyu-tei / JP shop","eBay","Local collection","Facebook / OfferUp","Trade night","Booster pull","Trade","Other"];
+const opt=(arr,v)=>arr.map(o=>`<option value="${esc(o)}" ${String(o)===String(v)?"selected":""}>${esc(o||"—")}</option>`).join("");
+const showOpts=v=>`<option value="">None</option>`+[...D("shows")].sort((a,b)=>(b.date||"")>(a.date||"")?1:-1).map(s=>`<option value="${esc(s.id)}" ${s.id===v?"selected":""}>${esc(s.name)} · ${fdate(s.date)}</option>`).join("");
+const seg=(name,items,v)=>`<div class="seg" role="radiogroup">${items.map(([val,l])=>`<label><input type="radio" name="${name}" value="${val}" ${v===val?"checked":""}>${l}</label>`).join("")}</div>`;
+
+const SHEETS={
+  cardForm(arg){
+    const c=arg&&arg.id?{...byId("cards",arg.id)}:{lang:"EN",kind:"raw",cond:"NM",qty:1,variant:"Regular",buyDate:today(),status:"stock",...(arg&&arg.preset||{})};
+    const editing=!!(arg&&arg.id);
+    const src=imgSrc(c);
+    return{title:editing?"Edit card":"Log a card",body:`<form data-form="card" data-id="${esc(c.id||"")}">
+      <div class="photo-drop"><div id="phPrev">${src?`<img class="thumb" src="${esc(src)}" alt="">`:`<div class="thumb">No photo</div>`}</div>
+        <div class="field" style="flex:1"><label for="f-photo">Photo of the card</label><input id="f-photo" type="file" accept="image/*"><span class="hint">Snap it with your phone. It tells alt arts apart at a glance.</span><button class="btn sm" type="button" id="f-read" hidden style="margin-top:6px;align-self:flex-start">Fill in details from photo</button><span class="hint" id="f-readst"></span></div></div>
+      <div class="grid" style="margin-top:12px">
+        <div class="field"><label for="f-code">Card code</label><input id="f-code" name="code" required placeholder="OP05-119" value="${esc(c.code||"")}" autocapitalize="characters" class="mono"></div>
+        <div class="field"><label for="f-name">Name</label><input id="f-name" name="name" placeholder="Monkey.D.Luffy" value="${esc(c.name||"")}"></div>
+        <div class="field"><label for="f-var">Variant</label><select id="f-var" name="variant">${opt(VARIANTS,c.variant)}</select></div>
+        <div class="field"><label for="f-rar">Rarity</label><select id="f-rar" name="rarity">${opt(RARITIES,c.rarity||"")}</select></div>
+        <div class="field full"><label for="f-vnote">Variant notes</label><input id="f-vnote" name="variantNote" placeholder="e.g. _p1, gold stamp, box topper" value="${esc(c.variantNote||"")}"></div>
+        <div class="field"><label>Language</label>${seg("lang",[["EN","English"],["JP","Japanese"]],c.lang)}</div>
+        <div class="field"><label>Type</label>${seg("kind",[["raw","Raw"],["graded","Graded"]],c.kind)}</div>
+        <fieldset class="full grid" id="rawBox" ${c.kind==="graded"?"hidden":""} style="display:grid;grid-template-columns:1fr 1fr;gap:10px 12px"><div class="field"><label for="f-cond">Condition</label><select id="f-cond" name="cond">${opt(CONDS,c.cond)}</select></div></fieldset>
+        <fieldset class="full" id="gradedBox" ${c.kind!=="graded"?"hidden":""}><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 12px">
+          <div class="field"><label for="f-grader">Company</label><select id="f-grader" name="grader">${opt(GRADERS,c.grader||"PSA")}</select></div>
+          <div class="field"><label for="f-grade">Grade</label><input id="f-grade" name="grade" placeholder="10" value="${esc(c.grade||"")}"></div>
+          <div class="field"><label for="f-cert">Cert #</label><input id="f-cert" name="cert" inputmode="numeric" value="${esc(c.cert||"")}"></div></div></fieldset>
+      </div>
+      <div class="section grid">
+        <div class="field"><label for="f-qty">Quantity</label><input id="f-qty" name="qty" type="number" min="0" step="1" value="${esc(c.qty)}"></div>
+        <div class="field"><label for="f-cost">Paid per card ($)</label><input id="f-cost" name="cost" type="number" inputmode="decimal" step="0.01" min="0" value="${esc(c.cost??"")}" placeholder="0.00"></div>
+        <div class="field"><label for="f-date">Bought on</label><input id="f-date" name="buyDate" type="date" value="${esc(c.buyDate||"")}"></div>
+        <div class="field"><label for="f-src">Source</label><select id="f-src" name="source">${opt(SOURCES,c.source||"Card show")}</select></div>
+        <div class="field full"><label for="f-show">Bought at a show?</label><select id="f-show" name="showId">${showOpts(c.showId)}</select></div>
+      </div>
+      <div class="section grid">
+        <div class="field"><label for="f-mkt">Market value ($)</label><input id="f-mkt" name="market" type="number" inputmode="decimal" step="0.01" min="0" value="${esc(c.market??"")}" placeholder="from comps"></div>
+        <div class="field"><label for="f-list">Sticker price ($)</label><input id="f-list" name="list" type="number" inputmode="decimal" step="0.01" min="0" value="${esc(c.list??"")}" placeholder="auto from market"></div>
+        <div class="field"><label for="f-loc">Where it is</label><input id="f-loc" name="location" placeholder="Case 1, Binder A…" value="${esc(c.location||"")}" list="locs"><datalist id="locs">${[...new Set(D("cards").map(x=>x.location).filter(Boolean))].map(l=>`<option value="${esc(l)}">`).join("")}</datalist></div>
+        ${c.status==="grading"?`<div class="field"><label>Status</label><span class="chip grd" style="align-self:flex-start;margin-top:8px">At grading</span></div>`:`<div class="field"><label for="f-status">Status</label><select id="f-status" name="status"><option value="stock" ${c.status!=="pc"?"selected":""}>For sale</option><option value="pc" ${c.status==="pc"?"selected":""}>My collection (not for sale)</option></select></div>`}
+        ${c.status!=="grading"?`<div class="field full"><label for="f-lot">Lot</label><select id="f-lot" name="lotId"><option value="">Not in a lot</option>${openLots().map(L=>`<option value="${esc(L.id)}" ${L.id===c.lotId?"selected":""}>${esc(L.name)}</option>`).join("")}</select></div>`:""}
+        <div class="field full"><label for="f-tags">Tags</label><input id="f-tags" name="tags" placeholder="chase, show case, needs grading" value="${esc(c.tags||"")}"></div>
+        <div class="field full"><label for="f-notes">Notes</label><textarea id="f-notes" name="notes">${esc(c.notes||"")}</textarea></div>
+      </div>
+      <div class="bar" style="margin-top:16px"><button class="btn pri" type="submit">${editing?"Save changes":"Add to inventory"}</button><button class="btn" type="button" data-act="close">Cancel</button></div>
+    </form>`,after(){
+      const form=document.querySelector('form[data-form="card"]');
+      form.addEventListener("change",e=>{if(e.target.name==="kind"){form.querySelector("#rawBox").hidden=e.target.value==="graded";form.querySelector("#gradedBox").hidden=e.target.value!=="graded";}});
+      form.querySelector("#f-photo").addEventListener("change",async e=>{const file=e.target.files[0];if(!file)return;try{const blob=await shrink(file);S.pendingPhoto={blob,url:URL.createObjectURL(blob)};document.getElementById("phPrev").innerHTML=`<img class="thumb" src="${S.pendingPhoto.url}" alt="">`;form.querySelector("#f-read").hidden=!S.sampleImg;}catch(err){toast("Couldn't read that image. Try a JPG or PNG.");}});
+      form.querySelector("#f-read").addEventListener("click",()=>readCardPhoto(form));
+    }};
+  },
+  card(id){
+    const c=byId("cards",id);if(!c)return null;
+    const cs=compStats(c);
+    const age=daysSince(c.buyDate);
+    const sales=D("sales").filter(s=>s.cardId===c.id);
+    const mkt=n(c.market);
+    const comps=[...(c.comps||[])].map((x,i)=>({...x,i})).sort((a,b)=>(b.date||"")>(a.date||"")?1:-1);
+    const L=cardLot(c);const gr=c.status==="grading"?(c.grading||{}):null;
+    return{live:true,title:`<span class="mono">${esc(c.code)}</span> ${esc(c.name||"")}`,body:`
+      <div class="detail-top">${imgSrc(c)?`<img class="big" src="${esc(imgSrc(c))}" alt="${esc(c.name||c.code)}">`:`<div class="big">${esc(c.code)}</div>`}
+        <div><div class="m" style="display:flex;gap:6px;flex-wrap:wrap">${chips(c)}${c.status==="pc"?`<span class="chip ok">My collection</span>`:""}${c.status==="sold"||n(c.qty)<=0?`<span class="chip">Sold out</span>`:""}</div>
+        <div class="stat-line muted"><span>Set ${esc(setCode(c.code))}</span>${c.variantNote?`<span>${esc(c.variantNote)}</span>`:""}${c.kind==="graded"&&c.cert?`<span>Cert <span class="mono">${esc(c.cert)}</span></span>`:""}</div>
+        <div class="stat-line muted"><span>${esc(c.source||"")}</span>${c.buyDate?`<span>bought ${fdate(c.buyDate)} (${age}d)</span>`:""}${c.location?`<span>in ${esc(c.location)}</span>`:""}</div>
+        ${c.tags?`<div class="stat-line">${String(c.tags).split(",").map(t=>t.trim()).filter(Boolean).map(t=>`<span class="chip">${esc(t)}</span>`).join("")}</div>`:""}
+        ${c.notes?`<p class="hint" style="margin:8px 0 0">${esc(c.notes)}</p>`:""}</div></div>
+      <div class="kv num">
+        <div><span class="label">Paid</span><b>${money(c.cost)}</b></div>
+        <div><span class="label">Market</span><b>${mkt>0?money(mkt):"—"}</b></div>
+        <div><span class="label">Sticker</span><b>${c.list?money(c.list):mkt>0?money(suggestList(mkt)):"—"}</b></div>
+        <div><span class="label">Qty</span><b>${n(c.qty)}</b></div>
+        <div><span class="label">Gain / card</span><b class="${cls(mkt-n(c.cost))}">${mkt>0?signed(mkt-n(c.cost)):"—"}</b></div>
+        <div><span class="label">Offer if buying</span><b>${mkt>0?money(offerFor(mkt),0):"—"}</b></div>
+      </div>
+      ${L?`<div class="note lotn"><span>Part of <b>${esc(L.name||"a lot")}</b>. ${L.status==="sold"?"Sold with the lot.":"It sells only with the whole lot."}</span><span class="bar"><button class="btn sm" data-act="lot" data-id="${esc(L.id)}">Open lot</button>${L.status!=="sold"?`<button class="btn sm" data-act="lot-remove" data-id="${esc(c.id)}">Take out of lot</button>`:""}</span></div>`:""}
+      ${gr?`<div class="note grdn"><span>At <b>${esc(gr.company||"grading")}</b> since ${fdate(gr.sent)} (${daysSince(gr.sent)??0} days)${gr.service?` · ${esc(gr.service)}`:""}${gr.sub?` · sub <span class="mono">${esc(gr.sub)}</span>`:""}${n(gr.fee)?` · fee ${money(gr.fee)}`:""}</span><span class="bar"><button class="btn sm pri" data-act="grade-return" data-id="${esc(c.id)}">It's back: enter grade</button><button class="btn sm" data-act="grade-cancel" data-id="${esc(c.id)}">Cancel grading</button></span></div>`:""}
+      <div class="bar" style="margin-top:14px">${n(c.qty)>0&&!L&&!gr&&c.status!=="sold"?`<button class="btn pri" data-act="sell" data-id="${esc(c.id)}">Sell</button>`:""}${L&&L.status!=="sold"?`<button class="btn pri" data-act="sell-lot" data-id="${esc(L.id)}">Sell whole lot</button>`:""}${n(c.qty)>0&&!gr&&c.kind==="raw"&&!L&&c.status!=="sold"?`<button class="btn" data-act="grade-send" data-id="${esc(c.id)}">Send for grading</button>`:""}${n(c.qty)>0&&!gr&&!L&&c.status!=="sold"?`<button class="btn" data-act="lot-add" data-id="${esc(c.id)}">Add to lot</button>`:""}<button class="btn" data-act="edit-card" data-id="${esc(c.id)}">Edit</button><button class="btn" data-act="dup-card" data-id="${esc(c.id)}">Log another copy</button><button class="btn danger" data-act="del-card" data-id="${esc(c.id)}">Delete</button></div>
+
+      <div class="section"><div class="bar spread"><h3 style="margin:0">Price comps</h3>${cs.n?`<span class="hint">${cs.n} sold · newest ${fdate(cs.newest)}</span>`:""}</div>
+        ${cs.n?`<div class="kv num" style="margin-top:8px"><div><span class="label">Average</span><b>${money(cs.mean)}</b></div><div><span class="label">Median</span><b>${money(cs.median)}</b></div><div><span class="label">Range</span><b style="font-size:16px">${money(cs.low)}–${money(cs.high)}</b></div></div>
+        <div class="bar" style="margin-top:8px"><button class="btn sm" data-act="use-avg" data-id="${esc(c.id)}" data-v="${cs.n>=5?cs.trimmed.toFixed(2):cs.mean.toFixed(2)}">Set market to ${money(cs.n>=5?cs.trimmed:cs.mean)} (${cs.n>=5?"trimmed avg":"average"})</button><button class="btn sm" data-act="use-avg" data-id="${esc(c.id)}" data-v="${cs.median.toFixed(2)}">Use median</button></div>`:`<p class="hint">Look up recent sales below, then log 3–5 of them. The app averages sold prices from the last ${S.settings.compDays} days, so one lucky sale doesn't set your price.</p>`}
+        ${cs.listedLow!==null?`<p class="hint" style="margin:6px 0 0">Lowest current listing: ${money(cs.listedLow)} (not counted in the average)</p>`:""}
+        <div class="links" style="margin-top:10px">${compLinks(c)}</div>
+        <div class="bar" style="margin-top:8px"><button class="btn sm pri" data-act="paste-comps" data-id="${esc(c.id)}">Paste sold listings</button><span class="hint">Copy a page of sold results and paste it. No typing.</span></div>
+        <p class="hint" style="margin:6px 0 0">Search: <span class="mono">${esc(searchQuery(c))}</span> <button class="btn sm" data-act="copy" data-v="${esc(searchQuery(c))}">Copy</button></p>
+        <form data-form="comp" data-id="${esc(c.id)}" style="margin-top:10px;display:grid;grid-template-columns:1.3fr 1fr 1.2fr 1fr auto;gap:6px;align-items:end">
+          <div class="field"><label for="cp-src">Where</label><select id="cp-src" name="src">${opt(["eBay sold","PriceCharting","TCGplayer","130point","Card Ladder","Yuyu-tei","Card show","Other"],"eBay sold")}</select></div>
+          <div class="field"><label for="cp-price">Price</label><input id="cp-price" name="price" type="number" inputmode="decimal" step="0.01" required></div>
+          <div class="field"><label for="cp-date">Date</label><input id="cp-date" name="date" type="date" value="${today()}"></div>
+          <div class="field"><label for="cp-kind">Type</label><select id="cp-kind" name="kind"><option value="sold">Sold</option><option value="listed">Listed</option></select></div>
+          <button class="btn" type="submit">Add</button>
+        </form>
+        ${comps.length?`<div class="panel scroll" style="margin-top:10px"><table class="t num"><tbody>${comps.map(x=>`<tr><td>${fdate(x.date)}</td><td>${esc(x.src)}</td><td>${x.kind==="listed"?`<span class="chip">Listed</span>`:`<span class="chip ok">Sold</span>`}</td><td class="r"><b>${money(x.price)}</b></td><td class="r"><button class="btn sm" data-act="del-comp" data-id="${esc(c.id)}" data-i="${x.i}" aria-label="Remove comp">×</button></td></tr>`).join("")}</tbody></table></div>`:""}
+      </div>
+      ${(c.gradingHistory||[]).length?`<div class="section"><h3>Grading history</h3><div class="panel scroll"><table class="t num"><tbody>${c.gradingHistory.map(g=>`<tr><td>${esc(g.company)}</td><td>${fdate(g.sent)} → ${fdate(g.returned)}</td><td>${g.days??""}d</td><td class="r">${money(n(g.fee)+n(g.extra))}</td><td class="r"><b>${esc(g.result||"")}</b></td></tr>`).join("")}</tbody></table></div><p class="hint">Grading costs are added to what you paid for the card, so profit on the sale includes them.</p></div>`:""}
+      ${sales.length?`<div class="section"><h3>Sold from this listing</h3><div class="panel">${sales.map(saleRow).join("")}</div></div>`:""}
+    `,after(){ if(window.innerWidth<520){const f=document.querySelector('form[data-form="comp"]');if(f)f.style.gridTemplateColumns="1fr 1fr";} }};
+  },
+  sell(arg){
+    const c=byId("cards",arg.id);if(!c)return null;
+    const up=D("shows").find(s=>s.date===today());
+    const showId=arg.showId||(up?up.id:"");
+    const price=n(c.list)||suggestList(c.market)||"";
+    return{title:`Sell <span class="mono">${esc(c.code)}</span>`,body:`<form data-form="sell" data-id="${esc(c.id)}">
+      <p class="hint" style="margin:0 0 10px">${esc(c.name||"")} · ${esc(gradeLabel(c))} · ${esc(c.lang)} · paid ${money(c.cost)}${n(c.market)?` · market ${money(c.market)}`:""}</p>
+      <div class="grid">
+        <div class="field"><label for="sl-price">Sold for, per card ($)</label><input id="sl-price" name="price" type="number" inputmode="decimal" step="0.01" min="0" required value="${esc(price)}"></div>
+        <div class="field"><label for="sl-qty">Quantity (of ${n(c.qty)})</label><input id="sl-qty" name="qty" type="number" min="1" max="${n(c.qty)}" step="1" value="1"></div>
+        <div class="field"><label for="sl-ch">Where</label><select id="sl-ch" name="channel">${opt(["Show","eBay","TCGplayer","Local / meetup","Instagram / Facebook","Trade","Other"],showId?"Show":"Show")}</select></div>
+        <div class="field"><label for="sl-date">Date</label><input id="sl-date" name="date" type="date" value="${today()}"></div>
+        <div class="field full"><label for="sl-show">Show</label><select id="sl-show" name="showId">${showOpts(showId)}</select></div>
+        <div class="field"><label for="sl-fees">Fees ($)</label><input id="sl-fees" name="fees" type="number" inputmode="decimal" step="0.01" min="0" value="0"></div>
+        <div class="field"><label for="sl-pay">Paid with</label><select id="sl-pay" name="pay">${opt(["Cash","Card","Venmo","Cash App","Zelle","PayPal","Trade credit"],"Cash")}</select></div>
+      </div>
+      <div id="sellPreview" class="panel pad num" style="margin-top:12px"></div>
+      <div class="bar" style="margin-top:14px"><button class="btn pri" type="submit">Record sale</button><button class="btn" type="button" data-act="close">Cancel</button></div>
+    </form>`,after(){
+      const f=document.querySelector('form[data-form="sell"]');
+      const upd=()=>{const q=n(f.qty.value)||1,p=n(f.price.value),fe=n(f.fees.value);const pr=q*(p-n(c.cost))-fe;document.getElementById("sellPreview").innerHTML=`<div class="pl"><span>Total</span><span>${money(q*p)}</span></div><div class="pl"><span>Cost of these cards</span><span>${money(-q*n(c.cost))}</span></div>${fe?`<div class="pl"><span>Fees</span><span>${money(-fe)}</span></div>`:""}<div class="pl total"><span>Profit</span><span class="${cls(pr)}">${signed(pr)}</span></div>`;};
+      f.addEventListener("input",upd);
+      f.channel.addEventListener("change",()=>{if(f.channel.value==="eBay"&&!n(f.fees.value)){f.fees.value=(n(f.price.value)*n(f.qty.value)*n(S.settings.ebayFeePct)/100).toFixed(2);upd();}});
+      upd();
+    }};
+  },
+  sale(id){
+    const s=byId("sales",id);if(!s)return null;const sh=s.showId?byId("shows",s.showId):null;
+    return{live:true,title:s.itemId?"Side item sale":s.lotId?"Lot sale":`Sale · <span class="mono">${esc(s.code)}</span>`,body:`<div class="panel pad num">
+      <div class="pl"><span>${esc(s.name||"")} ${s.variant&&s.variant!=="Regular"?"· "+esc(s.variant):""}</span><span>${s.lotId?`${(s.items||[]).reduce((a,x)=>a+n(x.qty),0)} cards`:esc(s.lang||"")}</span></div>
+      <div class="pl"><span>Date</span><span>${fdate(s.date)}</span></div>
+      <div class="pl"><span>Where</span><span>${esc(sh?sh.name:s.channel||"")}${s.pay?" · "+esc(s.pay):""}</span></div>
+      <div class="pl"><span>${n(s.qty)} × ${money(s.price)}</span><span>${money(saleRev(s))}</span></div>
+      <div class="pl"><span>Cost</span><span>${money(-n(s.qty)*n(s.costEach))}</span></div>
+      ${n(s.fees)?`<div class="pl"><span>Fees</span><span>${money(-s.fees)}</span></div>`:""}
+      <div class="pl total"><span>Profit</span><span class="${cls(saleProfit(s))}">${signed(saleProfit(s))}</span></div></div>
+      <div class="bar" style="margin-top:14px">${s.itemId&&byId("items",s.itemId)?`<button class="btn" data-act="item" data-id="${esc(s.itemId)}">Open item</button>`:""}${s.dealId?`<span class="chip">Part of a deal</span>`:""}${s.lotId&&byId("lots",s.lotId)?`<button class="btn" data-act="lot" data-id="${esc(s.lotId)}">Open lot</button>`:""}${s.cardId&&byId("cards",s.cardId)?`<button class="btn" data-act="card" data-id="${esc(s.cardId)}">Open card</button>`:""}<button class="btn danger" data-act="undo-sale" data-id="${esc(s.id)}">Undo sale (return to stock)</button></div>`};
+  },
+  showForm(arg){
+    const s=arg&&arg.id?{...byId("shows",arg.id)}:{date:today(),tableFee:75,costs:[]};
+    const costs=(s.costs||[]).concat([{label:"",amt:""},{label:"",amt:""}]).slice(0,Math.max(3,(s.costs||[]).length+1));
+    return{title:arg&&arg.id?"Edit show":"New show",body:`<form data-form="show" data-id="${esc(s.id||"")}"><div class="grid">
+      <div class="field full"><label for="sh-name">Show name</label><input id="sh-name" name="name" required value="${esc(s.name||"")}" placeholder="e.g. Pasadena Card Show"></div>
+      <div class="field"><label for="sh-date">Date</label><input id="sh-date" name="date" type="date" required value="${esc(s.date||"")}"></div>
+      <div class="field"><label for="sh-fee">Table fee ($)</label><input id="sh-fee" name="tableFee" type="number" inputmode="decimal" step="0.01" min="0" value="${esc(s.tableFee??"")}"></div>
+      <div class="field full"><label for="sh-venue">Venue</label><input id="sh-venue" name="venue" value="${esc(s.venue||"")}"></div>
+      <div class="field full"><label>Other costs (gas, parking, food, split table…)</label>${costs.map((c,i)=>`<div style="display:grid;grid-template-columns:2fr 1fr;gap:6px;margin-top:${i?6:0}px"><input aria-label="Cost ${i+1} label" name="cl${i}" value="${esc(c.label)}" placeholder="Gas"><input aria-label="Cost ${i+1} amount" name="ca${i}" type="number" step="0.01" min="0" value="${esc(c.amt)}" placeholder="$"></div>`).join("")}<input type="hidden" name="ncost" value="${costs.length}"></div>
+      <div class="field"><label for="sh-bulk">Bulk sales total ($)</label><input id="sh-bulk" name="bulkRevenue" type="number" inputmode="decimal" step="0.01" min="0" value="${esc(s.bulkRevenue??"")}" placeholder="0"><span class="hint">Count the bulk cash at the end of the day.</span></div>
+      <div class="field"><label for="sh-bulkn">Bulk cards sold</label><input id="sh-bulkn" name="bulkCount" type="number" step="1" min="0" value="${esc(s.bulkCount??"")}"></div>
+      <div class="field full"><label for="sh-notes">Notes</label><textarea id="sh-notes" name="notes" placeholder="Crowd, what people asked for, what to bring next time">${esc(s.notes||"")}</textarea></div>
+    </div><div class="bar" style="margin-top:16px"><button class="btn pri" type="submit">Save show</button><button class="btn" type="button" data-act="close">Cancel</button></div></form>`};
+  },
+  show(id){
+    const s=byId("shows",id);if(!s)return null;const x=showNumbers(s);const fut=s.date>today();
+    const be=breakEven(s);
+    return{live:true,title:esc(s.name),body:`<p class="hint" style="margin:0 0 10px">${fdate(s.date)}${s.venue?" · "+esc(s.venue):""}${fut?` · <span class="chip ok">Upcoming</span>`:""}</p>
+      <div class="bar"><button class="btn pri" data-act="quick-sell" data-id="${esc(s.id)}">Quick sell</button><button class="btn" data-act="deal" data-id="${esc(s.id)}">Deal / trade</button><button class="btn" data-act="buy-at-show" data-id="${esc(s.id)}">Log a buy</button><button class="btn" data-act="edit-show" data-id="${esc(s.id)}">Edit / bulk total</button></div>
+      <div class="panel pad num" style="margin-top:12px">
+        <div class="pl"><span>Sales (${x.units} pieces)</span><span>${money(x.rev)}</span></div>
+        <div class="pl"><span>Cost of what sold</span><span>${money(-x.cogs)}</span></div>
+        ${x.fees?`<div class="pl"><span>Fees</span><span>${money(-x.fees)}</span></div>`:""}
+        <div class="pl"><span>Bulk sales${s.bulkCount?` (${n(s.bulkCount)} cards)`:""}</span><span>${money(x.bulk)}</span></div>
+        <div class="pl"><span>Table fee</span><span class="neg">${money(-n(s.tableFee))}</span></div>
+        ${(s.costs||[]).map(c=>`<div class="pl"><span>${esc(c.label||"Cost")}</span><span class="neg">${money(-n(c.amt))}</span></div>`).join("")}
+        ${x.exps.map(e=>`<div class="pl"><span>${esc(e.cat)}${e.note?" · "+esc(e.note):""}</span><span class="neg">${money(-n(e.amount))}</span></div>`).join("")}
+        <div class="pl total"><span>Net profit</span><span class="${cls(x.net)}">${signed(x.net)}</span></div>
+      </div>
+      <div class="stat-line muted num"><span>Cash taken in: ${money(x.cashIn,0)}</span><span>Spent on buys: ${money(x.buyCash,0)}</span>${x.tradeIn?`<span>Took in trade: ${money(x.tradeIn,0)}</span>`:""}${fut||x.net<0?`<span>Break-even ≈ ${money(be,0)} in card sales</span>`:""}</div>
+      ${s.notes?`<p class="hint">${esc(s.notes)}</p>`:""}
+      <div class="section"><h3>Sold here</h3><div class="panel">${x.sales.length?x.sales.map(saleRow).join(""):`<div class="empty">Tap Quick sell to log a sale in a few seconds.</div>`}</div></div>
+      <div class="section"><h3>Bought here</h3><div class="panel">${x.buys.length?x.buys.map(c=>cardRow(c)).join(""):`<div class="empty">Cards you buy at this show will show up here.</div>`}</div></div>
+      <div class="bar" style="margin-top:14px"><button class="btn danger" data-act="del-show" data-id="${esc(s.id)}">Delete show</button></div>`};
+  },
+  pick(showId){
+    return{title:"Quick sell",body:`<button class="btn" data-act="deal" data-id="${esc(showId)}" style="width:100%;margin-bottom:10px">Several items or a trade? Start a deal</button><input id="pickQ" class="search" style="width:100%" type="search" placeholder="Type a code or name" aria-label="Find a card"><div id="pickList" class="panel" style="margin-top:10px"></div>`,after(){
+      const q=document.getElementById("pickQ"),out=document.getElementById("pickList");
+      const draw=()=>{const w=q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);const L=stockCards().filter(sellable).filter(c=>{const h=[c.code,c.name,c.variant,c.location].join(" ").toLowerCase();return w.every(x=>h.includes(x));}).slice(0,30);
+        const LL=openLots().filter(x=>{const h=[x.name,...lotCards(x).map(c=>c.code+" "+c.name)].join(" ").toLowerCase();return w.every(y=>h.includes(y));});
+        const II=D("items").filter(i=>n(i.qty)>0&&w.every(y=>[i.name,i.sku,i.category].join(" ").toLowerCase().includes(y)));
+        out.innerHTML=(LL.length||L.length||II.length)?II.map(i=>itemRow(i).replace('data-act="item"',`data-act="sell-item" data-show="${esc(showId)}"`)).join("")+LL.map(x=>lotRow(x,"sell-lot").replace('data-act="sell-lot"',`data-act="sell-lot" data-show="${esc(showId)}"`)).join("")+L.map(c=>cardRow(c).replace('data-act="card"',`data-act="sell" data-show="${esc(showId)}"`)).join(""):`<div class="empty">No cards in stock match.</div>`;};
+      q.addEventListener("input",draw);draw();setTimeout(()=>q.focus(),50);
+    }};
+  },
+  gradeSend(id){
+    const c=byId("cards",id);if(!c)return null;
+    return{title:`Send <span class="mono">${esc(c.code)}</span> for grading`,body:`<form data-form="gradeSend" data-id="${esc(c.id)}"><p class="hint" style="margin:0 0 10px">${esc(c.name||"")} · ${esc(c.lang)} · ${esc(c.cond||"Raw")} · paid ${money(c.cost)}. It stays in your inventory marked "At grading" and can't be sold until it's back.</p><div class="grid">
+      <div class="field"><label for="gs-co">Company</label><select id="gs-co" name="company">${opt(GRADERS,"PSA")}</select></div>
+      <div class="field"><label for="gs-date">Sent on</label><input id="gs-date" name="sent" type="date" value="${today()}"></div>
+      <div class="field"><label for="gs-svc">Service level</label><input id="gs-svc" name="service" placeholder="Value, Regular, Express…"></div>
+      <div class="field"><label for="gs-fee">Fee per card ($)</label><input id="gs-fee" name="fee" type="number" inputmode="decimal" step="0.01" min="0" placeholder="25"></div>
+      <div class="field"><label for="gs-sub">Submission #</label><input id="gs-sub" name="sub" inputmode="numeric"></div>
+      ${n(c.qty)>1?`<div class="field"><label for="gs-qty">Copies to send (of ${n(c.qty)})</label><input id="gs-qty" name="qty" type="number" min="1" max="${n(c.qty)}" step="1" value="1"></div>`:""}
+    </div><div class="bar" style="margin-top:16px"><button class="btn pri" type="submit">Mark as sent</button><button class="btn" type="button" data-act="close">Cancel</button></div></form>`};
+  },
+  gradeReturn(id){
+    const c=byId("cards",id);if(!c)return null;const gr=c.grading||{};
+    return{title:`Grade for <span class="mono">${esc(c.code)}</span>`,body:`<form data-form="gradeReturn" data-id="${esc(c.id)}"><p class="hint" style="margin:0 0 10px">${esc(c.name||"")} · sent to ${esc(gr.company||"grading")} on ${fdate(gr.sent)}.</p><div class="grid">
+      <div class="field"><label for="gr-co">Company</label><select id="gr-co" name="grader">${opt(GRADERS,gr.company||"PSA")}</select></div>
+      <div class="field"><label for="gr-grade">Grade</label><input id="gr-grade" name="grade" required placeholder="10"></div>
+      <div class="field"><label for="gr-cert">Cert #</label><input id="gr-cert" name="cert" inputmode="numeric"></div>
+      <div class="field"><label for="gr-date">Returned on</label><input id="gr-date" name="returned" type="date" value="${today()}"></div>
+      <div class="field"><label for="gr-fee">Grading fee ($)</label><input id="gr-fee" name="fee" type="number" step="0.01" min="0" value="${esc(gr.fee??"")}"></div>
+      <div class="field"><label for="gr-extra">Shipping / upcharge ($)</label><input id="gr-extra" name="extra" type="number" step="0.01" min="0" placeholder="0"></div>
+      <div class="field"><label for="gr-mkt">New market value ($)</label><input id="gr-mkt" name="market" type="number" inputmode="decimal" step="0.01" min="0" placeholder="graded comps"></div>
+      <div class="field"><label for="gr-list">Sticker price ($)</label><input id="gr-list" name="list" type="number" inputmode="decimal" step="0.01" min="0" placeholder="auto"></div>
+      <div class="field full"><label class="check"><input type="checkbox" name="keepPc" ${c.status==="pc"?"checked":""}> Keep it in my collection (not for sale)</label></div>
+    </div>
+    <div id="grPrev" class="panel pad num" style="margin-top:12px"></div>
+    <p class="hint">Raw comps are cleared because a slab sells at a different price. Log graded comps next.</p>
+    <div class="bar" style="margin-top:12px"><button class="btn pri" type="submit">Back in inventory</button><button class="btn" type="button" data-act="close">Cancel</button></div></form>`,after(){
+      const f=document.querySelector('form[data-form="gradeReturn"]');
+      const upd=()=>{const nc=n(c.cost)+n(f.fee.value)+n(f.extra.value);const m=n(f.market.value);document.getElementById("grPrev").innerHTML=`<div class="pl"><span>Paid for the raw card</span><span>${money(c.cost)}</span></div><div class="pl"><span>Grading + shipping</span><span>${money(n(f.fee.value)+n(f.extra.value))}</span></div><div class="pl total"><span>New cost basis</span><span>${money(nc)}</span></div>${m?`<div class="pl"><span>Gain at market</span><span class="${cls(m-nc)}">${signed(m-nc)}</span></div>`:""}`;};
+      f.addEventListener("input",upd);upd();
+    }};
+  },
+  lotAdd(id){
+    const c=byId("cards",id);if(!c)return null;const L=openLots();
+    return{title:`Add <span class="mono">${esc(c.code)}</span> to a lot`,body:`<form data-form="lotAdd" data-id="${esc(c.id)}"><div class="grid">
+      ${L.length?`<div class="field full"><label for="la-lot">Lot</label><select id="la-lot" name="lotId">${L.map(x=>`<option value="${esc(x.id)}">${esc(x.name)} (${lotStats(x).units} cards)</option>`).join("")}<option value="__new">New lot…</option></select></div>`:`<input type="hidden" name="lotId" value="__new">`}
+      <div class="field full" id="la-newbox" ${L.length?"hidden":""}><label for="la-name">New lot name</label><input id="la-name" name="name" value="Lot ${D("lots").length+1}"></div>
+    </div><p class="hint">Once it's in a lot, this card can only be sold with the whole lot. You can take it out again at any time.</p>
+    <div class="bar" style="margin-top:12px"><button class="btn pri" type="submit">Add to lot</button><button class="btn" type="button" data-act="close">Cancel</button></div></form>`,after(){
+      const s=document.getElementById("la-lot");if(s)s.addEventListener("change",()=>{document.getElementById("la-newbox").hidden=s.value!=="__new";});
+    }};
+  },
+  lotForm(arg){
+    const editing=!!(arg&&arg.id);
+    const L=editing?{...byId("lots",arg.id)}:{name:"Lot "+(D("lots").length+1),sequential:false,premiumPct:0,status:"stock"};
+    const members=editing?lotCards(L).map(c=>c.id):(arg&&arg.cardIds)||[];
+    const pool=D("cards").filter(c=>members.includes(c.id)||sellable(c));
+    return{title:editing?"Edit lot":"New lot",body:`<form data-form="lot" data-id="${esc(L.id||"")}"><div class="grid">
+      <div class="field full"><label for="lt-name">Lot name</label><input id="lt-name" name="name" required value="${esc(L.name||"")}" placeholder="Lot 1 · Straw Hats PSA 10"></div>
+      <div class="field"><label for="lt-loc">Where it is</label><input id="lt-loc" name="location" value="${esc(L.location||"")}" placeholder="Case 2"></div>
+      <div class="field"><label for="lt-list">Sticker price ($)</label><input id="lt-list" name="list" type="number" inputmode="decimal" step="0.01" min="0" value="${esc(L.list??"")}" placeholder="auto"></div>
+      <div class="field"><label class="check" style="margin-top:22px"><input type="checkbox" id="lt-seq" name="sequential" ${L.sequential?"checked":""}> Sequential certs</label></div>
+      <div class="field"><label for="lt-prem">Lot premium (%)</label><input id="lt-prem" name="premiumPct" type="number" step="1" value="${esc(L.premiumPct??0)}"></div>
+      <div class="field full"><label for="lt-notes">Notes</label><input id="lt-notes" name="notes" value="${esc(L.notes||"")}"></div>
+    </div>
+    <div class="section"><h3>Cards from your inventory</h3>
+      ${pool.length?`<input id="lt-q" class="search" style="width:100%;margin-bottom:8px" type="search" placeholder="Filter" aria-label="Filter inventory"><div class="picklist" id="lt-pool">${pool.map(c=>`<label data-hay="${esc([c.code,c.name,c.variant,c.cert,gradeLabel(c)].join(" ").toLowerCase())}"><input type="checkbox" name="member" value="${esc(c.id)}" ${members.includes(c.id)?"checked":""}>${thumb(c)}<span style="flex:1;min-width:0"><span class="mono">${esc(c.code)}</span> ${esc(c.name||"")}<br><span class="hint">${esc(c.lang)} · ${esc(gradeLabel(c))}${c.cert?` · #${esc(c.cert)}`:""}${n(c.qty)>1?` · ×${n(c.qty)}`:""}</span></span><span class="num hint">${n(c.market)?money(c.market):"—"}</span></label>`).join("")}</div>`:`<p class="hint">No loose cards in stock. Add the lot's cards below.</p>`}
+    </div>
+    <div class="section"><h3>New cards bought as this lot</h3>
+      <p class="hint" style="margin:0 0 8px">Bought a lot all at once? Enter what the cards have in common, the total you paid, and one row per card. The price is split across the cards by market value.</p>
+      <div class="grid">
+        <div class="field"><label>Language</label>${seg("nlang",[["EN","English"],["JP","Japanese"]],"EN")}</div>
+        <div class="field"><label>Type</label>${seg("nkind",[["raw","Raw"],["graded","Graded"]],"graded")}</div>
+        <div class="field"><label for="ln-grader">Grader</label><select id="ln-grader" name="ngrader">${opt(GRADERS,"PSA")}</select></div>
+        <div class="field"><label for="ln-grade">Grade (or condition if raw)</label><input id="ln-grade" name="ngrade" placeholder="10"></div>
+        <div class="field"><label for="ln-paid">Total paid for these ($)</label><input id="ln-paid" name="npaid" type="number" inputmode="decimal" step="0.01" min="0"></div>
+        <div class="field"><label for="ln-date">Bought on</label><input id="ln-date" name="ndate" type="date" value="${today()}"></div>
+        <div class="field"><label for="ln-src">Source</label><select id="ln-src" name="nsource">${opt(SOURCES,"eBay")}</select></div>
+        <div class="field"><label for="ln-show">Bought at a show?</label><select id="ln-show" name="nshow">${showOpts("")}</select></div>
+      </div>
+      <div id="ln-rows"></div>
+      <div class="bar" style="margin-top:8px"><button class="btn sm" type="button" id="ln-add">+ Add card row</button><span class="hint">Tip: type the first cert # and the next rows count up for you.</span></div>
+    </div>
+    <div id="ltPrev" class="panel pad num" style="margin-top:14px"></div>
+    <div class="bar" style="margin-top:14px"><button class="btn pri" type="submit">${editing?"Save lot":"Create lot"}</button><button class="btn" type="button" data-act="close">Cancel</button></div></form>`,after(){
+      const f=document.querySelector('form[data-form="lot"]');const rows=document.getElementById("ln-rows");
+      const addRow=()=>{const i=rows.children.length;const prev=rows.lastElementChild;const pc=prev?prev.querySelector('[name="rcert"]').value.trim():"";const nextCert=/^\d+$/.test(pc)?String(Number(pc)+1).padStart(pc.length,"0"):"";
+        const d=document.createElement("div");d.className="newrow";d.innerHTML=`<input name="rcode" aria-label="Card ${i+1} code" placeholder="OP01-001" class="mono" autocapitalize="characters"><input name="rname" aria-label="Card ${i+1} name" placeholder="Name"><input name="rcert" aria-label="Card ${i+1} cert" placeholder="Cert #" inputmode="numeric" value="${nextCert}"><input name="rmkt" aria-label="Card ${i+1} market" type="number" step="0.01" min="0" placeholder="Market $"><button type="button" class="btn sm rm" aria-label="Remove row">×</button>`;
+        d.querySelector(".rm").onclick=()=>{d.remove();upd();};rows.appendChild(d);};
+      document.getElementById("ln-add").onclick=()=>{addRow();upd();};
+      if(!editing&&!members.length)addRow();
+      const q=document.getElementById("lt-q");if(q)q.addEventListener("input",()=>{const w=q.value.toLowerCase().trim();document.querySelectorAll("#lt-pool label").forEach(l=>{l.hidden=w&&!l.dataset.hay.includes(w);});});
+      let touchedPrem=editing;
+      f.premiumPct.addEventListener("input",()=>touchedPrem=true);
+      f.sequential.addEventListener("change",()=>{if(!touchedPrem){f.premiumPct.value=f.sequential.checked?S.settings.seqPremiumPct:0;}upd();});
+      function upd(){
+        const chosen=[...f.querySelectorAll('input[name="member"]:checked')].map(x=>byId("cards",x.value)).filter(Boolean);
+        const nr=[...rows.children].filter(r=>r.querySelector('[name="rcode"]').value.trim());
+        const base=chosen.reduce((a,c)=>a+n(c.qty)*(n(c.market)||n(c.cost)),0)+nr.reduce((a,r)=>a+n(r.querySelector('[name="rmkt"]').value),0);
+        const cost=chosen.reduce((a,c)=>a+n(c.qty)*n(c.cost),0)+n(f.npaid.value);
+        const units=chosen.reduce((a,c)=>a+n(c.qty),0)+nr.length;
+        const kind=f.querySelector('input[name="nkind"]:checked').value;
+        const fake=chosen.concat(nr.map(r=>({kind,grader:f.ngrader.value,cert:r.querySelector('[name="rcert"]').value.trim()})));
+        const seq=certsSequential(fake);
+        if(seq&&!f.sequential.checked&&!f.sequential.dataset.auto){f.sequential.checked=true;f.sequential.dataset.auto="1";if(!touchedPrem)f.premiumPct.value=S.settings.seqPremiumPct;}
+        const prem=n(f.premiumPct.value);const value=base*(1+prem/100);const sticker=n(f.list.value)||suggestList(value);
+        document.getElementById("ltPrev").innerHTML=`<div class="pl"><span>${units} cards · sum of values</span><span>${money(base)}</span></div><div class="pl"><span>Lot premium ${prem>0?"+":""}${prem}%${seq?" · certs are sequential ✓":""}</span><span>${signed(value-base)}</span></div><div class="pl total"><span>Lot value</span><span>${money(value)}</span></div><div class="pl"><span>Sticker</span><span>${money(sticker)}</span></div><div class="pl"><span>Your cost</span><span>${money(cost)}</span></div><div class="pl"><span>Profit at sticker</span><span class="${cls(sticker-cost)}">${signed(sticker-cost)}</span></div>`;
+      }
+      f.addEventListener("input",upd);f.addEventListener("change",upd);upd();
+    }};
+  },
+  lot(id){
+    const L=byId("lots",id);if(!L)return null;const st=lotStats(L);const sold=L.status==="sold";
+    const sale=D("sales").find(s=>s.lotId===L.id);
+    return{live:true,title:esc(L.name||"Lot"),body:`<div class="m" style="display:flex;gap:6px;flex-wrap:wrap">${lotChips(L,st)}${sold?`<span class="chip">Sold</span>`:""}</div>
+      ${L.sequential&&!st.seqCerts&&st.cards.length>1?`<p class="hint" style="margin:8px 0 0">Marked sequential, but the cert numbers aren't consecutive yet. Check each card's cert #.</p>`:""}
+      ${L.notes?`<p class="hint" style="margin:8px 0 0">${esc(L.notes)}</p>`:""}
+      <div class="panel pad num" style="margin-top:12px">
+        <div class="pl"><span>Sum of card values</span><span>${money(st.base)}</span></div>
+        <div class="pl"><span>${L.sequential?"Sequential premium":"Lot premium"} ${st.prem>0?"+":""}${st.prem}%</span><span>${signed(st.value-st.base)}</span></div>
+        <div class="pl total"><span>Lot value</span><span>${money(st.value)}</span></div>
+        <div class="pl"><span>Sticker${L.list?"":" (value + "+esc(S.settings.markupPct)+"%)"}</span><span><b>${money(st.sticker)}</b></span></div>
+        <div class="pl"><span>Your cost</span><span>${money(st.cost)}</span></div>
+        <div class="pl"><span>Profit at sticker</span><span class="${cls(st.sticker-st.cost)}">${signed(st.sticker-st.cost)}</span></div>
+        <div class="pl"><span>Offer if buying a lot like this</span><span>${money(offerFor(st.value),0)}</span></div>
+      </div>
+      ${st.missing?`<p class="hint">${st.missing} card${st.missing>1?"s have":" has"} no market value yet and count at cost. Open them to add comps.</p>`:""}
+      <div class="bar" style="margin-top:14px">${sold?(sale?`<button class="btn" data-act="sale" data-id="${esc(sale.id)}">Open sale</button>`:""):`<button class="btn pri" data-act="sell-lot" data-id="${esc(L.id)}">Sell lot</button><button class="btn" data-act="edit-lot" data-id="${esc(L.id)}">Edit / add cards</button><button class="btn danger" data-act="break-lot" data-id="${esc(L.id)}">Break up lot</button>`}</div>
+      <div class="section"><h3>Cards in this lot</h3><div class="panel">${st.cards.length?st.cards.sort((a,b)=>String(a.cert||a.code).localeCompare(String(b.cert||b.code),undefined,{numeric:true})).map(c=>cardRow(c,chips(c).replace(/<span class="chip lot">.*?<\/span>/,"")+(c.cert?`<span class="mono">#${esc(c.cert)}</span>`:""))).join(""):`<div class="empty">No cards yet. Tap Edit to add some.</div>`}</div></div>`};
+  },
+  sellLot(arg){
+    const L=byId("lots",arg.id);if(!L)return null;const st=lotStats(L);
+    const up=D("shows").find(s=>s.date===today());const showId=arg.showId||(up?up.id:"");
+    return{title:`Sell ${esc(L.name||"lot")}`,body:`<form data-form="sellLot" data-id="${esc(L.id)}">
+      <p class="hint" style="margin:0 0 10px">All ${st.units} cards leave your inventory together. Lot value ${money(st.value)} · cost ${money(st.cost)}.</p>
+      <div class="grid">
+        <div class="field"><label for="sll-price">Sold for ($)</label><input id="sll-price" name="price" type="number" inputmode="decimal" step="0.01" min="0" required value="${esc(st.sticker)}"></div>
+        <div class="field"><label for="sll-date">Date</label><input id="sll-date" name="date" type="date" value="${today()}"></div>
+        <div class="field"><label for="sll-ch">Where</label><select id="sll-ch" name="channel">${opt(["Show","eBay","TCGplayer","Local / meetup","Instagram / Facebook","Trade","Other"],"Show")}</select></div>
+        <div class="field"><label for="sll-pay">Paid with</label><select id="sll-pay" name="pay">${opt(["Cash","Card","Venmo","Cash App","Zelle","PayPal","Trade credit"],"Cash")}</select></div>
+        <div class="field full"><label for="sll-show">Show</label><select id="sll-show" name="showId">${showOpts(showId)}</select></div>
+        <div class="field"><label for="sll-fees">Fees ($)</label><input id="sll-fees" name="fees" type="number" inputmode="decimal" step="0.01" min="0" value="0"></div>
+      </div>
+      <div id="sllPrev" class="panel pad num" style="margin-top:12px"></div>
+      <div class="bar" style="margin-top:14px"><button class="btn pri" type="submit">Record lot sale</button><button class="btn" type="button" data-act="close">Cancel</button></div></form>`,after(){
+      const f=document.querySelector('form[data-form="sellLot"]');
+      const upd=()=>{const p=n(f.price.value),fe=n(f.fees.value),pr=p-st.cost-fe;document.getElementById("sllPrev").innerHTML=`<div class="pl"><span>Sale</span><span>${money(p)}</span></div><div class="pl"><span>Cost of ${st.units} cards</span><span>${money(-st.cost)}</span></div>${fe?`<div class="pl"><span>Fees</span><span>${money(-fe)}</span></div>`:""}<div class="pl total"><span>Profit</span><span class="${cls(pr)}">${signed(pr)}</span></div>`;};
+      f.addEventListener("input",upd);
+      f.channel.addEventListener("change",()=>{if(f.channel.value==="eBay"&&!n(f.fees.value)){f.fees.value=(n(f.price.value)*n(S.settings.ebayFeePct)/100).toFixed(2);upd();}});
+      upd();
+    }};
+  },
+  expenseForm(arg){
+    const e=arg&&arg.id?{...byId("expenses",arg.id)}:{date:today(),cat:"Supplies",...(arg&&arg.preset||{})};
+    const sup=D("supplies");
+    return{title:arg&&arg.id?"Edit expense":(e.cat==="Supplies"?"Bought supplies":"Add expense"),body:`<form data-form="expense" data-id="${esc(e.id||"")}"><div class="grid">
+      <div class="field"><label for="ex-cat">Category</label><select id="ex-cat" name="cat">${opt(["Supplies","Grading","Shipping","Travel / gas","Display & table gear","3D printing materials","Fees / subscriptions","Other"],e.cat)}</select></div>
+      <div class="field"><label for="ex-amt">Amount paid ($)</label><input id="ex-amt" name="amount" type="number" inputmode="decimal" step="0.01" min="0" required value="${esc(e.amount??"")}"></div>
+      <fieldset class="full" id="supBox" ${e.cat!=="Supplies"?"hidden":""}><div style="display:grid;grid-template-columns:2fr 1fr;gap:10px 12px">
+        <div class="field"><label for="ex-sup">Supply</label><select id="ex-sup" name="supplyId"><option value="">Not tracked</option>${sup.map(s=>`<option value="${esc(s.id)}" ${s.id===e.supplyId?"selected":""}>${esc(s.name)}</option>`).join("")}<option value="__new" ${!sup.length&&!e.id?"selected":""}>New supply…</option></select></div>
+        <div class="field"><label for="ex-qty">How many</label><input id="ex-qty" name="qty" type="number" step="1" min="0" value="${esc(e.qty??"")}" placeholder="100"></div>
+        <div class="field" id="supNew" ${sup.length||e.id?"hidden":""} style="grid-column:1/-1"><label for="ex-supname">New supply name</label><input id="ex-supname" name="supName" placeholder="Top loaders, penny sleeves, zip bags…"></div>
+      </div></fieldset>
+      <div class="field"><label for="ex-date">Date</label><input id="ex-date" name="date" type="date" value="${esc(e.date||"")}"></div>
+      <div class="field"><label for="ex-show">For a show?</label><select id="ex-show" name="showId">${showOpts(e.showId)}</select></div>
+      <div class="field full"><label for="ex-note">Note</label><input id="ex-note" name="note" value="${esc(e.note||"")}" placeholder="Store, order #…"></div>
+    </div><div id="exPrev" class="hint" style="margin-top:8px"></div><div class="bar" style="margin-top:16px"><button class="btn pri" type="submit">Save</button>${e.id?`<button class="btn danger" type="button" data-act="del-expense" data-id="${esc(e.id)}">Delete</button>`:""}<button class="btn" type="button" data-act="close">Cancel</button></div></form>`,after(){
+      const f=document.querySelector('form[data-form="expense"]');
+      const upd=()=>{f.querySelector("#supBox").hidden=f.cat.value!=="Supplies";f.querySelector("#supNew").hidden=f.supplyId.value!=="__new";const q=n(f.qty.value),a=n(f.amount.value);document.getElementById("exPrev").textContent=f.cat.value==="Supplies"&&q&&a?`${money(a/q,a/q<1?3:2)} each`:"";};
+      f.addEventListener("input",upd);f.addEventListener("change",upd);upd();
+    }};
+  },
+  supply(id){
+    const s=byId("supplies",id);if(!s)return null;const st=supplyStats(s);
+    return{live:true,title:esc(s.name),body:`<div class="kv num"><div><span class="label">On hand</span><b>${n(s.onHand)}</b></div><div><span class="label">Spent</span><b>${money(st.spent)}</b></div><div><span class="label">Per unit</span><b>${st.bought?money(st.unit,st.unit<1?3:2):"—"}</b></div></div>
+      <form data-form="supplyUse" data-id="${esc(s.id)}" class="bar" style="margin-top:12px"><input name="used" type="number" min="1" step="1" placeholder="How many" aria-label="How many used" class="search" style="max-width:130px;flex:0 1 auto"><button class="btn" type="submit">Used these</button><button class="btn" type="button" data-act="add-supply-buy" data-id="${esc(s.id)}">Bought more</button></form>
+      <form data-form="supply" data-id="${esc(s.id)}" class="section grid">
+        <div class="field full"><label for="su-name">Name</label><input id="su-name" name="name" value="${esc(s.name)}"></div>
+        <div class="field"><label for="su-on">On hand (correct the count)</label><input id="su-on" name="onHand" type="number" step="1" value="${esc(n(s.onHand))}"></div>
+        <div class="field"><label for="su-low">Warn me below</label><input id="su-low" name="lowAt" type="number" step="1" min="0" value="${esc(s.lowAt??"")}"></div>
+        <div class="bar full"><button class="btn" type="submit">Save</button><button class="btn danger" type="button" data-act="del-supply" data-id="${esc(s.id)}">Delete supply</button></div>
+      </form>
+      <div class="section"><h3>Purchases</h3><div class="panel">${st.ex.length?st.ex.sort((a,b)=>(b.date||"")>(a.date||"")?1:-1).map(e=>`<button class="row" data-act="expense" data-id="${esc(e.id)}"><div class="main"><div class="t">${n(e.qty)} ${esc(s.unit||"")}</div><div class="m">${fdate(e.date)}${e.note?" · "+esc(e.note):""}</div></div><div class="r num">${money(e.amount)}</div></button>`).join(""):`<div class="empty">No purchases logged.</div>`}</div></div>`};
+  },
+  itemForm(arg){
+    const i=arg&&arg.id?{...byId("items",arg.id)}:{category:"3D print",qty:1,lowAt:2};
+    const src=i.photoId?blobUrl(i.photoId):i.photoUrl;
+    return{title:arg&&arg.id?"Edit side item":"New side item",body:`<form data-form="item" data-id="${esc(i.id||"")}">
+      <div class="photo-drop"><div id="phPrev">${src?`<img class="thumb" style="aspect-ratio:1" src="${esc(src)}" alt="">`:`<div class="thumb" style="aspect-ratio:1">No photo</div>`}</div><div class="field" style="flex:1"><label for="it-photo">Photo</label><input id="it-photo" type="file" accept="image/*"></div></div>
+      <div class="grid" style="margin-top:12px">
+        <div class="field full"><label for="it-name">Name</label><input id="it-name" name="name" required value="${esc(i.name||"")}" placeholder="Kaizoku Ō desk sign"></div>
+        <div class="field full"><label for="it-desc">Description</label><textarea id="it-desc" name="desc" placeholder="What it is, size, colors, material">${esc(i.desc||"")}</textarea></div>
+        <div class="field"><label for="it-cat">Category</label><input id="it-cat" name="category" value="${esc(i.category||"")}" list="itcats"><datalist id="itcats">${[...new Set(["3D print","Sticker","Playmat","Accessory",...D("items").map(x=>x.category).filter(Boolean)])].map(c=>`<option value="${esc(c)}">`).join("")}</datalist></div>
+        <div class="field"><label for="it-sku">SKU / short code</label><input id="it-sku" name="sku" value="${esc(i.sku||"")}" placeholder="KZ-01" class="mono"></div>
+        <div class="field"><label for="it-price">Selling price ($)</label><input id="it-price" name="price" type="number" inputmode="decimal" step="0.01" min="0" value="${esc(i.price??"")}"></div>
+        <div class="field"><label for="it-cost">Cost to make, each ($)</label><input id="it-cost" name="cost" type="number" inputmode="decimal" step="0.01" min="0" value="${esc(i.cost??"")}" placeholder="filament + parts"></div>
+        <div class="field"><label for="it-qty">On hand</label><input id="it-qty" name="qty" type="number" step="1" min="0" value="${esc(i.qty??0)}"></div>
+        <div class="field"><label for="it-low">Warn me at</label><input id="it-low" name="lowAt" type="number" step="1" min="0" value="${esc(i.lowAt??2)}"></div>
+        <div class="field full"><label for="it-loc">Where it is</label><input id="it-loc" name="location" value="${esc(i.location||"")}" placeholder="Side tray"></div>
+      </div>
+      <p class="hint">Put the material cost in each item's cost, and don't also log that filament as an expense. Otherwise it's counted twice.</p>
+      <div class="bar" style="margin-top:12px"><button class="btn pri" type="submit">Save item</button><button class="btn" type="button" data-act="close">Cancel</button></div></form>`,after(){
+      document.getElementById("it-photo").addEventListener("change",async e=>{const file=e.target.files[0];if(!file)return;try{const blob=await shrink(file);S.pendingPhoto={blob,url:URL.createObjectURL(blob)};document.getElementById("phPrev").innerHTML=`<img class="thumb" style="aspect-ratio:1" src="${S.pendingPhoto.url}" alt="">`;}catch(err){toast("Couldn't read that image.");}});
+    }};
+  },
+  item(id){
+    const i=byId("items",id);if(!i)return null;
+    const sales=D("sales").filter(s=>s.itemId===i.id);const sold=sales.reduce((a,s)=>a+n(s.qty),0),pr=sales.reduce((a,s)=>a+saleProfit(s),0);
+    const src=i.photoId?blobUrl(i.photoId):i.photoUrl;
+    return{live:true,title:esc(i.name),body:`<div class="detail-top">${src?`<img class="big" style="aspect-ratio:1" src="${esc(src)}" alt="${esc(i.name)}">`:`<div class="big" style="aspect-ratio:1">${esc(i.sku||"ITEM")}</div>`}
+      <div><div class="m" style="display:flex;gap:6px;flex-wrap:wrap">${i.category?`<span class="chip">${esc(i.category)}</span>`:""}${i.sku?`<span class="chip mono">${esc(i.sku)}</span>`:""}${i.location?`<span class="chip">${esc(i.location)}</span>`:""}</div>${i.desc?`<p style="margin:8px 0 0;font-size:14px">${esc(i.desc)}</p>`:""}</div></div>
+      <div class="kv num"><div><span class="label">Price</span><b>${money(i.price)}</b></div><div><span class="label">Cost each</span><b>${money(i.cost)}</b></div><div><span class="label">Margin</span><b class="${cls(n(i.price)-n(i.cost))}">${n(i.price)?Math.round((n(i.price)-n(i.cost))/n(i.price)*100)+"%":"—"}</b></div><div><span class="label">On hand</span><b>${n(i.qty)}</b></div><div><span class="label">Sold</span><b>${sold}</b></div><div><span class="label">Profit</span><b class="${cls(pr)}">${signed(pr)}</b></div></div>
+      <div class="bar" style="margin-top:14px">${n(i.qty)>0?`<button class="btn pri" data-act="sell-item" data-id="${esc(i.id)}">Sell</button>`:""}<button class="btn" data-act="item-batch" data-id="${esc(i.id)}">Made more</button><button class="btn" data-act="edit-item" data-id="${esc(i.id)}">Edit</button><button class="btn danger" data-act="del-item" data-id="${esc(i.id)}">Delete</button></div>
+      ${(i.batches||[]).length?`<div class="section"><h3>Batches made</h3><div class="panel scroll"><table class="t num"><tbody>${[...i.batches].reverse().map(b=>`<tr><td>${fdate(b.date)}</td><td>${n(b.qty)} made</td><td class="r">${money(b.unitCost)} each</td><td>${esc(b.note||"")}</td></tr>`).join("")}</tbody></table></div></div>`:""}
+      ${sales.length?`<div class="section"><h3>Sales</h3><div class="panel">${sales.sort((a,b)=>(b.date||"")>(a.date||"")?1:-1).map(saleRow).join("")}</div></div>`:""}`};
+  },
+  itemBatch(id){
+    const i=byId("items",id);if(!i)return null;
+    return{title:`Made more: ${esc(i.name)}`,body:`<form data-form="itemBatch" data-id="${esc(i.id)}"><div class="grid">
+      <div class="field"><label for="ib-qty">How many</label><input id="ib-qty" name="qty" type="number" min="1" step="1" required value="5"></div>
+      <div class="field"><label for="ib-cost">Cost each ($)</label><input id="ib-cost" name="unitCost" type="number" step="0.01" min="0" value="${esc(i.cost??"")}"></div>
+      <div class="field"><label for="ib-date">Date</label><input id="ib-date" name="date" type="date" value="${today()}"></div>
+      <div class="field"><label for="ib-note">Note</label><input id="ib-note" name="note" placeholder="Color, filament"></div>
+    </div><p class="hint">The item's cost becomes the average across what you have on hand.</p><div class="bar" style="margin-top:12px"><button class="btn pri" type="submit">Add to stock</button><button class="btn" type="button" data-act="close">Cancel</button></div></form>`};
+  },
+  sellItem(arg){
+    const i=byId("items",arg.id);if(!i)return null;const up=D("shows").find(s=>s.date===today());const showId=arg.showId||(up?up.id:"");
+    return{title:`Sell ${esc(i.name)}`,body:`<form data-form="sellItem" data-id="${esc(i.id)}"><div class="grid">
+      <div class="field"><label for="si-price">Price each ($)</label><input id="si-price" name="price" type="number" step="0.01" min="0" required value="${esc(i.price??"")}"></div>
+      <div class="field"><label for="si-qty">Quantity (of ${n(i.qty)})</label><input id="si-qty" name="qty" type="number" min="1" max="${n(i.qty)}" step="1" value="1"></div>
+      <div class="field"><label for="si-ch">Where</label><select id="si-ch" name="channel">${opt(["Show","eBay","Etsy","Local / meetup","Instagram / Facebook","Other"],"Show")}</select></div>
+      <div class="field"><label for="si-pay">Paid with</label><select id="si-pay" name="pay">${opt(["Cash","Card","Venmo","Cash App","Zelle","PayPal"],"Cash")}</select></div>
+      <div class="field full"><label for="si-show">Show</label><select id="si-show" name="showId">${showOpts(showId)}</select></div>
+      <div class="field"><label for="si-date">Date</label><input id="si-date" name="date" type="date" value="${today()}"></div>
+      <div class="field"><label for="si-fees">Fees ($)</label><input id="si-fees" name="fees" type="number" step="0.01" min="0" value="0"></div>
+    </div><div class="bar" style="margin-top:14px"><button class="btn pri" type="submit">Record sale</button><button class="btn" type="button" data-act="close">Cancel</button></div></form>`};
+  },
+  pasteComps(id){
+    const c=byId("cards",id);if(!c)return null;
+    return{title:`Paste comps · <span class="mono">${esc(c.code)}</span>`,body:`<p class="hint" style="margin:0 0 8px">Open eBay sold listings (or 130point, PriceCharting), select the results, copy, and paste them here. ${S.sample?"Claude reads the prices and dates and checks which listings match this exact card.":"The app pulls out the prices and dates."}</p>
+      <div class="field"><label for="pc-src">From</label><select id="pc-src">${opt(["eBay sold","130point","PriceCharting","TCGplayer","Card Ladder","Yuyu-tei","Other"],"eBay sold")}</select></div>
+      <div class="field" style="margin-top:8px"><label for="pc-text">Pasted text</label><textarea id="pc-text" style="min-height:140px" placeholder="Paste here"></textarea></div>
+      <div class="bar" style="margin-top:10px"><button class="btn pri" type="button" id="pc-read">Read prices</button><span class="hint" id="pc-status"></span></div>
+      <div id="pc-out" style="margin-top:12px"></div>`,after(){
+      const out=document.getElementById("pc-out"),stat=document.getElementById("pc-status"),btn=document.getElementById("pc-read");
+      btn.onclick=async()=>{
+        const text=document.getElementById("pc-text").value.trim();if(!text){stat.textContent="Paste some listings first.";return;}
+        btn.disabled=true;stat.textContent=S.sample?"Reading… (this can take up to a minute)":"";
+        let rows=null;
+        if(S.sample){
+          try{
+            const res=await S.sample.json(`You extract card sale comps from text a user copied from a marketplace page.
+The card they are pricing: One Piece Card Game ${c.code} ${c.name||""}, variant: ${c.variant||"Regular"}${c.variantNote?" ("+c.variantNote+")":""}, language: ${c.lang==="JP"?"Japanese":"English"}, ${c.kind==="graded"?`graded ${c.grader} ${c.grade}`:"raw (ungraded)"}.
+From the text below, list every individual sale or listing you can find. For each give: price (number, the item price in USD, excluding shipping), date (YYYY-MM-DD; the sold date if shown, else null), title (short listing title), kind ("sold" if it sold, "listed" if it is only an active listing), match (true only if it is clearly this exact card: same code or name, same variant/art, same language, and same grade or raw status).
+Reply with only a JSON array like [{"price":45.5,"date":"2026-09-20","title":"...","kind":"sold","match":true}]. Reply [] if nothing is found.
+
+TEXT:
+${text.slice(0,30000)}`,{modelTier:"quick"});
+            if(Array.isArray(res))rows=res.filter(r=>r&&n(r.price)>0).map(r=>({price:n(r.price),date:/^\d{4}-\d\d-\d\d$/.test(r.date||"")?r.date:today(),title:String(r.title||""),kind:r.kind==="listed"?"listed":"sold",match:r.match!==false}));
+          }catch(err){if(err&&err.code==="not_granted")stat.textContent="Claude wasn't allowed, so the app read the prices itself.";}
+        }
+        if(!rows)rows=parseCompsText(text);
+        btn.disabled=false;
+        if(!rows.length){stat.textContent="No prices found in that text.";out.innerHTML="";return;}
+        stat.textContent=`Found ${rows.length}. Untick anything that isn't this exact card.`;
+        out.innerHTML=`<div class="picklist">${rows.map((r,k)=>`<label><input type="checkbox" data-k="${k}" ${r.match?"checked":""}><span style="flex:1;min-width:0"><b class="num">${money(r.price)}</b> <span class="hint">${fdate(r.date)} · ${r.kind==="listed"?"listed":"sold"}${r.match?"":" · may not match"}</span><br><span class="hint">${esc(r.title.slice(0,90))}</span></span></label>`).join("")}</div><div class="bar" style="margin-top:10px"><button class="btn pri" type="button" id="pc-add">Add ticked comps</button></div>`;
+        document.getElementById("pc-add").onclick=async()=>{
+          const src=document.getElementById("pc-src").value;
+          const pick=[...out.querySelectorAll("input[data-k]:checked")].map(x=>rows[+x.dataset.k]);
+          if(!pick.length){stat.textContent="Nothing ticked.";return;}
+          const cur=byId("cards",id);
+          await put("cards",{...cur,comps:[...(cur.comps||[]),...pick.map(r=>({src,price:r.price,date:r.date,kind:r.kind}))]});
+          toast(`Added ${pick.length} comps`);openSheet("card",id);
+        };
+      };
+    }};
+  },
+  deal(arg){
+    const up=D("shows").find(s=>s.date===today());const showId=(arg&&arg.showId)||(up?up.id:"");
+    return{title:"Deal or trade",body:`<form data-form="deal">
+      <p class="hint" style="margin:0 0 8px">Several items for one price, and/or cards taken in trade. Add what the customer is getting.</p>
+      <input id="dl-q" class="search" style="width:100%" type="search" placeholder="Add: type a code, name, lot or item" aria-label="Find items to add">
+      <div id="dl-res" class="panel" style="margin-top:6px" hidden></div>
+      <h3 style="margin-top:14px">They're getting</h3><div id="dl-cart" class="panel"></div>
+      <div class="section"><h3>Cards you take in trade</h3><div id="dl-trade"></div><button class="btn sm" type="button" id="dl-tadd" style="margin-top:8px">+ Add traded card</button><p class="hint">Each traded card goes into your inventory at the value you gave it.</p></div>
+      <div class="section grid">
+        <div class="field"><label for="dl-total">Deal price ($)</label><input id="dl-total" name="total" type="number" inputmode="decimal" step="0.01" min="0" placeholder="sum of stickers"></div>
+        <div class="field"><label for="dl-pay">Rest paid with</label><select id="dl-pay" name="pay">${opt(["Cash","Card","Venmo","Cash App","Zelle","PayPal"],"Cash")}</select></div>
+        <div class="field full"><label for="dl-show">Show</label><select id="dl-show" name="showId">${showOpts(showId)}</select></div>
+        <div class="field"><label for="dl-date">Date</label><input id="dl-date" name="date" type="date" value="${today()}"></div>
+      </div>
+      <div id="dl-sum" class="panel pad num" style="margin-top:12px"></div>
+      <div class="bar" style="margin-top:14px"><button class="btn pri" type="submit">Record deal</button><button class="btn" type="button" data-act="close">Cancel</button></div></form>`,after(){
+      const f=document.querySelector('form[data-form="deal"]');const cart=[];S.dealCart=cart;
+      const q=document.getElementById("dl-q"),res=document.getElementById("dl-res"),cartEl=document.getElementById("dl-cart"),tr=document.getElementById("dl-trade");
+      const inCart=(t,id)=>cart.find(x=>x.t===t&&x.id===id);
+      function search(){const w=q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);if(!w.length){res.hidden=true;return;}
+        const hit=hay=>w.every(x=>hay.toLowerCase().includes(x));
+        const L=[...openLots().filter(x=>!inCart("lot",x.id)&&hit([x.name,...lotCards(x).map(c=>c.code+" "+c.name)].join(" "))).map(x=>({t:"lot",id:x.id,label:x.name,sub:"Lot · "+lotStats(x).units+" cards",sticker:lotStats(x).sticker,max:1})),
+          ...stockCards().filter(c=>sellable(c)&&!inCart("card",c.id)&&hit([c.code,c.name,c.variant,c.location].join(" "))).map(c=>({t:"card",id:c.id,label:c.code+" "+(c.name||""),sub:c.lang+" · "+gradeLabel(c)+(c.variant&&c.variant!=="Regular"?" · "+c.variant:""),sticker:n(c.list)||suggestList(c.market)||n(c.cost),max:n(c.qty)})),
+          ...D("items").filter(i=>n(i.qty)>0&&!inCart("item",i.id)&&hit([i.name,i.sku,i.category].join(" "))).map(i=>({t:"item",id:i.id,label:i.name,sub:"Side item · "+n(i.qty)+" on hand",sticker:n(i.price),max:n(i.qty)}))].slice(0,12);
+        res.hidden=false;res.innerHTML=L.length?L.map((x,k)=>`<button type="button" class="row" data-k="${k}"><div class="main"><div class="t">${esc(x.label)}</div><div class="m">${esc(x.sub)}</div></div><div class="r num">${money(x.sticker)}</div></button>`).join(""):`<div class="empty">Nothing in stock matches.</div>`;
+        res.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{cart.push({...L[+b.dataset.k],qty:1});q.value="";res.hidden=true;draw();q.focus();});
+      }
+      q.addEventListener("input",search);
+      function addTrade(){const d=document.createElement("div");d.className="newrow";d.innerHTML=`<input name="tcode" placeholder="Code" class="mono" aria-label="Traded card code" autocapitalize="characters"><input name="tname" placeholder="Name" aria-label="Traded card name"><select name="tlang" aria-label="Language"><option>EN</option><option>JP</option></select><input name="tval" type="number" step="0.01" min="0" placeholder="Value $" aria-label="Trade value"><button type="button" class="btn sm rm" aria-label="Remove">×</button>`;d.querySelector(".rm").onclick=()=>{d.remove();draw();};tr.appendChild(d);}
+      document.getElementById("dl-tadd").onclick=()=>{addTrade();draw();};
+      function draw(){
+        cartEl.innerHTML=cart.length?cart.map((x,k)=>`<div class="row" style="cursor:default"><div class="main"><div class="t">${esc(x.label)}</div><div class="m">${esc(x.sub)} · ${money(x.sticker)} each</div></div>${x.max>1?`<input type="number" min="1" max="${x.max}" value="${x.qty}" data-q="${k}" aria-label="Quantity" style="width:56px;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--surface)">`:""}<button type="button" class="x" data-rm="${k}" aria-label="Remove">×</button></div>`).join(""):`<div class="empty">Search above to add cards, lots or side items.</div>`;
+        cartEl.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{cart.splice(+b.dataset.rm,1);draw();});
+        cartEl.querySelectorAll("[data-q]").forEach(b=>b.onchange=()=>{const x=cart[+b.dataset.q];x.qty=Math.min(x.max,Math.max(1,Math.round(n(b.value))));draw();});
+        sum();
+      }
+      function sum(){
+        const st=cart.reduce((a,x)=>a+x.sticker*x.qty,0);const total=f.total.value===""?st:n(f.total.value);
+        f.total.placeholder=st?money(st):"sum of stickers";
+        const trade=[...tr.querySelectorAll('[name="tval"]')].reduce((a,x)=>a+n(x.value),0);
+        const cash=total-trade;
+        document.getElementById("dl-sum").innerHTML=`<div class="pl"><span>Stickers</span><span>${money(st)}</span></div>${total!==st?`<div class="pl"><span>Discount</span><span>${signed(total-st)}</span></div>`:""}<div class="pl"><span>Deal price</span><span>${money(total)}</span></div>${trade?`<div class="pl"><span>Trade credit</span><span>${money(-trade)}</span></div>`:""}<div class="pl total"><span>${cash>=0?"Customer pays":"You pay the customer"}</span><span>${money(Math.abs(cash))}</span></div>`;
+      }
+      f.addEventListener("input",e=>{if(!e.target.closest("#dl-cart")&&e.target!==q)sum();});
+      if(arg&&arg.add){const a0=arg.add;cart.push(a0);}
+      draw();setTimeout(()=>q.focus(),50);
+    }};
+  },
+};
+
+async function readCardPhoto(form){
+  const b=form.querySelector("#f-read"),st=form.querySelector("#f-readst");if(!S.pendingPhoto||!S.sample)return;
+  b.disabled=true;st.textContent="Reading the card…";
+  try{
+    const r=await S.sample.json(`This photo shows a One Piece Card Game card, possibly inside a graded slab. Identify it.
+Reply with only JSON: {"code":"OP05-119","name":"Monkey.D.Luffy","rarity":"one of C, UC, R, SR, SEC, L, SP, TR, P or null","lang":"EN or JP","variant":"one of ${VARIANTS.join(" | ")}","graded":true/false,"grader":"PSA, BGS (Beckett), CGC, TAG, ARS, SGC or null","grade":"10 or null","cert":"cert number or null","confidence":"high, medium or low"}.
+The card code is printed in the bottom-right corner (like OP05-119 or ST01-012). Japanese cards have Japanese text. Use null for anything you can't read.`,{images:[S.pendingPhoto.blob]});
+    const set=(name,v)=>{if(v===null||v===undefined||v==="")return;const el=form.elements[name];if(!el)return;if(el instanceof RadioNodeList){[...el].forEach(x=>x.checked=x.value===v);}else el.value=v;};
+    set("code",r.code?String(r.code).toUpperCase():null);set("name",r.name);
+    if(RARITIES.includes(r.rarity))set("rarity",r.rarity);
+    if(r.lang==="EN"||r.lang==="JP")set("lang",r.lang);
+    if(VARIANTS.includes(r.variant))set("variant",r.variant);
+    if(r.graded){set("kind","graded");form.querySelector("#rawBox").hidden=true;form.querySelector("#gradedBox").hidden=false;if(GRADERS.includes(r.grader))set("grader",r.grader);set("grade",r.grade!=null?String(r.grade):null);set("cert",r.cert!=null?String(r.cert):null);}
+    st.textContent=r.confidence==="low"?"Filled in, but Claude wasn't sure. Check every field.":"Filled in. Check the details before saving.";
+  }catch(err){st.textContent=err&&err.code==="bad_key"?"Your API key was rejected. Check it in Tools.":err&&err.code==="unavailable"?"Couldn't reach Claude. Check your connection.":err&&err.code==="not_granted"?"Claude wasn't allowed to read the photo.":err&&err.code==="rate_limited"?"Too many requests. Try again in a minute.":"Couldn't read the card. Fill it in by hand.";}
+  finally{b.disabled=false;}
+}
+/* ---------- comp text parser (fallback when Claude isn't available) ---------- */
+const MONTHS={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,sept:9,oct:10,nov:11,dec:12};
+function findDate(line){
+  let m=line.match(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})/i);
+  if(m)return `${m[3]}-${String(MONTHS[m[1].toLowerCase().slice(0,3)]).padStart(2,"0")}-${m[2].padStart(2,"0")}`;
+  m=line.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);if(m)return m[0];
+  m=line.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);if(m){const y=m[3].length===2?"20"+m[3]:m[3];return `${y}-${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}`;}
+  return null;
+}
+function parseCompsText(text){
+  const out=[];let date=null,title="";
+  text.split(/\n+/).map(l=>l.trim()).filter(Boolean).forEach(line=>{
+    const d=findDate(line);if(d)date=d;
+    if(/shipping|delivery|postage|\+\s*\$|was:|list price|or best offer|coupon/i.test(line)&&!/sold/i.test(line)){if(!/\$/.test(line))title=line;return;}
+    const pm=line.match(/\$\s?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?|\d+(?:\.\d{2})?)/);
+    if(pm&&!/\bto\b\s*\$/i.test(line)){const price=n(pm[1].replace(/,/g,""));if(price>0)out.push({price,date:date||today(),title:title||line,kind:/sold/i.test(line+" "+title)||date?"sold":"listed",match:true});}
+    else if(line.length>18&&!d)title=line;
+  });
+  return out;
+}
+
+/* ---------- image shrink ---------- */
+function shrink(file){return new Promise((res,rej)=>{const img=new Image();const u=URL.createObjectURL(file);img.onload=()=>{const max=900;let w=img.naturalWidth,h=img.naturalHeight;const k=Math.min(1,max/Math.max(w,h));w=Math.round(w*k);h=Math.round(h*k);const cv=document.createElement("canvas");cv.width=w;cv.height=h;cv.getContext("2d").drawImage(img,0,0,w,h);cv.toBlob(b=>{URL.revokeObjectURL(u);b?res(b):rej(new Error("encode"));},"image/jpeg",.84);};img.onerror=()=>{URL.revokeObjectURL(u);rej(new Error("load"));};img.src=u;});}
+
+/* ---------- actions ---------- */
+const armed={};
+function confirmTap(btn,key,label){if(armed[key]&&Date.now()-armed[key]<4000){delete armed[key];return true;}armed[key]=Date.now();btn.textContent=label||"Tap again to confirm";setTimeout(()=>{if(armed[key]){delete armed[key];}},4000);return false;}
+
+document.addEventListener("click",async e=>{
+  const copyLink=e.target.closest("a[data-copyq]");
+  if(copyLink&&/cardladder|130point/.test(copyLink.href)){try{await navigator.clipboard.writeText(copyLink.dataset.copyq);toast("Search copied. Paste it on the site.");}catch(_){}}
+  const el=e.target.closest("[data-act]");if(!el)return;
+  const a=el.dataset.act,id=el.dataset.id;
+  if(a==="scrim"){if(e.target===el)closeSheet();return;}
+  switch(a){
+    case"tab":S.tab=el.dataset.v;try{localStorage.setItem("tl-tab",S.tab);}catch(_){}window.scrollTo(0,0);render();break;
+    case"close":closeSheet();break;
+    case"hide-install":try{localStorage.setItem("tl-hide-install","1");}catch(_){}render();break;
+    case"hide-ex":S.exampleOff=true;render();break;
+    case"filter":S.f[el.dataset.k]=el.dataset.v;render();break;
+    case"add-card":S.pendingPhoto=null;openSheet("cardForm",{});break;
+    case"card":openSheet("card",id);break;
+    case"edit-card":if(exBlock())return;S.pendingPhoto=null;openSheet("cardForm",{id});break;
+    case"dup-card":{if(exBlock())return;const c=byId("cards",id);const p={...c};["id","createdAt","updatedAt","cert","comps","showId","lotId","grading","gradingHistory","photoId","photoUrl","qtyBought"].forEach(k=>delete p[k]);p.qty=1;p.buyDate=today();p.status="stock";S.pendingPhoto=null;openSheet("cardForm",{preset:p});break;}
+    case"del-card":if(exBlock())return;if(!confirmTap(el,"dc"+id,"Tap again to delete"))return;await del("cards",id);closeSheet();toast("Card deleted");break;
+    case"sell":{if(exBlock())return;const c=byId("cards",id);if(c&&cardLot(c)){openSheet("sellLot",{id:c.lotId,showId:el.dataset.show||""});break;}if(c&&c.status==="grading"){toast("This card is at grading. Enter its grade first.");break;}openSheet("sell",{id,showId:el.dataset.show||""});break;}
+    case"add-item":if(exBlock())return;S.pendingPhoto=null;openSheet("itemForm",{});break;
+    case"item":openSheet("item",id);break;
+    case"edit-item":if(exBlock())return;S.pendingPhoto=null;openSheet("itemForm",{id});break;
+    case"del-item":if(exBlock())return;if(!confirmTap(el,"di"+id,"Tap again to delete"))return;await del("items",id);closeSheet();toast("Item deleted");break;
+    case"item-batch":if(exBlock())return;openSheet("itemBatch",id);break;
+    case"sell-item":if(exBlock())return;openSheet("sellItem",{id,showId:el.dataset.show||""});break;
+    case"supply":openSheet("supply",id);break;
+    case"add-supply-buy":if(exBlock())return;openSheet("expenseForm",{preset:{cat:"Supplies",supplyId:id||""}});break;
+    case"del-supply":if(exBlock())return;if(!confirmTap(el,"dsu"+id,"Tap again to delete"))return;await del("supplies",id);closeSheet();toast("Supply deleted. Its purchases stay in expenses.");break;
+    case"want-toggle":{if(exBlock())return;const w=byId("wants",id);await put("wants",{...w,done:!w.done});break;}
+    case"want-del":if(exBlock())return;await del("wants",id);break;
+    case"paste-comps":if(exBlock())return;openSheet("pasteComps",id);break;
+    case"deal":if(exBlock())return;openSheet("deal",{showId:id||""});break;
+    case"sell-lot":if(exBlock())return;openSheet("sellLot",{id,showId:el.dataset.show||""});break;
+    case"lot":openSheet("lot",id);break;
+    case"add-lot":if(exBlock())return;openSheet("lotForm",{});break;
+    case"edit-lot":if(exBlock())return;openSheet("lotForm",{id});break;
+    case"lot-add":if(exBlock())return;openSheet("lotAdd",id);break;
+    case"lot-remove":{if(exBlock())return;const c=byId("cards",id);await put("cards",{...c,lotId:""});toast("Taken out of the lot");break;}
+    case"break-lot":{if(exBlock())return;if(!confirmTap(el,"bl"+id,"Tap again to break up"))return;const L=byId("lots",id);for(const c of lotCards(L))await put("cards",{...c,lotId:""});await del("lots",id);closeSheet();toast("Lot broken up. Cards are back on their own.");break;}
+    case"apply-lot-list":{if(exBlock())return;const L=byId("lots",id);await put("lots",{...L,list:suggestList(lotStats(L).value)});break;}
+    case"grade-send":if(exBlock())return;openSheet("gradeSend",id);break;
+    case"grade-return":if(exBlock())return;openSheet("gradeReturn",id);break;
+    case"grade-cancel":{if(exBlock())return;if(!confirmTap(el,"gc"+id,"Tap again to cancel"))return;const c=byId("cards",id);const x={...c,status:"stock"};delete x.grading;await put("cards",x);toast("Back in stock as raw");break;}
+    case"sale":openSheet("sale",id);break;
+    case"undo-sale":{if(exBlock())return;if(!confirmTap(el,"us"+id,"Tap again to undo"))return;const s=byId("sales",id);
+      if(s.itemId){const i=byId("items",s.itemId);if(i)await put("items",{...i,qty:n(i.qty)+n(s.qty)});await del("sales",id);closeSheet();toast("Sale undone. Item is back in stock.");break;}
+      if(s.lotId){for(const it of (s.items||[])){const c=byId("cards",it.cardId);if(c)await put("cards",{...c,qty:n(c.qty)+n(it.qty),status:c.prevStatus||"stock"});}const L=byId("lots",s.lotId);if(L)await put("lots",{...L,status:"stock",soldDate:""});await del("sales",id);closeSheet();toast("Lot sale undone. Lot is back in stock.");break;}
+      const c=s.cardId&&byId("cards",s.cardId);if(c){const qty=n(c.qty)+n(s.qty);await put("cards",{...c,qty,status:c.status==="sold"?"stock":c.status});}await del("sales",id);closeSheet();toast("Sale undone. Card is back in stock.");break;}
+    case"add-show":if(exBlock())return;openSheet("showForm",{});break;
+    case"show":openSheet("show",id);break;
+    case"edit-show":if(exBlock())return;openSheet("showForm",{id});break;
+    case"del-show":if(exBlock())return;if(!confirmTap(el,"ds"+id,"Tap again to delete show"))return;await del("shows",id);closeSheet();toast("Show deleted");break;
+    case"quick-sell":if(exBlock())return;openSheet("pick",id);break;
+    case"buy-at-show":if(exBlock())return;S.pendingPhoto=null;openSheet("cardForm",{preset:{lang:"EN",kind:"raw",cond:"NM",qty:1,variant:"Regular",buyDate:byId("shows",id).date,source:"Card show",showId:id,status:"stock"}});break;
+    case"add-expense":if(exBlock())return;openSheet("expenseForm",{});break;
+    case"expense":if(exBlock())return;openSheet("expenseForm",{id});break;
+    case"del-expense":{if(!confirmTap(el,"de"+id,"Tap again to delete"))return;const e0=byId("expenses",id);if(e0&&e0.supplyId&&n(e0.qty)){const s0=byId("supplies",e0.supplyId);if(s0)await put("supplies",{...s0,onHand:Math.max(0,n(s0.onHand)-n(e0.qty))});}await del("expenses",id);closeSheet();break;}
+    case"use-avg":{if(exBlock())return;const c=byId("cards",id);const v=Math.round(n(el.dataset.v)*100)/100;await put("cards",{...c,market:v,marketDate:today()});toast("Market value set to "+money(v));break;}
+    case"del-comp":{if(exBlock())return;const c=byId("cards",id);const comps=[...(c.comps||[])];comps.splice(+el.dataset.i,1);await put("cards",{...c,comps});break;}
+    case"apply-list":{if(exBlock())return;const c=byId("cards",id);await put("cards",{...c,list:suggestList(c.market)});break;}
+    case"copy":try{await navigator.clipboard.writeText(el.dataset.v);toast("Copied");}catch(_){toast("Select the text to copy it");}break;
+    case"export":await exportCsv(el.dataset.what);break;
+    case"backup-make":{
+      if(!S.cards.length&&!S.sales.length&&!S.shows.length&&!S.items.length){toast("Nothing to back up yet.");break;}
+      const st=document.getElementById("bk-status");el.disabled=true;st.textContent="Packing your log and photos…";
+      try{const b=await buildBackup();S.pendingBackup=b;const kb=Math.round(b.json.length/1024);st.textContent=`Ready: ${b.counts.filter(x=>x[1]).map(x=>x[1]+" "+x[0]).join(", ")} · ${kb>1024?(kb/1024).toFixed(1)+" MB":kb+" KB"}${b.missed?` · ${b.missed} photo${b.missed>1?"s":""} couldn't be included`:""}.`;document.getElementById("bk-save").hidden=false;}
+      catch(e){st.textContent="Couldn't create the backup: "+(e.message||e);}
+      el.disabled=false;break;}
+    case"backup-save":{
+      const b=S.pendingBackup;if(!b)break;
+      if(!S.downloads){toast("Saving files isn't available here.");break;}
+      try{await S.downloads.save({filename:`treasure-log-backup-${today()}.json`,data:new Blob([b.json],{type:"application/json"})});S.settings.lastBackup=today();await saveSettings();toast("Backup saved");}
+      catch(err){if(!err||err.code!=="declined")toast("Backup wasn't saved ("+((err&&err.code)||"error")+")");}
+      break;}
+    case"backup-restore":{
+      const b=S.pendingRestore;if(!b)break;
+      if(!confirmTap(el,"rs","Tap again: this replaces everything"))return;
+      const st=document.getElementById("bk-status");el.disabled=true;
+      try{await restoreBackup(b,t=>{st.textContent=t;});S.pendingRestore=null;toast("Backup restored");render();}
+      catch(e){st.textContent="Restore stopped: "+(e.message||e.code||e);el.disabled=false;}
+      break;}
+    case"key-remove":try{localStorage.removeItem("tl-apikey");}catch(_){}useApiKey();toast("Key removed");render();break;
+  }
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&S.sheet)closeSheet();});
+document.addEventListener("input",e=>{
+  if(e.target.id==="q"){S.q=e.target.value;clearTimeout(render._q);render._q=setTimeout(render,120);}
+  if(e.target.id==="calcM")calc();
+});
+document.addEventListener("change",async e=>{
+  if(e.target.id==="sort"){S.sort=e.target.value;render();}
+  if(e.target.id==="bk-file"){
+    const file=e.target.files[0];if(!file)return;const st=document.getElementById("bk-status");
+    try{const b=JSON.parse(await file.text());if(b.app!=="treasure-log"||!b.collections)throw new Error("not a Treasure Log backup");
+      S.pendingRestore=b;const c=b.collections;
+      st.innerHTML=`Backup from ${esc(fdate(b.exportedDate||(b.exportedAt||"").slice(0,10)))}: ${COLS.filter(k=>(c[k]||[]).length).map(k=>(c[k]||[]).length+" "+k).join(", ")}, ${Object.keys(b.photos||{}).length} photos. <b>Restoring replaces everything in this log.</b> <button class="btn sm danger" data-act="backup-restore">Replace my data with this backup</button>`;}
+    catch(err){st.textContent="That file can't be restored: "+(err.message||err);}
+    e.target.value="";
+  }
+});
+
+function calc(){
+  const i=document.getElementById("calcM"),o=document.getElementById("calcOut");if(!i||!o)return;
+  const m=n(i.value);
+  if(!m){o.innerHTML=`<span class="hint">Your default offer is ${esc(S.settings.offerPct)}% of market.</span>`;return;}
+  const tiers=[50,60,Number(S.settings.offerPct),80].filter((v,k,a)=>a.indexOf(v)===k).sort((a,b)=>a-b);
+  o.innerHTML=tiers.map(p=>{const off=Math.floor(m*p/100);const prof=suggestList(m)-off;return `<div class="pl" ${p===Number(S.settings.offerPct)?'style="font-weight:700"':""}><span>${p}% offer${p===Number(S.settings.offerPct)?" (yours)":""}</span><span>${money(off,0)} <span class="hint">→ ${signed(prof)} at sticker ${money(suggestList(m))}</span></span></div>`;}).join("")+`<div class="pl"><span>Trade credit (+10%)</span><span>${money(Math.floor(m*(n(S.settings.offerPct)+10)/100),0)}</span></div>`;
+}
+
+document.addEventListener("submit",async e=>{
+  const f=e.target.closest("form[data-form]");if(!f)return;e.preventDefault();
+  const t=f.dataset.form,id=f.dataset.id||undefined;const fd=new FormData(f);const g=k=>(fd.get(k)??"").toString().trim();
+  const btn=f.querySelector('[type="submit"]');if(btn)btn.disabled=true;
+  try{
+  if(t==="card"){
+    const prev=id?byId("cards",id):null;
+    const c={...(prev||{}),id,code:g("code").toUpperCase(),name:g("name"),variant:g("variant"),variantNote:g("variantNote"),rarity:g("rarity"),lang:g("lang")||"EN",kind:g("kind")||"raw",
+      cond:g("cond"),grader:g("grader"),grade:g("grade"),cert:g("cert"),qty:Math.max(0,Math.round(n(g("qty")))),cost:n(g("cost")),buyDate:g("buyDate"),source:g("source"),showId:g("showId"),
+      market:g("market")===""?null:n(g("market")),list:g("list")===""?null:n(g("list")),location:g("location"),status:prev&&prev.status==="grading"?"grading":(g("status")||"stock"),lotId:prev&&prev.status==="grading"?"":g("lotId"),tags:g("tags"),notes:g("notes"),comps:(prev&&prev.comps)||[]};
+    if(c.kind==="raw"){c.grader="";c.grade="";c.cert="";}else c.cond="";
+    if(!prev)c.qtyBought=c.qty;
+    if(c.market&&!prev?.market)c.marketDate=today();
+    if(S.pendingPhoto){
+      if(S.assets){try{const r=await S.assets.upload(S.pendingPhoto.blob,{type:"image/jpeg"});c.photoId=r.id;delete c.photoUrl;}catch(err){toast("Photo didn't upload ("+(err.code||"error")+"). Card saved without it.");}}
+      else c.photoUrl=S.pendingPhoto.url;
+    }
+    if(isEx())S.exampleOff=true;
+    const nid=await put("cards",c);S.pendingPhoto=null;
+    const wm=!prev&&c.code?D("wants").filter(w=>!w.done&&String(w.text).toUpperCase().includes(c.code)):[];
+    toast(wm.length?`${wm[0].who||"A customer"} asked for ${c.code}${wm[0].contact?" ("+wm[0].contact+")":""}`:(prev?"Saved":"Added to inventory"));openSheet("card",nid||id);
+  }else if(t==="comp"){
+    if(exBlock())return;
+    const c=byId("cards",id);const comps=[...(c.comps||[]),{src:g("src"),price:n(g("price")),date:g("date")||today(),kind:g("kind")}];
+    await put("cards",{...c,comps});
+  }else if(t==="sell"){
+    const c=byId("cards",id);const qty=Math.min(n(c.qty),Math.max(1,Math.round(n(g("qty")))));
+    const sale={cardId:c.id,code:c.code,name:c.name,variant:c.variant,lang:c.lang,kind:c.kind,grader:c.grader||"",grade:c.grade||"",qty,price:n(g("price")),costEach:n(c.cost),fees:n(g("fees")),channel:g("channel"),showId:g("showId"),date:g("date")||today(),pay:g("pay")};
+    await put("sales",sale);
+    const left=n(c.qty)-qty;await put("cards",{...c,qty:left,status:left<=0?"sold":c.status});
+    closeSheet();toast(`Sold for ${money(sale.qty*sale.price)} · profit ${signed(saleProfit(sale))}`);
+    if(sale.showId&&byId("shows",sale.showId))openSheet("show",sale.showId);
+  }else if(t==="show"){
+    const prev=id?byId("shows",id):null;const costs=[];for(let i=0;i<n(g("ncost"));i++){const l=g("cl"+i),a=n(g("ca"+i));if(l||a)costs.push({label:l||"Cost",amt:a});}
+    if(isEx())S.exampleOff=true;
+    const s={...(prev||{}),id,name:g("name"),date:g("date"),venue:g("venue"),tableFee:n(g("tableFee")),costs,bulkRevenue:n(g("bulkRevenue")),bulkCount:g("bulkCount")===""?null:n(g("bulkCount")),notes:g("notes")};
+    const nid=await put("shows",s);openSheet("show",nid||id);
+  }else if(t==="gradeSend"){
+    const c=byId("cards",id);const send=Math.min(n(c.qty),Math.max(1,Math.round(n(g("qty"))||1)));
+    const grading={company:g("company"),sent:g("sent")||today(),service:g("service"),fee:n(g("fee")),sub:g("sub")};
+    if(send<n(c.qty)){await put("cards",{...c,qty:n(c.qty)-send});}
+    let first=null;
+    for(let i=0;i<send;i++){const x={...c,qty:1,status:"grading",grading,lotId:""};if(send<n(c.qty)||i>0){delete x.id;delete x.createdAt;delete x.photoId;delete x.photoUrl;x.qtyBought=1;x.splitFrom=c.id;x.comps=[...(c.comps||[])];if(c.photoId)x.photoId=c.photoId;if(c.photoUrl)x.photoUrl=c.photoUrl;}const nid=await put("cards",x);first=first||nid||x.id;}
+    toast(`${send>1?send+" cards":"Card"} marked as at ${grading.company}`);openSheet("card",first||id);
+  }else if(t==="gradeReturn"){
+    const c=byId("cards",id);const gr=c.grading||{};const fee=n(g("fee")),extra=n(g("extra"));
+    const x={...c,kind:"graded",grader:g("grader"),grade:g("grade"),cert:g("cert"),cond:"",cost:Math.round((n(c.cost)+fee+extra)*100)/100,
+      status:fd.get("keepPc")?"pc":"stock",market:g("market")===""?null:n(g("market")),list:g("list")===""?null:n(g("list")),marketDate:g("market")===""?"":today(),comps:[],
+      gradingHistory:[...(c.gradingHistory||[]),{company:g("grader"),sent:gr.sent||"",returned:g("returned")||today(),days:daysSince(gr.sent)-(daysSince(g("returned")||today())||0),fee,extra,service:gr.service||"",sub:gr.sub||"",result:`${g("grader")} ${g("grade")}`,rawCost:n(c.cost)}]};
+    delete x.grading;
+    await put("cards",x);toast(`${g("grader")} ${g("grade")}. Back in inventory.`);openSheet("card",id);
+  }else if(t==="lotAdd"){
+    const c=byId("cards",id);let lotId=g("lotId");
+    if(lotId==="__new"){lotId=await put("lots",{name:g("name")||"Lot "+(D("lots").length+1),sequential:false,premiumPct:0,status:"stock",location:c.location||"",buyDate:c.buyDate||today()});}
+    await put("cards",{...c,lotId});openSheet("lot",lotId);
+  }else if(t==="lot"){
+    if(isEx())S.exampleOff=true;
+    const prev=id?byId("lots",id):null;
+    const L={...(prev||{}),id,name:g("name"),location:g("location"),list:g("list")===""?null:n(g("list")),sequential:!!fd.get("sequential"),premiumPct:n(g("premiumPct")),notes:g("notes"),status:(prev&&prev.status)||"stock",buyDate:(prev&&prev.buyDate)||g("ndate")||today()};
+    const lid=await put("lots",L)||id;
+    const chosen=new Set(fd.getAll("member"));
+    for(const c of D("cards")){const inIt=c.lotId===lid;if(chosen.has(c.id)&&!inIt)await put("cards",{...c,lotId:lid});else if(!chosen.has(c.id)&&inIt)await put("cards",{...c,lotId:""});}
+    const codes=fd.getAll("rcode"),names=fd.getAll("rname"),certs=fd.getAll("rcert"),mkts=fd.getAll("rmkt");
+    const rowsIn=codes.map((code,i)=>({code:code.trim().toUpperCase(),name:names[i].trim(),cert:certs[i].trim(),market:mkts[i]===""?null:n(mkts[i])})).filter(r=>r.code);
+    if(rowsIn.length){
+      const paid=n(g("npaid"));const mSum=rowsIn.reduce((a,r)=>a+n(r.market),0);
+      const kind=g("nkind")||"graded";const gv=g("ngrade");
+      let assigned=0;
+      for(let i=0;i<rowsIn.length;i++){const r=rowsIn[i];
+        let share=mSum>0?paid*n(r.market)/mSum:paid/rowsIn.length;share=Math.round(share*100)/100;if(i===rowsIn.length-1)share=Math.round((paid-assigned)*100)/100;assigned+=share;
+        await put("cards",{code:r.code,name:r.name,variant:"Regular",lang:g("nlang")||"EN",kind,grader:kind==="graded"?g("ngrader"):"",grade:kind==="graded"?gv:"",cond:kind==="raw"?(gv||"NM"):"",cert:kind==="graded"?r.cert:"",
+          qty:1,qtyBought:1,cost:share,buyDate:g("ndate")||today(),source:g("nsource"),showId:g("nshow"),market:r.market,marketDate:r.market?today():"",location:g("location"),status:"stock",lotId:lid,comps:[]});}
+    }
+    openSheet("lot",lid);toast(prev?"Lot saved":"Lot created");
+  }else if(t==="sellLot"){
+    const L=byId("lots",id);const st=lotStats(L);
+    const sale={lotId:L.id,code:"LOT",name:L.name,variant:"",lang:st.langs.join("+"),kind:"lot",qty:1,price:n(g("price")),costEach:Math.round(st.cost*100)/100,fees:n(g("fees")),channel:g("channel"),showId:g("showId"),date:g("date")||today(),pay:g("pay"),items:st.cards.map(c=>({cardId:c.id,qty:n(c.qty)}))};
+    await put("sales",sale);
+    for(const c of st.cards)await put("cards",{...c,prevStatus:c.status,qty:0,status:"sold"});
+    await put("lots",{...L,status:"sold",soldDate:sale.date});
+    closeSheet();toast(`Lot sold for ${money(sale.price)} · profit ${signed(saleProfit(sale))}`);
+    if(sale.showId&&byId("shows",sale.showId))openSheet("show",sale.showId);
+  }else if(t==="expense"){
+    if(isEx())S.exampleOff=true;
+    const prev=id?byId("expenses",id):null;
+    let supplyId=g("cat")==="Supplies"?g("supplyId"):"";const qty=supplyId?Math.max(0,Math.round(n(g("qty")))):0;
+    if(supplyId==="__new"){const nm=g("supName");if(!nm){toast("Name the new supply first.");return;}supplyId=await put("supplies",{name:nm,unit:"pcs",onHand:0,lowAt:0});}
+    await put("expenses",{...(prev||{}),id,cat:g("cat"),amount:n(g("amount")),date:g("date"),showId:g("showId"),note:g("note"),supplyId,qty});
+    if(prev&&prev.supplyId&&n(prev.qty)){const s0=byId("supplies",prev.supplyId);if(s0)await put("supplies",{...s0,onHand:Math.max(0,n(s0.onHand)-n(prev.qty))});}
+    if(supplyId&&qty){const s1=byId("supplies",supplyId);if(s1)await put("supplies",{...s1,onHand:n(s1.onHand)+qty});}
+    closeSheet();toast(supplyId&&qty?`Added ${qty} to supplies`:"Expense saved");
+  }else if(t==="supplyUse"){
+    if(exBlock())return;const s=byId("supplies",id);const u=Math.max(0,Math.round(n(g("used"))));if(!u)return;
+    await put("supplies",{...s,onHand:Math.max(0,n(s.onHand)-u)});toast(`${u} used`);
+  }else if(t==="supply"){
+    if(exBlock())return;const s=byId("supplies",id);await put("supplies",{...s,name:g("name")||s.name,onHand:Math.max(0,Math.round(n(g("onHand")))),lowAt:g("lowAt")===""?0:n(g("lowAt"))});toast("Saved");
+  }else if(t==="item"){
+    if(isEx())S.exampleOff=true;
+    const prev=id?byId("items",id):null;
+    const it={...(prev||{}),id,name:g("name"),desc:g("desc"),category:g("category"),sku:g("sku"),price:n(g("price")),cost:n(g("cost")),qty:Math.max(0,Math.round(n(g("qty")))),lowAt:n(g("lowAt")),location:g("location"),batches:(prev&&prev.batches)||[]};
+    if(!prev&&it.qty)it.batches=[{date:today(),qty:it.qty,unitCost:it.cost,note:"Starting stock"}];
+    if(S.pendingPhoto){if(S.assets){try{const r=await S.assets.upload(S.pendingPhoto.blob,{type:"image/jpeg"});it.photoId=r.id;delete it.photoUrl;}catch(err){toast("Photo didn't upload. Item saved without it.");}}else it.photoUrl=S.pendingPhoto.url;}
+    const nid=await put("items",it);S.pendingPhoto=null;openSheet("item",nid||id);toast(prev?"Saved":"Item added");
+  }else if(t==="itemBatch"){
+    const i=byId("items",id);const q=Math.max(1,Math.round(n(g("qty"))));const uc=n(g("unitCost"));
+    const tot=n(i.qty)+q;const avg=tot?Math.round(((n(i.qty)*n(i.cost))+q*uc)/tot*100)/100:uc;
+    await put("items",{...i,qty:tot,cost:avg,batches:[...(i.batches||[]),{date:g("date")||today(),qty:q,unitCost:uc,note:g("note")}]});
+    toast(`${q} added · ${tot} on hand`);openSheet("item",id);
+  }else if(t==="sellItem"){
+    const i=byId("items",id);const q=Math.min(n(i.qty),Math.max(1,Math.round(n(g("qty")))));
+    const sale=await sellItemCore(i,q,n(g("price")),{fees:n(g("fees")),channel:g("channel"),showId:g("showId"),date:g("date")||today(),pay:g("pay")});
+    closeSheet();toast(`Sold for ${money(q*sale.price)} · profit ${signed(saleProfit(sale))}`);
+    if(sale.showId&&byId("shows",sale.showId))openSheet("show",sale.showId);
+  }else if(t==="want"){
+    if(isEx())S.exampleOff=true;
+    const up=D("shows").find(s=>s.date===today());
+    await put("wants",{text:g("text"),who:g("who"),contact:g("contact"),date:today(),showId:up?up.id:"",done:false});f.reset();toast("Added to the want list");
+  }else if(t==="deal"){
+    const cart=S.dealCart||[];
+    const trades=[...f.querySelectorAll("#dl-trade .newrow")].map(r=>({code:r.querySelector('[name="tcode"]').value.trim().toUpperCase(),name:r.querySelector('[name="tname"]').value.trim(),lang:r.querySelector('[name="tlang"]').value,val:n(r.querySelector('[name="tval"]').value)})).filter(x=>x.code||x.name);
+    if(!cart.length&&!trades.length){toast("Add something to the deal first.");return;}
+    const stTot=cart.reduce((a,x)=>a+x.sticker*x.qty,0);const total=g("total")===""?stTot:n(g("total"));
+    const tradeVal=trades.reduce((a,x)=>a+x.val,0);
+    const dealId="d"+Date.now().toString(36);
+    const meta={fees:0,channel:"Show",showId:g("showId"),date:g("date")||today(),pay:tradeVal?(total>tradeVal?g("pay")+" + trade":"Trade"):g("pay"),dealId};
+    let left=total;
+    for(let k=0;k<cart.length;k++){const x=cart[k];
+      let share=stTot>0?total*(x.sticker*x.qty)/stTot:total/cart.length;share=Math.round(share*100)/100;if(k===cart.length-1)share=Math.round(left*100)/100;left-=share;
+      if(x.t==="card"){const c=byId("cards",x.id);if(c)await sellCardCore(c,x.qty,share/x.qty,meta);}
+      else if(x.t==="lot"){const L=byId("lots",x.id);if(L)await sellLotCore(L,share,meta);}
+      else if(x.t==="item"){const i=byId("items",x.id);if(i)await sellItemCore(i,x.qty,share/x.qty,meta);}
+    }
+    for(const x of trades)await put("cards",{code:x.code,name:x.name,variant:"Regular",lang:x.lang,kind:"raw",cond:"NM",qty:1,qtyBought:1,cost:x.val,market:x.val||null,marketDate:x.val?today():"",buyDate:meta.date,source:"Trade",showId:meta.showId,status:"stock",dealId,comps:[]});
+    S.dealCart=null;closeSheet();
+    const cash=total-tradeVal;
+    toast(`Deal saved · ${cash>=0?"collect "+money(cash):"pay out "+money(-cash)}${trades.length?` · ${trades.length} card${trades.length>1?"s":""} added from trade`:""}`);
+    if(meta.showId&&byId("shows",meta.showId))openSheet("show",meta.showId);
+  }else if(t==="apikey"){
+    const k=g("key");if(!k)return;try{localStorage.setItem("tl-apikey",k);}catch(_){toast("Couldn't save the key");return;}useApiKey();toast("Key saved. Photo reading is on.");render();
+  }else if(t==="settings"){
+    ["offerPct","markupPct","seqPremiumPct","ebayFeePct","compDays","staleDays","agingDays"].forEach(k=>{const v=g(k);if(v!=="")S.settings[k]=n(v);});
+    await saveSettings();toast("Defaults saved");
+  }
+  }catch(err){}finally{if(btn&&btn.isConnected)btn.disabled=false;}
+});
+
+/* ---------- sell helpers (used by deals and side items) ---------- */
+async function sellCardCore(c,qty,priceEach,meta){
+  const sale={cardId:c.id,code:c.code,name:c.name,variant:c.variant,lang:c.lang,kind:c.kind,grader:c.grader||"",grade:c.grade||"",qty,price:Math.round(priceEach*100)/100,costEach:n(c.cost),...meta};
+  await put("sales",sale);const left=n(c.qty)-qty;await put("cards",{...c,qty:left,status:left<=0?"sold":c.status});return sale;
+}
+async function sellLotCore(L,price,meta){
+  const st=lotStats(L);
+  const sale={lotId:L.id,code:"LOT",name:L.name,variant:"",lang:st.langs.join("+"),kind:"lot",qty:1,price:Math.round(price*100)/100,costEach:Math.round(st.cost*100)/100,items:st.cards.map(c=>({cardId:c.id,qty:n(c.qty)})),...meta};
+  await put("sales",sale);for(const c of st.cards)await put("cards",{...c,prevStatus:c.status,qty:0,status:"sold"});await put("lots",{...L,status:"sold",soldDate:sale.date});return sale;
+}
+async function sellItemCore(i,qty,priceEach,meta){
+  const sale={itemId:i.id,code:"ITEM",name:i.name,kind:"item",qty,price:Math.round(priceEach*100)/100,costEach:n(i.cost),...meta};
+  await put("sales",sale);await put("items",{...i,qty:Math.max(0,n(i.qty)-qty)});return sale;
+}
+
+/* ---------- export ---------- */
+async function exportCsv(what){
+  const rows={
+    cards:[["Code","Name","Variant","Variant notes","Rarity","Language","Type","Condition","Grader","Grade","Cert","Qty","Paid each","Market","Sticker","Bought","Source","Location","Status","Lot","Tags","Notes"],
+      ...D("cards").map(c=>[c.code,c.name,c.variant,c.variantNote,c.rarity,c.lang,c.kind,c.cond,c.grader,c.grade,c.cert,c.qty,c.cost,c.market,c.list,c.buyDate,c.source,c.location,c.status,(cardLot(c)||{}).name||"",c.tags,c.notes])],
+    sales:[["Date","Code","Name","Variant","Language","Qty","Price each","Cost each","Fees","Profit","Channel","Show","Paid with"],
+      ...D("sales").map(s=>[s.date,s.code,s.name,s.variant,s.lang,s.qty,s.price,s.costEach,s.fees,saleProfit(s).toFixed(2),s.channel,(byId("shows",s.showId)||{}).name||"",s.pay])],
+    items:[["Name","SKU","Category","Description","Price","Cost each","On hand","Sold"],
+      ...D("items").map(i=>[i.name,i.sku,i.category,i.desc,i.price,i.cost,i.qty,D("sales").filter(s=>s.itemId===i.id).reduce((a,s)=>a+n(s.qty),0)])],
+    shows:[["Date","Show","Venue","Table fee","Other costs","Card sales","Bulk sales","Net profit"],
+      ...D("shows").map(s=>{const x=showNumbers(s);return[s.date,s.name,s.venue,s.tableFee,showCosts(s)-n(s.tableFee),x.rev,x.bulk,x.net.toFixed(2)];})]
+  }[what];
+  const csv=rows.map(r=>r.map(v=>{v=v==null?"":String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(",")).join("\n");
+  if(!S.downloads){toast("Export works when you open this page in Claude.");return;}
+  try{await S.downloads.save({filename:`treasure-log-${what}-${today()}.csv`,data:csv});toast("Export ready");}
+  catch(err){if(err&&err.code!=="declined")toast("Export didn't go through ("+(err.code||"error")+")");}
+}
+
+/* ---------- boot ---------- */
+render();
+(async()=>{
+  if(window.TL_STANDALONE){
+    try{
+      await IDB.open();
+      for(const col of COLS)S[col]=(await IDB.all(col)).map(([,v])=>v);
+      const st=await IDB.get("settings","main");if(st)S.settings={...DEFAULT_SETTINGS,...st};
+      for(const [id,blob] of await IDB.all("photos")){try{PHOTO_URLS[id]=URL.createObjectURL(blob);}catch(_){}}
+      S.idb=true;S.live=true;S.assets=localAssets;S.downloads=localDownloads;useApiKey();
+      try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist();}catch(_){}
+    }catch(e){S.live=false;S.downloads=localDownloads;}
+    S.loaded=true;render();return;
+  }
+  const cl=window.claude;
+  if(!cl||!cl.use){S.loaded=true;render();return;}
+  const [db,assets,downloads,sample]=await Promise.all([cl.use("db").catch(()=>null),cl.use("assets").catch(()=>null),cl.use("downloads").catch(()=>null),cl.use("sample").catch(()=>null)]);
+  S.db=db;S.assets=assets;S.downloads=downloads;S.sample=sample;
+  if(sample){try{const lim=await sample.limits();S.sampleImg=!!(lim&&lim.images);}catch(_){S.sampleImg=false;}}S.live=!!db;S.loaded=true;
+  if(!db){render();return;}
+  COLS.forEach(col=>{
+    db.collection(col).limit(1000).onSnapshot(snap=>{S[col]=snap.docs.map(d=>({id:d.id,...d.data()}));render();},err=>{toast("Couldn't load "+col+": "+(err.message||err.code));});
+  });
+  db.doc("settings/main").onSnapshot(snap=>{if(snap.exists)S.settings={...DEFAULT_SETTINGS,...snap.data()};render();},()=>{});
+  render();
+})();
+})();
+</script>
+
+<script>
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{});});
+}
+</script>
+</body>
+</html>
