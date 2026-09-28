@@ -1,6 +1,6 @@
 // Treasure Log service worker: keeps the app working offline.
 // App files are fetched fresh when online (so updates arrive), with the saved copy as fallback.
-const CACHE = "tl-35c5e934";
+const CACHE = "tl-c7da9ba1";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
@@ -15,7 +15,7 @@ self.addEventListener("fetch", e => {
       if (res.ok) { const cp = res.clone(); caches.open(CACHE).then(c => c.put(r, cp)); }
       return res;
     }).catch(() => caches.match(r).then(m => m || caches.match("./index.html"))));
-  } else if (u.hostname.endsWith("onepiece-cardgame.com") && !u.search.includes("probe=1")) {
+  } else if ((u.hostname.endsWith("onepiece-cardgame.com") || u.hostname === "tcgplayer-cdn.tcgplayer.com") && !u.search.includes("probe=1")) {
     e.respondWith(caches.open("tl-cards").then(c => c.match(r).then(m => m || fetch(r).then(res => { c.put(r, res.clone()); return res; }))));
   } else if (u.hostname === "fonts.googleapis.com" || u.hostname === "fonts.gstatic.com") {
     e.respondWith(caches.match(r).then(m => m || fetch(r).then(res => { const cp = res.clone(); caches.open(CACHE).then(c => c.put(r, cp)); return res; })));

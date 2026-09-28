@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.TL_STANDALONE=true;window.TL_VERSION="35c5e934";</script>
+<script>window.TL_STANDALONE=true;window.TL_VERSION="c7da9ba1";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -297,7 +297,7 @@ const CAN_OFFICIAL=!!window.TL_STANDALONE;
 const OFFICIAL={EN:"https://en.onepiece-cardgame.com/images/cardlist/card/",JP:"https://www.onepiece-cardgame.com/images/cardlist/card/"};
 const codeOk=c=>/^[A-Z]{1,5}\d{0,2}-\d{3}$/.test(String(c||"").trim().toUpperCase());
 const officialUrl=(code,lang,suf)=>OFFICIAL[lang==="JP"?"JP":"EN"]+encodeURIComponent(String(code).trim().toUpperCase())+(suf||"")+".png";
-function probeImg(url){return new Promise(res=>{const i=new Image();let done=false;const fin=v=>{if(!done){done=true;clearTimeout(t);res(v);}};const t=setTimeout(()=>fin(false),9000);i.referrerPolicy="no-referrer";i.onload=()=>fin(i.naturalWidth>10);i.onerror=()=>fin(false);i.src=url+"?probe=1";});}
+function probeImg(url){return new Promise(res=>{const i=new Image();let done=false;const fin=v=>{if(!done){done=true;clearTimeout(t);res(v);}};const t=setTimeout(()=>fin(false),9000);i.referrerPolicy="no-referrer";i.onload=()=>fin(i.naturalWidth>10);i.onerror=()=>fin(false);i.src=url+(url.includes("?")?"&":"?")+"probe=1";});}
 const VCACHE={};
 async function findVersions(code,lang){
   const key=code+"|"+lang;if(VCACHE[key])return VCACHE[key];
@@ -307,11 +307,26 @@ async function findVersions(code,lang){
   if(!v.length){v=await tryLang(lang==="JP"?"EN":"JP");other=v.length>0;}
   const out={v,other};if(v.length)VCACHE[key]=out;return out;
 }
+function linkToImage(u){
+  u=String(u||"").trim();
+  const m=u.match(/tcgplayer\.com\/product\/(\d+)/i);if(m)return`https://tcgplayer-cdn.tcgplayer.com/product/${m[1]}_in_1000x1000.jpg`;
+  if(/^https:\/\/tcgplayer-cdn\.tcgplayer\.com\/product\/\d+/i.test(u))return u.split("?")[0];
+  if(/^https:\/\/\S+\.(jpe?g|png|webp|gif)(\?\S*)?$/i.test(u))return u;
+  return null;
+}
+function linkBox(id){return`<div class="bar" style="margin-top:4px"><input id="${id}" class="search" type="url" inputmode="url" placeholder="…or paste a TCGplayer card link" aria-label="Picture link" style="min-width:0"><button type="button" class="btn sm" data-linkfor="${id}">Use picture</button></div><span class="hint" id="${id}-st">For DON!! cards, promos or anything not on the official list.</span>`;}
+async function useLink(inputId,onOk){
+  const inp=document.getElementById(inputId),st=document.getElementById(inputId+"-st");const url=linkToImage(inp.value);
+  if(!url){st.textContent="Paste a TCGplayer card page link, or a link that ends in .jpg or .png.";return;}
+  st.textContent="Checking the picture…";
+  if(!(await probeImg(url))){st.textContent="Couldn't load a picture from that link.";return;}
+  st.textContent="Picture set.";onOk(url);
+}
 const vLabel=s=>s?"Version "+s.replace("_",""):"Regular";
 /* renders the version strip; onPick({suf,url}|null) */
 async function mountPicker(el,code,lang,selected,onPick){
   code=String(code||"").trim().toUpperCase();
-  if(!codeOk(code)){el.innerHTML=`<span class="hint">Type a card code like OP05-119 to see its versions.</span>`;return;}
+  if(!codeOk(code)){el.innerHTML=`<span class="hint">${code?"The official list has no pictures for this code. Paste a TCGplayer link below.":"Type a card code like OP05-119 to see its versions."}</span>`;return;}
   el.innerHTML=`<span class="hint">Looking up ${esc(code)} on the official card list…</span>`;
   const token=(el._tok=(el._tok||0)+1);
   let res;try{res=await findVersions(code,lang);}catch(e){res={v:[],other:false};}
@@ -881,7 +896,7 @@ const SHEETS={
         <div class="field"><label for="f-name">Name</label><input id="f-name" name="name" placeholder="Monkey.D.Luffy" value="${esc(c.name||"")}"></div>
         <div class="field"><label for="f-var">Variant</label><select id="f-var" name="variant">${opt(VARIANTS,c.variant)}</select></div>
         <div class="field"><label for="f-rar">Rarity</label><select id="f-rar" name="rarity">${opt(RARITIES,c.rarity||"")}</select></div>
-        <div class="field full" ${CAN_OFFICIAL?"":"hidden"}><label>Pick your version (official pictures)</label><div id="vp" class="vpick"></div><input type="hidden" name="officialImg" value="${esc(c.officialImg||"")}"><input type="hidden" name="imgSuffix" value="${esc(c.imgSuffix??"")}"></div>
+        <div class="field full" ${CAN_OFFICIAL?"":"hidden"}><label>Pick your version (official pictures)</label><div id="vp" class="vpick"></div>${linkBox("f-link")}<input type="hidden" name="officialImg" value="${esc(c.officialImg||"")}"><input type="hidden" name="imgSuffix" value="${esc(c.imgSuffix??"")}"></div>
         <div class="field full"><label for="f-vnote">Variant notes</label><input id="f-vnote" name="variantNote" placeholder="e.g. _p1, gold stamp, box topper" value="${esc(c.variantNote||"")}"></div>
         <div class="field"><label>Language</label>${seg("lang",[["EN","English"],["JP","Japanese"]],c.lang)}</div>
         <div class="field"><label>Type</label>${seg("kind",[["raw","Raw"],["graded","Graded"]],c.kind)}</div>
@@ -922,8 +937,12 @@ const SHEETS={
           if(!S.pendingPhoto){const pv=document.getElementById("phPrev");const s=v?v.url:photoSrc(c);pv.innerHTML=s?`<img class="thumb" src="${esc(s)}" alt="" referrerpolicy="no-referrer">`:`<div class="thumb">No photo</div>`;}
         });};
         form._refreshPicker=refresh;
-        form.code.addEventListener("input",()=>{clearTimeout(tm);tm=setTimeout(()=>{if(form.officialImg.value&&!form.officialImg.value.includes("/"+form.code.value.trim().toUpperCase()))form.officialImg.value="";refresh();},450);});
-        form.addEventListener("change",e=>{if(e.target.name==="lang"){form.officialImg.value="";refresh();}});
+        form.querySelector('[data-linkfor="f-link"]').onclick=()=>useLink("f-link",url=>{
+          form.officialImg.value=url;form.imgSuffix.value="link";vp.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));
+          if(!S.pendingPhoto)document.getElementById("phPrev").innerHTML=`<img class="thumb" src="${esc(url)}" alt="" referrerpolicy="no-referrer">`;
+        });
+        form.code.addEventListener("input",()=>{clearTimeout(tm);tm=setTimeout(()=>{if(form.officialImg.value&&form.imgSuffix.value!=="link"&&!form.officialImg.value.includes("/"+form.code.value.trim().toUpperCase()))form.officialImg.value="";refresh();},450);});
+        form.addEventListener("change",e=>{if(e.target.name==="lang"){if(form.imgSuffix.value!=="link")form.officialImg.value="";refresh();}});
         refresh();
       }
     }};
@@ -939,7 +958,7 @@ const SHEETS={
     return{live:true,title:`<span class="mono">${esc(c.code)}</span> ${esc(c.name||"")}`,body:`
       <div class="detail-top"><div>${imgSrc(c)?`<img class="big" src="${esc(imgSrc(c))}" alt="${esc(c.name||c.code)}" referrerpolicy="no-referrer">`:`<div class="big">${esc(c.code)}</div>`}
         ${CAN_OFFICIAL&&c.officialImg&&photoSrc(c)?`<div style="margin-top:6px"><span class="label">Your photo</span><img class="thumb" style="width:56px;display:block;margin-top:3px" src="${esc(photoSrc(c))}" alt="Your photo"></div>`:""}
-        ${CAN_OFFICIAL&&codeOk(c.code)?`<button class="btn sm" data-act="find-official" data-id="${esc(c.id)}" style="margin-top:6px;width:100%">${c.officialImg?"Change picture":"Find picture"}</button>`:""}</div>
+        ${CAN_OFFICIAL?`<button class="btn sm" data-act="find-official" data-id="${esc(c.id)}" style="margin-top:6px;width:100%">${c.officialImg?"Change picture":"Find picture"}</button>`:""}</div>
         <div><div class="m" style="display:flex;gap:6px;flex-wrap:wrap">${chips(c)}${c.status==="pc"?`<span class="chip ok">My collection</span>`:""}${c.status==="sold"||n(c.qty)<=0?`<span class="chip">Sold out</span>`:""}</div>
         <div class="stat-line muted"><span>Set ${esc(setCode(c.code))}</span>${c.variantNote?`<span>${esc(c.variantNote)}</span>`:""}${c.kind==="graded"&&c.cert?`<span>Cert <span class="mono">${esc(c.cert)}</span></span>`:""}</div>
         <div class="stat-line muted"><span>${esc(c.source||"")}</span>${c.buyDate?`<span>bought ${fdate(c.buyDate)} (${age}d)</span>`:""}${c.location?`<span>in ${esc(c.location)}</span>`:""}</div>
@@ -1289,7 +1308,8 @@ const SHEETS={
   },
   pickOfficial(id){
     const c=byId("cards",id);if(!c)return null;
-    return{title:`Pick the version · <span class="mono">${esc(c.code)}</span>`,body:`<p class="hint" style="margin:0 0 8px">Official ${c.lang==="JP"?"Japanese":"English"} card pictures for ${esc(c.code)}. Tap the one that matches your card.</p><div id="vp2" class="vpick"></div>`,after(){
+    return{title:`Pick the version · <span class="mono">${esc(c.code)}</span>`,body:`<p class="hint" style="margin:0 0 8px">Official ${c.lang==="JP"?"Japanese":"English"} card pictures for ${esc(c.code)}. Tap the one that matches your card.</p><div id="vp2" class="vpick"></div>${linkBox("p-link")}`,after(){
+      document.querySelector('[data-linkfor="p-link"]').onclick=()=>useLink("p-link",async url=>{const cur=byId("cards",id);await put("cards",{...cur,officialImg:url,imgSuffix:"link"});toast("Picture set");openSheet("card",id);});
       mountPicker(document.getElementById("vp2"),c.code,c.lang,c.officialImg,async v=>{
         const cur=byId("cards",id);const upd={...cur,officialImg:v?v.url:"",imgSuffix:v?v.suf:""};
         if(v&&v.suf&&cur.variant==="Regular")upd.variant="Alt art (parallel)";
