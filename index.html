@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="8b6f1435";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="ee8e3764";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -2013,7 +2013,29 @@ function pgBackground(im){const {w,h,d}=im;
   for(let x=0;x<w;x+=3){for(let y=0;y<m;y+=2){add(x,y);add(x,h-1-y);}}for(let y=0;y<h;y+=3){for(let x=0;x<m;x+=2){add(x,y);add(w-1-x,y);}}
   return [pgMedian(R),pgMedian(G),pgMedian(B)];}
 function pgDist(im,bg,x,y){const i=(y*im.w+x)*4;const a=im.d[i]-bg[0],b=im.d[i+1]-bg[1],c=im.d[i+2]-bg[2];return Math.sqrt(a*a+b*b+c*c);}
-let PG_T=45;
+let PG_T=45,PG_INOUT=false;
+/* low-contrast border on a textured background: find the edge by walking outwards from inside the card instead */
+function pgLastCross(get,n,T){if(get(n-1)<=T||get(n-2)<=T)return null;for(let i=n-2;i>=6;i--){if(get(i)<=T){let ok=true;for(let k=1;k<6;k++)if(get(i-k)>T){ok=false;break;}
+  if(!ok)continue;const p0=get(i),p1=get(i+1);return {pos:i+(T-p0)/(p1-p0),touch:false};}}return {pos:0,touch:true};}
+let PG_FEAT=null;
+/* how different a colour is from the background: plain colour distance, or (for low-contrast cards) a learned card-vs-background score */
+function pgD(r,g,b,bg){const f=PG_FEAT;if(f)return Math.max(0,(f.w[0]*(r-f.m[0])+f.w[1]*(g-f.m[1])+f.w[2]*(b-f.m[2]))*f.k);const a=r-bg[0],c=g-bg[1],e=b-bg[2];return Math.sqrt(a*a+c*c+e*e);}
+/* learn which colour direction best separates the card's border from the background right around it (Fisher / LDA),
+   scaled so background ~0 and border ~100 */
+function pgLearnFeat(im,H){const bgS=[],cdS=[];const push=(arr,u,v)=>{const [x,y]=H(u,v);if(x<0||y<0||x>=im.w-1||y>=im.h-1)return;const o=((y|0)*im.w+(x|0))*4;arr.push([im.d[o],im.d[o+1],im.d[o+2]]);};
+  for(let t=0.08;t<=0.92;t+=0.004){const u=t*CARD_W,v=t*CARD_H;
+    for(const off of [0.35,0.6,0.85,1.1,1.4]){push(bgS,u,-off);push(bgS,u,CARD_H+off);push(bgS,-off,v);push(bgS,CARD_W+off,v);}
+    for(const off of [0.35,0.55,0.75,0.95]){push(cdS,u,off);push(cdS,u,CARD_H-off);push(cdS,off,v);push(cdS,CARD_W-off,v);}}
+  if(bgS.length<100||cdS.length<100)return null;
+  const mean=a=>[0,1,2].map(c=>a.reduce((s,p)=>s+p[c],0)/a.length);const mb=mean(bgS),mc=mean(cdS);
+  const S=[[0,0,0],[0,0,0],[0,0,0]];for(const [a,m] of [[bgS,mb],[cdS,mc]])for(const p of a)for(let i=0;i<3;i++)for(let j=0;j<3;j++)S[i][j]+=(p[i]-m[i])*(p[j]-m[j])/(bgS.length+cdS.length);
+  for(let i=0;i<3;i++)S[i][i]+=4;
+  const w=pgSolve3(S,[mc[0]-mb[0],mc[1]-mb[1],mc[2]-mb[2]]);const sep=w[0]*(mc[0]-mb[0])+w[1]*(mc[1]-mb[1])+w[2]*(mc[2]-mb[2]);if(!(sep>0))return null;
+  // how well separated (in background noise units)
+  const proj=a=>a.map(p=>w[0]*(p[0]-mb[0])+w[1]*(p[1]-mb[1])+w[2]*(p[2]-mb[2]));const pb=proj(bgS),pc=proj(cdS);
+  const sd=x=>{const m=x.reduce((s,v)=>s+v,0)/x.length;return Math.sqrt(x.reduce((s,v)=>s+(v-m)**2,0)/x.length);};
+  return {w,m:mb,k:100/sep,snr:sep/Math.max(1e-9,Math.sqrt((sd(pb)**2+sd(pc)**2)/2))};}
+function pgCross(get,n,T){return PG_INOUT?pgLastCross(get,n,T):pgFirstCross(get,n,T);}
 function pgFirstCross(get,n,T){for(let i=0;i<n-6;i++){if(get(i)>T){let ok=true;for(let k=1;k<6;k++)if(get(i+k)<=T){ok=false;break;}
   if(!ok)continue;if(i===0)return {pos:0,touch:true};const p0=get(i-1),p1=get(i);return {pos:i-1+(T-p0)/(p1-p0),touch:false};}}return null;}
 function pgEdgePoints(im,bg){const {w,h}=im;const P={L:[],R:[],T:[],B:[]};let touch=0,total=0;
@@ -2043,29 +2065,128 @@ function pgLineTLS(pts){let keep=pts.map(()=>true),L=null;
     const r=pts.map(p=>nx*p[0]+ny*p[1]-c);const rk=r.filter((_,i)=>keep[i]);const sd=Math.max(1e-9,pgMAD(rk,pgMedian(rk)));
     L={nx,ny,c,dx,dy,sd,n:rk.length};keep=r.map(x=>Math.abs(x)<2.5*Math.max(sd,0.5));}
   return L;}
+function pgLineRansac(pts,tol){if(pts.length<6)return pgLineTLS(pts);let seed=12345;const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;};
+  let best=null,bestN=-1;const n=pts.length;
+  for(let it=0;it<300;it++){const a=pts[(rnd()*n)|0],b=pts[(rnd()*n)|0];const dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy);if(l<1e-6)continue;
+    const nx=-dy/l,ny=dx/l,c=nx*a[0]+ny*a[1];let cnt=0;for(const p of pts)if(Math.abs(nx*p[0]+ny*p[1]-c)<tol)cnt++;if(cnt>bestN){bestN=cnt;best={nx,ny,c};}}
+  const inl=pts.filter(p=>Math.abs(best.nx*p[0]+best.ny*p[1]-best.c)<tol);return pgLineTLS(inl.length>=3?inl:pts);}
 function pgIntersect(a,b){const det=a.nx*b.ny-a.ny*b.nx;return [(a.c*b.ny-a.ny*b.c)/det,(a.nx*b.c-a.c*b.nx)/det];}
-/* find the card anywhere in the photo, at any angle */
-function pgCardLines(im,bg){
-  const s=Math.min(1,900/Math.max(im.w,im.h));const w=Math.max(8,Math.round(im.w*s)),h=Math.max(8,Math.round(im.h*s));
-  const dm=new Float32Array(w*h);let dmax=1;
-  for(let y=0;y<h;y++){const sy=Math.min(im.h-1,Math.round((y+.5)/s-.5));for(let x=0;x<w;x++){const v=pgDist(im,bg,Math.min(im.w-1,Math.round((x+.5)/s-.5)),sy);dm[y*w+x]=v;if(v>dmax)dmax=v;}}
-  // 1) card vs background: a threshold learned from this photo (Otsu)
-  PG_T=Math.max(22,Math.min(110,pgOtsu(dm,dmax+1)*0.8));
-  const mask=new Uint8Array(w*h);for(let i=0;i<w*h;i++)mask[i]=dm[i]>PG_T?1:0;
-  // 2) keep the biggest shape (the card); specks and other objects are ignored
-  const lab=new Int32Array(w*h).fill(-1),stack=new Int32Array(w*h);let best=-1,bestN=0,comp=0;
+/* background model: smooth (quadratic) colour field fitted to the background around the card */
+function pgQuadFit(pts,W,H){ // pts: [x,y,r,g,b]; returns coefficients per channel on normalized coords
+  const bas=(x,y)=>{const u=x/W*2-1,v=y/H*2-1;return [1,u,v,u*u,u*v,v*v];};
+  const solve=(A,b)=>{const n=b.length,M=A.map((r,i)=>[...r,b[i]]);for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;[M[c],M[p]]=[M[p],M[c]];if(Math.abs(M[c][c])<1e-12)continue;
+    for(let r=0;r<n;r++){if(r===c)continue;const f=M[r][c]/M[c][c];for(let k=c;k<=n;k++)M[r][k]-=f*M[c][k];}}return M.map((r,i)=>Math.abs(r[i])<1e-12?0:r[n]/r[i]);};
+  let keep=pts.map(()=>true),C=null;
+  for(let it=0;it<6;it++){const A=[...Array(6)].map(()=>new Array(6).fill(0)),B=[0,1,2].map(()=>new Array(6).fill(0));
+    for(let i=0;i<pts.length;i++){if(!keep[i])continue;const p=pts[i],f=bas(p[0],p[1]);for(let a=0;a<6;a++){for(let b=0;b<6;b++)A[a][b]+=f[a]*f[b];for(let c=0;c<3;c++)B[c][a]+=f[a]*p[2+c];}}
+    C=B.map(b=>solve(A,b));
+    const res=pts.map(p=>{const f=bas(p[0],p[1]);let s=0;for(let c=0;c<3;c++){let m=0;for(let a=0;a<6;a++)m+=C[c][a]*f[a];s+=(p[2+c]-m)**2;}return Math.sqrt(s);});
+    const kr=res.filter((_,i)=>keep[i]);const md=pgMedian(kr);keep=res.map(r=>r<Math.max(10,3*md));}
+  return {C,W,H,at(x,y){const u=x/W*2-1,v=y/H*2-1,f=[1,u,v,u*u,u*v,v*v];return C.map(c=>{let m=0;for(let a=0;a<6;a++)m+=c[a]*f[a];return Math.max(0,Math.min(255,m));});}};}
+function pgFlatten(im){const {w,h,d}=im;const s=Math.min(1,320/Math.max(w,h));const gw=Math.max(8,Math.round(w*s)),gh=Math.max(8,Math.round(h*s));
+  const G=new Float32Array(gw*gh*3);
+  for(let y=0;y<gh;y++){const sy=Math.min(h-1,Math.round((y+.5)/s-.5));for(let x=0;x<gw;x++){const sx=Math.min(w-1,Math.round((x+.5)/s-.5));const i=(sy*w+sx)*4,o=(y*gw+x)*3;G[o]=d[i];G[o+1]=d[i+1];G[o+2]=d[i+2];}}
+  const P=(x,y)=>{const o=(y*gw+x)*3;return [x/s,y/s,G[o],G[o+1],G[o+2]];};
+  const m=Math.max(2,Math.round(0.025*Math.min(gw,gh)));const ring=[];
+  for(let y=0;y<gh;y++)for(let x=0;x<gw;x++)if(x<m||y<m||x>=gw-m||y>=gh-m)ring.push(P(x,y));
+  let M=pgQuadFit(ring,w,h);
+  const distG=M2=>{const D=new Float32Array(gw*gh);for(let y=0;y<gh;y++)for(let x=0;x<gw;x++){const b=M2.at(x/s,y/s),o=(y*gw+x)*3;D[y*gw+x]=Math.hypot(G[o]-b[0],G[o+1]-b[1],G[o+2]-b[2]);}return D;};
+  let D=distG(M);
+  // rough card mask, then refit the background on everything well away from it
+  const ringD=[];for(let y=0;y<gh;y++)for(let x=0;x<gw;x++)if(x<m||y<m||x>=gw-m||y>=gh-m)ringD.push(D[y*gw+x]);ringD.sort((a,b)=>a-b);
+  const noise=ringD[Math.floor(ringD.length*0.6)];
+  const T0=Math.max(15,4*noise);const mask=new Uint8Array(gw*gh);for(let i=0;i<gw*gh;i++)mask[i]=D[i]>T0?1:0;
+  const lab=pgLargest(mask,gw,gh);
+  if(lab){const r=Math.round(0.03*Math.max(gw,gh));const dil=pgDilate(lab,gw,gh,r);const pts=[];for(let y=0;y<gh;y++)for(let x=0;x<gw;x++)if(!dil[y*gw+x])pts.push(P(x,y));
+    if(pts.length>gw*gh*0.03)M=pgQuadFit(pts,w,h);}
+  // reference colour = the background's typical colour; every pixel is shifted by (reference - local background)
+  const ref=M.at(w/2,h/2).map(()=>0);let n=0;for(const q of ring){const b=M.at(q[0],q[1]);for(let c=0;c<3;c++)ref[c]+=b[c];n++;}for(let c=0;c<3;c++)ref[c]/=n;
+  // only worth it when the photo's rim really is background (not a tight crop of the card)
+  let good=0;for(const q of ring){const b=M.at(q[0],q[1]);if(Math.hypot(q[2]-b[0],q[3]-b[1],q[4]-b[2])<25)good++;}
+  if(good<ring.length*0.6)return {ok:false};
+  const out=pgApplyBg(im,(x,y)=>M.at(x,y),ref);
+  return {ok:true,flat:true,w,h,d:out,url:im.url,bgRef:ref.map(Math.round)};}
+/* shift every pixel by (reference - local background); background sampled on a coarse grid, bilinear in between */
+function pgApplyBg(im,at,ref){const {w,h,d}=im;const cs=32,cw=Math.ceil(w/cs)+1,ch=Math.ceil(h/cs)+1,F=new Float32Array(cw*ch*3);
+  for(let y=0;y<ch;y++)for(let x=0;x<cw;x++){const b=at(Math.min(w-1,x*cs),Math.min(h-1,y*cs));for(let c=0;c<3;c++)F[(y*cw+x)*3+c]=ref[c]-b[c];}
+  const out=new Uint8ClampedArray(d.length);const row=new Float32Array(cw*3),px=new Float32Array(w*3);
+  for(let y=0;y<h;y++){const gy=y/cs,y0=Math.min(ch-2,gy|0),fy=gy-y0;
+    if(y%4===0||y===0){for(let k=0;k<cw*3;k++)row[k]=F[y0*cw*3+k]*(1-fy)+F[(y0+1)*cw*3+k]*fy;
+      for(let x=0;x<w;x++){const gx=x/cs,x0=Math.min(cw-2,gx|0),fx=gx-x0,a=x0*3;px[x*3]=row[a]*(1-fx)+row[a+3]*fx;px[x*3+1]=row[a+1]*(1-fx)+row[a+4]*fx;px[x*3+2]=row[a+2]*(1-fx)+row[a+5]*fx;}}
+    let i=y*w*4;for(let x=0,j=0;x<w;x++,i+=4,j+=3){out[i]=d[i]+px[j];out[i+1]=d[i+1]+px[j+1];out[i+2]=d[i+2]+px[j+2];out[i+3]=255;}}
+  return out;}
+/* second, finer background model once the card's outline is known: the median background colour in each patch
+   of the photo outside the card, holes (under the card) filled in smoothly from the surrounding patches */
+function pgFlattenQuad(im,cl,ref){const {w,h,d}=im;const nx=24,ny=Math.max(8,Math.round(24*h/w)),sx=w/nx,sy=h/ny;
+  const Qd=[cl.TL,cl.TR,cl.BR,cl.BL];const cx=(Qd[0][0]+Qd[1][0]+Qd[2][0]+Qd[3][0])/4,cy=(Qd[0][1]+Qd[1][1]+Qd[2][1]+Qd[3][1])/4;
+  // grow the outline ~2% so the card's own edge never counts as background
+  const grow=0.02*Math.hypot(w,h);const Q=Qd.map(([x,y])=>{const dx=x-cx,dy=y-cy,l=Math.hypot(dx,dy)||1;return [x+dx/l*grow,y+dy/l*grow];});
+  const inside=(x,y)=>{let pos=0,neg=0;for(let k=0;k<4;k++){const a=Q[k],b=Q[(k+1)%4];const c=(b[0]-a[0])*(y-a[1])-(b[1]-a[1])*(x-a[0]);if(c>0)pos++;else neg++;}return pos===4||neg===4;};
+  const G=new Float32Array(nx*ny*3),has=new Uint8Array(nx*ny);const step=Math.max(2,Math.round(Math.min(sx,sy)/10));
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const R=[],Gc=[],B=[];for(let y=Math.floor(j*sy);y<Math.min(h,(j+1)*sy);y+=step)for(let x=Math.floor(i*sx);x<Math.min(w,(i+1)*sx);x+=step){if(inside(x,y))continue;const o=(y*w+x)*4;R.push(d[o]);Gc.push(d[o+1]);B.push(d[o+2]);}
+    if(R.length>=12){const k=(j*nx+i)*3;G[k]=pgMedian(R);G[k+1]=pgMedian(Gc);G[k+2]=pgMedian(B);has[j*nx+i]=1;}}
+  if(has.reduce((a,b)=>a+b,0)<6)return null;
+  // fill the cells under the card: repeated neighbour averaging (a smooth membrane)
+  for(let i=0;i<nx*ny;i++)if(!has[i]){let s0=0,s1=0,s2=0,n=0;for(let k=0;k<nx*ny;k++)if(has[k]){s0+=G[k*3];s1+=G[k*3+1];s2+=G[k*3+2];n++;}G[i*3]=s0/n;G[i*3+1]=s1/n;G[i*3+2]=s2/n;}
+  for(let it=0;it<400;it++)for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const q=j*nx+i;if(has[q])continue;let n=0,a0=0,a1=0,a2=0;
+    for(const [di,dj] of [[1,0],[-1,0],[0,1],[0,-1]]){const ii=i+di,jj=j+dj;if(ii<0||jj<0||ii>=nx||jj>=ny)continue;const r=(jj*nx+ii)*3;a0+=G[r];a1+=G[r+1];a2+=G[r+2];n++;}
+    G[q*3]=a0/n;G[q*3+1]=a1/n;G[q*3+2]=a2/n;}
+  const at=(x,y)=>{const gx=Math.max(0,Math.min(nx-1.001,x/sx-0.5)),gy=Math.max(0,Math.min(ny-1.001,y/sy-0.5)),i0=gx|0,j0=gy|0,fx=gx-i0,fy=gy-j0;
+    const v=c=>{const g=(i,j)=>G[(j*nx+i)*3+c];return (g(i0,j0)*(1-fx)+g(i0+1,j0)*fx)*(1-fy)+(g(i0,j0+1)*(1-fx)+g(i0+1,j0+1)*fx)*fy;};return [v(0),v(1),v(2)];};
+  return {ok:true,flat:true,w,h,d:pgApplyBg(im,at,ref),url:im.url,bgRef:ref};}
+function pgLargest(mask,w,h){const lab=new Int32Array(w*h).fill(-1),stack=new Int32Array(w*h);let best=-1,bestN=0,comp=0;
   for(let i=0;i<w*h;i++){if(!mask[i]||lab[i]>=0)continue;let sp=0,n=0;stack[sp++]=i;lab[i]=comp;
     while(sp){const j=stack[--sp];n++;const x=j%w,y=(j/w)|0;
       if(x>0&&mask[j-1]&&lab[j-1]<0){lab[j-1]=comp;stack[sp++]=j-1;}if(x<w-1&&mask[j+1]&&lab[j+1]<0){lab[j+1]=comp;stack[sp++]=j+1;}
       if(y>0&&mask[j-w]&&lab[j-w]<0){lab[j-w]=comp;stack[sp++]=j-w;}if(y<h-1&&mask[j+w]&&lab[j+w]<0){lab[j+w]=comp;stack[sp++]=j+w;}}
     if(n>bestN){bestN=n;best=comp;}comp++;}
-  if(best<0||bestN<w*h*0.03)throw new Error("Couldn't find the card. Use a plain background that contrasts with the card, and keep the whole card in the photo.");
-  const inC=i=>lab[i]===best;
+  if(best<0)return null;const out=new Uint8Array(w*h);for(let i=0;i<w*h;i++)out[i]=lab[i]===best?1:0;out.n=bestN;return out;}
+function pgDilate(m,w,h,r){const a=new Uint8Array(w*h),b=new Uint8Array(w*h);
+  for(let y=0;y<h;y++){let last=-1e9;for(let x=0;x<w;x++){if(m[y*w+x])last=x;if(x-last<=r)a[y*w+x]=1;}last=1e9;for(let x=w-1;x>=0;x--){if(m[y*w+x])last=x;if(last-x<=r)a[y*w+x]=1;}}
+  for(let x=0;x<w;x++){let last=-1e9;for(let y=0;y<h;y++){if(a[y*w+x])last=y;if(y-last<=r)b[y*w+x]=1;}last=1e9;for(let y=h-1;y>=0;y--){if(a[y*w+x])last=y;if(last-y<=r)b[y*w+x]=1;}}
+  return b;}
+function pgQuantile(a,p){const b=[...a].sort((x,y)=>x-y);return b[Math.min(b.length-1,Math.max(0,Math.floor(p*(b.length-1))))];}
+function pgBoxBlur(a,w,h,r){const t=new Float32Array(w*h),n=2*r+1;
+  for(let y=0;y<h;y++){const o=y*w;let acc=0;for(let k=-r;k<=r;k++)acc+=a[o+Math.min(w-1,Math.max(0,k))];
+    for(let x=0;x<w;x++){t[o+x]=acc/n;acc+=a[o+Math.min(w-1,x+r+1)]-a[o+Math.max(0,x-r)];}}
+  for(let x=0;x<w;x++){let acc=0;for(let k=-r;k<=r;k++)acc+=t[Math.min(h-1,Math.max(0,k))*w+x];
+    for(let y=0;y<h;y++){a[y*w+x]=acc/n;acc+=t[Math.min(h-1,y+r+1)*w+x]-t[Math.max(0,y-r)*w+x];}}}
+function pgHull(pts){const P=[...new Map(pts.map(p=>[p[0]+","+p[1],p])).values()].sort((a,b)=>a[0]-b[0]||a[1]-b[1]);if(P.length<3)return P;
+  const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);const lo=[],up=[];
+  for(const p of P){while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p);}
+  for(let i=P.length-1;i>=0;i--){const p=P[i];while(up.length>=2&&cr(up[up.length-2],up[up.length-1],p)<=0)up.pop();up.push(p);}
+  return lo.slice(0,-1).concat(up.slice(0,-1));}
+function pgMaxQuad(H){let h=H;if(h.length>160){const k=h.length/160;h=[...Array(160)].map((_,i)=>H[Math.floor(i*k)]);}const n=h.length;if(n<4)throw new Error("Couldn't find the card's corners.");
+  const tri=(a,b,c)=>Math.abs((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]))/2;let best=-1,Q=null;
+  for(let i=0;i<n;i++)for(let j=i+2;j<n;j++){let b1=-1,k1=-1,b2=-1,k2=-1;
+    for(let k=i+1;k<j;k++){const t=tri(h[i],h[j],h[k]);if(t>b1){b1=t;k1=k;}}
+    for(let k=j+1;k<n+i;k++){const t=tri(h[i],h[j],h[k%n]);if(t>b2){b2=t;k2=k%n;}}
+    if(k1>=0&&k2>=0&&b1+b2>best){best=b1+b2;Q=[h[i],h[k1],h[j],h[k2]];}}
+  return Q;}
+/* find the card anywhere in the photo, at any angle */
+function pgCardLines(im,bg){
+  const s=Math.min(1,900/Math.max(im.w,im.h));const w=Math.max(8,Math.round(im.w*s)),h=Math.max(8,Math.round(im.h*s));
+  const dm=new Float32Array(w*h);let dmax=1;
+  for(let y=0;y<h;y++){const sy=Math.min(im.h-1,Math.round((y+.5)/s-.5));for(let x=0;x<w;x++){const v=pgDist(im,bg,Math.min(im.w-1,Math.round((x+.5)/s-.5)),sy);dm[y*w+x]=v;if(v>dmax)dmax=v;}}
+  // smooth away background texture (leather, wood grain, cloth)
+  if(im.flat){pgBoxBlur(dm,w,h,2);pgBoxBlur(dm,w,h,2);}
+  // 1) card vs background: a threshold learned from this photo, kept above the background's own texture
+  const m=Math.max(2,Math.round(0.02*Math.min(w,h)));const ring=[];for(let y=0;y<h;y+=2)for(let x=0;x<w;x+=2)if(x<m||y<m||x>=w-m||y>=h-m)ring.push(dm[y*w+x]);
+  const otsuT=Math.max(22,Math.min(110,pgOtsu(dm,dmax+1)*0.8));
+  // on an evened-out background, anything clearly above the background's own texture is card
+  PG_T=im.flat?Math.max(18,2.5*pgMedian(ring)):otsuT;const segT=PG_T;
+  let mask=new Uint8Array(w*h);for(let i=0;i<w*h;i++)mask[i]=dm[i]>PG_T?1:0;
+  // cut thin bridges between the card and bits of background (opening)
+  if(im.flat){const r=Math.max(2,Math.round(0.008*Math.max(w,h)));const inv=new Uint8Array(w*h);for(let i=0;i<w*h;i++)inv[i]=mask[i]?0:1;const di=pgDilate(inv,w,h,r);for(let i=0;i<w*h;i++)inv[i]=di[i]?0:1;mask=pgDilate(inv,w,h,r);}
+  // 2) keep the biggest shape (the card); specks and other objects are ignored
+  const comp=pgLargest(mask,w,h);
+  if(!comp||comp.n<w*h*0.03)throw new Error("Couldn't find the card. Use a plain background that contrasts with the card, and keep the whole card in the photo.");
+  const inC=i=>comp[i]===1;
   // outer outline of that shape (holes inside the card don't matter)
   const outline=[];let touch=0,edgePx=0;
   for(let y=0;y<h;y++){let a=-1,b=-1;for(let x=0;x<w;x++)if(inC(y*w+x)){if(a<0)a=x;b=x;}if(a>=0){outline.push([a,y],[b,y]);if(a===0||b===w-1)touch++;edgePx+=2;}}
   for(let x=0;x<w;x++){let a=-1,b=-1;for(let y=0;y<h;y++)if(inC(y*w+x)){if(a<0)a=y;b=y;}if(a>=0){outline.push([x,a],[x,b]);if(a===0||b===h-1)touch++;edgePx+=2;}}
-  // 3) orientation from the shape's principal axes, rough corners from the extremes
+  // 3) rough corners: the biggest four-sided shape that fits in the outline's convex hull
   let mx=0,my=0,n=0;for(let i=0;i<w*h;i+=3)if(inC(i)){mx+=i%w;my+=(i/w)|0;n++;}mx/=n;my/=n;
   let sxx=0,syy=0,sxy=0;for(let i=0;i<w*h;i+=3)if(inC(i)){const dx=i%w-mx,dy=((i/w)|0)-my;sxx+=dx*dx;syy+=dy*dy;sxy+=dx*dy;}
   const th=0.5*Math.atan2(2*sxy,sxx-syy),ux=Math.cos(th),uy=Math.sin(th),vx=-uy,vy=ux;
@@ -2073,36 +2194,53 @@ function pgCardLines(im,bg){
   const umin=Math.min(...pu),umax=Math.max(...pu),vmin=Math.min(...pv),vmax=Math.max(...pv);
   const nu=pu.map(x=>(x-umin)/(umax-umin)),nv=pv.map(x=>(x-vmin)/(vmax-vmin));
   const pick=f=>{let bi=0,bv=-1e9;for(let i=0;i<outline.length;i++){const v=f(nu[i],nv[i]);if(v>bv){bv=v;bi=i;}}return outline[bi];};
-  const Q=[pick((a,b)=>-a-b),pick((a,b)=>a-b),pick((a,b)=>a+b),pick((a,b)=>-a+b)]; // around the shape
+  const Q=globalThis.PG_HULL?pgMaxQuad(pgHull(outline)):[pick((a,b)=>-a-b),pick((a,b)=>a-b),pick((a,b)=>a+b),pick((a,b)=>-a+b)];
   // 4) outline points belonging to each side (skip the rounded corners), fitted at low resolution
   const diag=Math.hypot(w,h),sides=[];
   for(let k=0;k<4;k++){const A=Q[k],B=Q[(k+1)%4];const ex=B[0]-A[0],ey=B[1]-A[1],len=Math.hypot(ex,ey)||1;const pts=[];
     for(const p of outline){const t=((p[0]-A[0])*ex+(p[1]-A[1])*ey)/(len*len);if(t<0.12||t>0.88)continue;const d=Math.abs((p[0]-A[0])*ey-(p[1]-A[1])*ex)/len;if(d<0.03*diag)pts.push(p);}
     if(pts.length<10)throw new Error("Couldn't find all four card edges. Keep the whole card in the photo with some background around it.");
-    sides.push(pgLineTLS(pts));}
+    sides.push(im.flat?pgLineRansac(pts,2):pgLineTLS(pts));}
   // 5) refine every side at full resolution: march across the edge from the background into the card
-  const cx=mx/s,cy=my/s;const full=sides.map(L=>({nx:L.nx,ny:L.ny,c:L.c/s,dx:L.dx,dy:L.dy}));
+  const cx=mx/s,cy=my/s;let full=sides.map(L=>({nx:L.nx,ny:L.ny,c:L.c/s,dx:L.dx,dy:L.dy}));
+  const reach=Math.max(12,0.012*Math.hypot(im.w,im.h));let refined,mids;
+  for(let pass=0;pass<(im.flat?2:1);pass++){if(pass)full=refined;
   const qc=[0,1,2,3].map(k=>pgIntersect(full[(k+3)%4],full[k]));  // corner k = between side k-1 and side k
-  const refined=[];const reach=Math.max(12,0.012*Math.hypot(im.w,im.h));
+  refined=[];mids=[];
   for(let k=0;k<4;k++){const L=full[k],A=qc[k],B=qc[(k+1)%4];let nx=L.nx,ny=L.ny;
     const mxp=(A[0]+B[0])/2,myp=(A[1]+B[1])/2;if((cx-mxp)*nx+(cy-myp)*ny<0){nx=-nx;ny=-ny;} // n points into the card
     const pts=[];
     for(let q=0;q<=240;q++){const t=0.1+0.8*q/240;const bx=A[0]+(B[0]-A[0])*t,by=A[1]+(B[1]-A[1])*t;
-      const get=i=>{const x=Math.round(bx+nx*(i-reach)),y=Math.round(by+ny*(i-reach));if(x<0||y<0||x>=im.w||y>=im.h)return 0;return pgDist(im,bg,x,y);};
-      const r=pgFirstCross(get,Math.round(2*reach),PG_T);if(r&&!r.touch){const o=r.pos-reach;pts.push([bx+nx*o,by+ny*o]);}}
-    refined.push(pts.length>=20?pgLineTLS(pts):L);}
+      const get=i=>{let sum=0,c=0;for(let e=-2;e<=2;e++){const x=Math.round(bx+nx*(i-reach)+L.dx*e*2),y=Math.round(by+ny*(i-reach)+L.dy*e*2);if(x<0||y<0||x>=im.w||y>=im.h)continue;sum+=pgDist(im,bg,x,y);c++;}return c?sum/c:0;};
+      // the edge sits halfway between the background level and the card's border level on this line
+      const N=Math.round(2*reach),arr=new Float32Array(N);for(let i=0;i<N;i++)arr[i]=get(i);
+      const lo=(arr[0]+arr[1]+arr[2]+arr[3]+arr[4])/5,hi=pgMedian(Array.from(arr.subarray(Math.round(N*0.72))));
+      if(im.flat&&hi-lo<segT*0.7)continue;const mid=im.flat?(lo+hi)/2:PG_T;if(im.flat)mids.push(mid);
+      const r=pgFirstCross(i=>arr[i],N,mid);if(r&&!r.touch){const o=r.pos-reach;pts.push([bx+nx*o,by+ny*o]);}}
+    refined.push(pts.length>=20?(im.flat?pgLineRansac(pts,2.5):pgLineTLS(pts)):L);}}
+  if(mids.length>40)PG_T=Math.max(segT*0.8,pgQuantile(mids,0.2));  // threshold used by the corner and edge checks
   // 6) which side is which: long sides are the card's height; the top is whichever end points up in the photo
   const cor=[0,1,2,3].map(k=>pgIntersect(refined[(k+3)%4],refined[k]));
   const len=k=>Math.hypot(cor[(k+1)%4][0]-cor[k][0],cor[(k+1)%4][1]-cor[k][1]);
   const longK=(len(0)+len(2))>=(len(1)+len(3))?0:1;  // sides longK and longK+2 are the long ones
   let upx=cor[(longK+1)%4][0]-cor[longK][0],upy=cor[(longK+1)%4][1]-cor[longK][1];const ul=Math.hypot(upx,upy);upx/=ul;upy/=ul;if(upy>0){upx=-upx;upy=-upy;}
   const rx=-upy,ry=upx;const dot=(p,a,b)=>p[0]*a+p[1]*b;
-  const choose=f=>cor.reduce((bst,p)=>f(p)<f(bst)?p:bst,cor[0]);
-  const TL=choose(p=>dot(p,rx,ry)-dot(p,upx,upy)),TR=choose(p=>-dot(p,rx,ry)-dot(p,upx,upy)),BR=choose(p=>-dot(p,rx,ry)+dot(p,upx,upy)),BL=choose(p=>dot(p,rx,ry)+dot(p,upx,upy));
-  const lineThrough=(P,Q2)=>refined[[0,1,2,3].find(k=>{const a=cor[k],b=cor[(k+1)%4];return (a===P&&b===Q2)||(a===Q2&&b===P);})];
-  const T=lineThrough(TL,TR),R=lineThrough(TR,BR),B=lineThrough(BR,BL),Lf=lineThrough(BL,TL);
-  if(!T||!R||!B||!Lf)throw new Error("Couldn't work out the card's orientation. Try a straighter photo.");
-  return {L:Lf,R,T,B,TL,TR,BR,BL,touchFrac:edgePx?touch/edgePx*2:0,fitSd:Math.max(T.sd,R.sd,B.sd,Lf.sd)};}
+  // the top is the short side lying furthest "up"; then walk round the quad from it
+  const midUp=k=>dot(cor[k],upx,upy)+dot(cor[(k+1)%4],upx,upy);
+  const t=midUp((longK+1)%4)>=midUp((longK+3)%4)?(longK+1)%4:(longK+3)%4;
+  const q=i=>cor[(t+i)%4],ln=i=>refined[(t+i)%4];
+  let TL,TR,BR,BL,T=ln(0),R,B=ln(2),Lf;
+  if(dot(q(0),rx,ry)<=dot(q(1),rx,ry)){TL=q(0);TR=q(1);R=ln(1);BR=q(2);BL=q(3);Lf=ln(3);}
+  else{TR=q(0);TL=q(1);Lf=ln(1);BL=q(2);BR=q(3);R=ln(3);}
+  // sanity: a convex four-sided shape with a card-like shape
+  const area=Math.abs([TL,TR,BR,BL].reduce((a2,p,i,arr)=>{const n2=arr[(i+1)%4];return a2+p[0]*n2[1]-n2[0]*p[1];},0))/2;
+  const wT=Math.hypot(TR[0]-TL[0],TR[1]-TL[1]),wB=Math.hypot(BR[0]-BL[0],BR[1]-BL[1]),hL=Math.hypot(BL[0]-TL[0],BL[1]-TL[1]),hR=Math.hypot(BR[0]-TR[0],BR[1]-TR[1]);
+  const asp=(hL+hR)/(wT+wB);
+  if(!(area>im.w*im.h*0.04)||asp<1.1||asp>1.75||Math.max(wT,wB)/Math.min(wT,wB)>1.5||Math.max(hL,hR)/Math.min(hL,hR)>1.5)
+    throw new Error("Couldn't outline the card cleanly. Use a plain background that contrasts with the card's border, keep the whole card in the photo, and shoot from straight above.");
+  // on an evened-out background, judge "touches the photo edge" from the card's own outline
+  let tf=edgePx?touch/edgePx*2:0;if(im.flat){let out=0,all=0;for(const [P0,P1] of [[TL,TR],[TR,BR],[BR,BL],[BL,TL]])for(let t=0.06;t<=0.94;t+=0.02){const x=P0[0]+(P1[0]-P0[0])*t,y=P0[1]+(P1[1]-P0[1])*t;all++;if(x<1||y<1||x>im.w-2||y>im.h-2)out++;}tf=out/all;}
+  return {L:Lf,R,T,B,TL,TR,BR,BL,touchFrac:tf,fitSd:Math.max(T.sd,R.sd,B.sd,Lf.sd)};}
 /* homography: card mm -> image px */
 function pgHomography(src,dst){const A=[],bb=[];for(let i=0;i<4;i++){const [x,y]=dst[i],[u,v]=src[i];
   A.push([x,y,1,0,0,0,-u*x,-u*y]);bb.push(u);A.push([0,0,0,x,y,1,-v*x,-v*y]);bb.push(v);}
@@ -2172,9 +2310,9 @@ function pgSolve3(A,b){const M=A.map((r,i)=>[...r,b[i]]);for(let c=0;c<3;c++){le
   for(let r=0;r<3;r++){if(r===c)continue;const f=M[r][c]/M[c][c];for(let k=c;k<4;k++)M[r][k]-=f*M[c][k];}}return M.map((r,i)=>r[3]/r[i]);}
 function pgCorner(im,H,bg,which,resUm){const px=40,pad=0.6,size=5.4;const flipX=which==="TR"||which==="BR",flipY=which==="BL"||which==="BR";
   const Hm=(u,v)=>H(flipX?CARD_W-u:u,flipY?CARD_H-v:v);const wp=pgWarp(im,Hm,bg,-pad,-pad,size,size,px);
-  const dist=(x,y)=>{const o=(y*wp.w+x)*3;const a=wp.d[o]-bg[0],b=wp.d[o+1]-bg[1],c=wp.d[o+2]-bg[2];return Math.sqrt(a*a+b*b+c*c);};
-  const pts=[];for(let y=0;y<wp.h;y++){const r=pgFirstCross(i=>dist(i,y),wp.w,PG_T);if(r&&!r.touch)pts.push([r.pos/px-pad,(y+.5)/px-pad]);}
-  for(let x=0;x<wp.w;x++){const r=pgFirstCross(i=>dist(x,i),wp.h,PG_T);if(r&&!r.touch)pts.push([(x+.5)/px-pad,r.pos/px-pad]);}
+  const dist=(x,y)=>{const o=(y*wp.w+x)*3;return pgD(wp.d[o],wp.d[o+1],wp.d[o+2],bg);};
+  const pts=[];for(let y=0;y<wp.h;y++){const r=pgCross(i=>dist(i,y),wp.w,PG_T);if(r&&!r.touch)pts.push([r.pos/px-pad,(y+.5)/px-pad]);}
+  for(let x=0;x<wp.w;x++){const r=pgCross(i=>dist(x,i),wp.h,PG_T);if(r&&!r.touch)pts.push([(x+.5)/px-pad,r.pos/px-pad]);}
   let arc=pts.filter(([x,y])=>x>0.06&&y>0.06);if(arc.length<20)return {ok:false,wp,pts:[]};
   let c=pgFitCircle(arc);const phi=([x,y])=>Math.atan2(c.cy-y,c.cx-x)*180/Math.PI;
   for(let k=0;k<2;k++){const a2=arc.filter(p=>{const f=phi(p);return f>6&&f<84;});if(a2.length>20){c=pgFitCircle(a2);}}
@@ -2195,8 +2333,8 @@ function pgCorner(im,H,bg,which,resUm){const px=40,pad=0.6,size=5.4;const flipX=
 /* ---- edges (between the corners) ---- */
 function pgEdge(wp,bg,side,resUm){const P=Math.round(0.5*wp.px),px=wp.px;const cw=wp.w-2*P,ch=wp.h-2*P;const n=(side==="L"||side==="R")?ch:cw;
   const at=(i,j)=>{let x,y;if(side==="L"){x=j;y=P+i;}else if(side==="R"){x=wp.w-1-j;y=P+i;}else if(side==="T"){x=P+i;y=j;}else{x=P+i;y=wp.h-1-j;}return (y*wp.w+x)*3;};
-  const dist=(i,j)=>{const o=at(i,j);const a=wp.d[o]-bg[0],b=wp.d[o+1]-bg[1],c=wp.d[o+2]-bg[2];return Math.sqrt(a*a+b*b+c*c);};
-  const u=[],v=[];for(let i=Math.round(4.5*px);i<n-4.5*px;i++){const r=pgFirstCross(j=>dist(i,j),Math.round(2*px),PG_T);if(r&&!r.touch){u.push(i);v.push(r.pos);}}
+  const dist=(i,j)=>{const o=at(i,j);return pgD(wp.d[o],wp.d[o+1],wp.d[o+2],bg);};
+  const u=[],v=[];for(let i=Math.round(4.5*px);i<n-4.5*px;i++){const r=pgCross(j=>dist(i,j),Math.round(2*px),PG_T);if(r&&!r.touch){u.push(i);v.push(r.pos);}}
   if(u.length<50)return null;const f=pgFitLine(u,v);const r=u.map((x,k)=>(v[k]-(f.a*x+f.b))/px*1000);
   const sm=r.map((_,k)=>{let s=0,c=0;for(let q=k-7;q<=k+7;q++)if(q>=0&&q<r.length){s+=r[q];c++;}return s/c;});
   const rough=Math.sqrt(r.reduce((s,x,k)=>s+(x-sm[k])**2,0)/r.length);const sorted=[...r].sort((a,b)=>a-b);const dent=sorted[Math.floor(sorted.length*0.998)];
@@ -2205,11 +2343,15 @@ function pgEdge(wp,bg,side,resUm){const P=Math.round(0.5*wp.px),px=wp.px;const c
   const thrR=Math.max(20,0.8*resUm),thrD=Math.max(80,2.5*resUm);
   return {rough,dent,white,fray:Math.max(0,1000-Math.max(0,Math.round((rough-thrR)/5))-Math.min(30,Math.round(white/3))),fill:Math.max(0,1000-Math.max(0,Math.round((dent-thrD)/20)))};}
 /* ---- one side of the card ---- */
-function pgAnalyze(im){const bg=pgBackground(im);const cl=pgCardLines(im,bg);
+function pgAnalyze(im0){let im=pgFlatten(im0),bg;if(im.ok)bg=im.bgRef;else{im=im0;bg=pgBackground(im0);}const cl=pgCardLines(im,bg);
+  // with the card found, even out the background more finely around it (shadows, bright patches) for the corner and edge checks
+  if(im.ok){const f2=pgFlattenQuad(im0,cl,bg);if(f2)im=f2;}
+  PG_INOUT=false;PG_FEAT=null;
   const H=pgHomography([cl.TL,cl.TR,cl.BR,cl.BL],[[0,0],[CARD_W,0],[CARD_W,CARD_H],[0,CARD_H]]);
   const wPx=Math.hypot(cl.TR[0]-cl.TL[0],cl.TR[1]-cl.TL[1]),hPx=Math.hypot(cl.BL[0]-cl.TL[0],cl.BL[1]-cl.TL[1]);
   const srcPxMm=wPx/CARD_W,resUm=1000/srcPxMm;
-  const wp=pgWarp(im,H,bg,-0.5,-0.5,CARD_W+0.5,CARD_H+0.5,PG_PX);
+  const T0=PG_T;if(im.flat&&PG_T<50){const f=pgLearnFeat(im,H);globalThis.PGF=f;if(f&&f.snr>2){PG_FEAT=f;PG_T=50;}}
+  const wp=pgWarp(im,H,bg,-0.5,-0.5,CARD_W+0.5,CARD_H+0.5,PG_PX);const wpShow=pgWarp(im0,H,bg,-0.5,-0.5,CARD_W+0.5,CARD_H+0.5,PG_PX);
   const cen=pgCentering(wp);
   const corners={};for(const k of ["TL","TR","BL","BR"])corners[k]=pgCorner(im,H,bg,k,resUm);
   // cut-corner angles from the straight edges in the photo (only meaningful when shot flat-on)
@@ -2219,11 +2361,11 @@ function pgAnalyze(im){const bg=pgBackground(im);const cl=pgCardLines(im,bg);
   const ang={TL:angAt(cl.TL,cl.TR,cl.BL),TR:angAt(cl.TR,cl.TL,cl.BR),BL:angAt(cl.BL,cl.BR,cl.TL),BR:angAt(cl.BR,cl.BL,cl.TR)};
   for(const k in corners){const c=corners[k];if(!c.ok)continue;c.angle=flat?ang[k]:null;c.angleScore=flat?Math.max(0,1000-Math.round(Math.abs(ang[k]-90)/0.05)):null;}
   const edges={};for(const k of "TBLR")edges[k]=pgEdge(wp,bg,k,resUm);
-  const warns=[];if(cl.touchFrac>0.15)warns.push("The card touches the edge of the photo. Leave some background all around it.");
+  const warns=[];if(cl.touchFrac>(im.flat?0.01:0.15))warns.push("The card touches the edge of the photo. Leave some background all around it.");
   if(srcPxMm<15)warns.push(`Low resolution (${srcPxMm.toFixed(0)} px per mm). Get closer or use the main camera for sharper results.`);
   if(!flat)warns.push("The photo isn't perfectly flat-on, so corner angles are skipped. Centering and the other checks still work.");
   if(cen.warn)warns.push(cen.warn);
-  return {bg,lines:cl,wp,cen,corners,edges,ratio:hPx/wPx,srcPxMm,resUm,flat,warns};}
+  return {bg,lines:cl,wp,wpShow,cen,corners,edges,ratio:hPx/wPx,srcPxMm,resUm,flat,warns};}
 /* ---- grading limits (centering only) ---- */
 const PG_LIMITS=[
   {co:"PSA",grades:[["10",55,75],["9",60,90],["8",65,90]]},
@@ -2242,7 +2384,7 @@ function pgImages(r,im){const out={};
   if(im){const full=document.createElement("canvas");full.width=im.w;full.height=im.h;full.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(im.d.buffer,im.d.byteOffset,im.d.length),im.w,im.h),0,0);
     const OW=300,OH=Math.round(OW*im.h/im.w),k=OW/im.w;const c=r.lines;
     out.photo=pgToURL(OW,OH,cx=>{cx.drawImage(full,0,0,OW,OH);cx.strokeStyle="#22c55e";cx.lineWidth=2.5;cx.beginPath();[c.TL,c.TR,c.BR,c.BL].forEach((p,i)=>{i?cx.lineTo(p[0]*k,p[1]*k):cx.moveTo(p[0]*k,p[1]*k);});cx.closePath();cx.stroke();
-      cx.fillStyle="#22c55e";cx.font="bold 13px system-ui";cx.fillText("TOP",(c.TL[0]+c.TR[0])/2*k-12,(c.TL[1]+c.TR[1])/2*k-6);});}const wp=r.wp,P=Math.round(0.5*wp.px);
+      cx.fillStyle="#22c55e";cx.font="bold 13px system-ui";cx.fillText("TOP",(c.TL[0]+c.TR[0])/2*k-12,(c.TL[1]+c.TR[1])/2*k-6);});}const wp=r.wpShow||r.wp,P=Math.round(0.5*wp.px);
   const full=pgWpCanvas(wp,0,0,wp.w,wp.h);const W=360,H=Math.round(W*wp.h/wp.w),k=W/wp.w;
   out.card=pgToURL(W,H,cx=>{cx.drawImage(full,0,0,W,H);
     if(r.cen.ok){cx.strokeStyle="#22c55e";cx.lineWidth=1.5;const m=r.cen.mm,px=wp.px;const L=(P+m.L*px)*k,R=(wp.w-P-m.R*px)*k,T=(P+m.T*px)*k,B=(wp.h-P-m.B*px)*k;
@@ -2285,7 +2427,7 @@ function pgReport(R){
     <div class="panel pad pg-card"><div class="label">Corners</div>${line("front",(x,dd)=>`<b>${dd.corners} dings</b>`)}${line("back",(x,dd)=>`<b>${dd.corners} dings</b>`)}</div>
     <div class="panel pad pg-card"><div class="label">Edges</div>${line("front",(x,dd)=>`<b>${dd.edges} dings</b>`)}${line("back",(x,dd)=>`<b>${dd.edges} dings</b>`)}</div>
     <div class="panel pad pg-card"><div class="label">Surface</div><span class="hint">Not measured yet</span></div>
-    <div class="panel pad pg-card"><div class="label">Shape</div>${line("front",x=>`<b class="num">${x.ratio.toFixed(4)}</b>`)}${line("back",x=>`<b class="num">${x.ratio.toFixed(4)}</b>`)}<span class="hint">height ÷ width · standard 1.3968</span></div>
+    <div class="panel pad pg-card"><div class="label">Shape</div>${line("front",x=>x.flat?`<b class="num">${x.ratio.toFixed(4)}</b>`:`<span class="hint">angled photo</span>`)}${line("back",x=>x.flat?`<b class="num">${x.ratio.toFixed(4)}</b>`:`<span class="hint">angled photo</span>`)}<span class="hint">height ÷ width · standard 1.3968</span></div>
   </div>
   ${sides.length>1?`<div class="seg" style="margin-top:14px">${sides.map(([k,l])=>`<label><input type="radio" name="pgview" value="${k}" ${k===tab?"checked":""}>${l}</label>`).join("")}</div>`:""}
   <h3 style="margin-top:14px">${tab==="front"?"Front":"Back"}</h3>
