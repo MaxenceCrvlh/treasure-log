@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="68167d96";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="47f01f28";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -197,6 +197,30 @@ table.t td.r,table.t th.r{text-align:right}
 .newrow{display:grid;grid-template-columns:1.1fr 1.3fr 1fr 1fr auto;gap:6px;margin-top:6px;align-items:center}
 .newrow input,.newrow select{padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);min-width:0;width:100%;font-size:13.5px}
 @media (max-width:520px){.newrow{grid-template-columns:1fr 1fr}.newrow .rm{grid-column:2;justify-self:end}}
+.pg-slots{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pg-slot{display:flex;flex-direction:column;gap:8px;align-items:stretch;text-align:center}
+.pg-prev{width:100%;aspect-ratio:63/88;object-fit:contain;background:var(--surface2);border-radius:8px}
+.pg-empty{display:grid;place-items:center;aspect-ratio:63/88;border:1.5px dashed var(--line);border-radius:8px;color:var(--muted);font-size:13px;cursor:pointer}
+.pg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pg-grid .full{grid-column:1/-1}
+.pg-card{text-align:center;display:flex;flex-direction:column;gap:3px}
+.pg-card b{font-size:16px}
+.pg-map{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;margin-top:8px}
+.pg-cardimg{width:100%;border-radius:8px;border:1px solid var(--line)}
+.pg-mapbox{position:relative;aspect-ratio:63/88;border:1.5px solid var(--ink);border-radius:4px;background:var(--surface)}
+.pg-mapbox::before{content:"";position:absolute;inset:12%;border:1.5px dashed var(--muted)}
+.pg-c{position:absolute;font-size:12px;font-weight:700;background:var(--surface);padding:0 3px}
+.pg-c.t{top:4%;left:50%;transform:translateX(-50%)}.pg-c.b{bottom:4%;left:50%;transform:translateX(-50%)}
+.pg-c.l{left:1%;top:50%;transform:translateY(-50%) rotate(-90deg)}.pg-c.r{right:1%;top:50%;transform:translateY(-50%) rotate(90deg)}
+.pg-inner{position:absolute;inset:22% 16%;display:flex;flex-direction:column;justify-content:center;gap:4px;font-size:11.5px;text-align:center}
+.pg-corners{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pg-tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:3px;text-align:center}
+.pg-tile img{width:100%;max-width:150px;align-self:center;border-radius:6px}
+.pg-kv{display:flex;justify-content:space-between;font-size:13px;padding:0 6px}
+.pg-edges{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pg-tile.v{flex-direction:row;align-items:center;gap:10px;text-align:left}
+.pg-tile.v img{width:30px;height:auto;max-width:30px}
+.pg-tile.v>div{flex:1}
 .trow{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-top:8px}
 .trow input,.trow select{padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);min-width:0;width:100%;font-size:13.5px}
 .trow .rm{justify-self:end}
@@ -594,9 +618,10 @@ const ICONS={
   shows:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M3 10h18v4H3z"/><path d="M5 14v6M19 14v6M8 10V6h8v4"/></svg>',
   money:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>',
   items:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg>',
+  grade:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M3 8h3M3 16h3M18 8h3M18 16h3M9 3v-1M15 3v-1M9 22v-1M15 22v-1"/></svg>',
   tools:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h1M14 11h1M9 15h1M14 15h1"/></svg>'
 };
-const TABS=[["home","Home"],["cards","Cards"],["items","Items"],["shows","Shows"],["money","Money"],["tools","Tools"]];
+const TABS=[["home","Home"],["cards","Cards"],["items","Items"],["shows","Shows"],["money","Money"],["grade","Grade"],["tools","Tools"]];
 
 function stockCards(){return D("cards").filter(c=>c.status!=="sold"&&n(c.qty)>0);}
 function totals(){
@@ -923,9 +948,10 @@ function render(){
     if(hasData&&(age===null||age>=7))b+=`<div class="banner"><span>Your log is only on this phone. Last backup: <b>${lb?age+" days ago":"never"}</b>.</span><button class="btn sm" data-act="tab" data-v="tools">Back up now</button></div>`;
   }
   st.innerHTML=b;
+  const fab=document.querySelector(".fab");if(fab)fab.hidden=S.tab==="grade";
   const main=document.getElementById("main");
   const focusQ=document.activeElement&&document.activeElement.id==="q";
-  main.innerHTML=({home:vHome,cards:vCards,items:vItems,shows:vShows,money:vMoney,tools:vTools}[S.tab]||vHome)();
+  main.innerHTML=({home:vHome,cards:vCards,items:vItems,grade:vGrade,shows:vShows,money:vMoney,tools:vTools}[S.tab]||vHome)();
   if(S.tab==="cards"){const s=document.getElementById("sort");if(s)s.value=S.sort;if(focusQ){const q=document.getElementById("q");q.focus();q.setSelectionRange(q.value.length,q.value.length);}}
   if(S.tab==="tools")calc();
   if(S.sheet&&S.sheet.live)openSheet(S.sheet.type,S.sheet.arg,true);
@@ -1079,6 +1105,8 @@ const SHEETS={
         </form>
         ${comps.length?`<div class="panel scroll" style="margin-top:10px"><table class="t num"><tbody>${comps.map(x=>`<tr><td>${fdate(x.date)}</td><td>${esc(x.src)}</td><td>${x.kind==="listed"?`<span class="chip">Listed</span>`:`<span class="chip ok">Sold</span>`}</td><td class="r"><b>${money(x.price)}</b></td><td class="r"><button class="btn sm" data-act="del-comp" data-id="${esc(c.id)}" data-i="${x.i}" aria-label="Remove comp">×</button></td></tr>`).join("")}</tbody></table></div>`:""}
       </div>
+      ${c.pregrade?`<div class="section"><h3>Pre-grade</h3><div class="panel pad num" style="font-size:14px">${c.pregrade.front?`<div>Front centering <b>${pgF(c.pregrade.front.lr)}/${100-pgF(c.pregrade.front.lr)}</b> · <b>${pgF(c.pregrade.front.tb)}/${100-pgF(c.pregrade.front.tb)}</b></div>`:""}${c.pregrade.back?`<div>Back centering <b>${pgF(c.pregrade.back.lr)}/${100-pgF(c.pregrade.back.lr)}</b> · <b>${pgF(c.pregrade.back.tb)}/${100-pgF(c.pregrade.back.tb)}</b></div>`:""}
+        <div class="stat-line">${(c.pregrade.caps||[]).map(x=>`<span class="chip ${/^below/.test(x.g)?"warn":"ok"}">${esc(x.co)} ${esc(x.g)}</span>`).join("")}</div><div class="hint">Measured ${fdate(c.pregrade.date)} in the Grade tab</div></div></div>`:""}
       ${(c.gradingHistory||[]).length?`<div class="section"><h3>Grading history</h3><div class="panel scroll"><table class="t num"><tbody>${c.gradingHistory.map(g=>`<tr><td>${esc(g.company)}</td><td>${fdate(g.sent)} → ${fdate(g.returned)}</td><td>${g.days??""}d</td><td class="r">${money(n(g.fee)+n(g.extra))}</td><td class="r"><b>${esc(g.result||"")}</b></td></tr>`).join("")}</tbody></table></div><p class="hint">Grading costs are added to what you paid for the card, so profit on the sale includes them.</p></div>`:""}
       ${sales.length?`<div class="section"><h3>Sold from this listing</h3><div class="panel">${sales.map(saleRow).join("")}</div></div>`:""}
     `,after(){ if(window.innerWidth<520){const f=document.querySelector('form[data-form="comp"]');if(f)f.style.gridTemplateColumns="1fr 1fr";} }};
@@ -1680,6 +1708,10 @@ document.addEventListener("click",async e=>{
     case"apply-list":{if(exBlock())return;const c=byId("cards",id);await put("cards",{...c,list:suggestList(c.market)});break;}
     case"copy":try{await navigator.clipboard.writeText(el.dataset.v);toast("Copied");}catch(_){toast("Select the text to copy it");}break;
     case"export":await exportCsv(el.dataset.what);break;
+    case"pg-run":await pgRun();break;
+    case"pg-clear":{const k=el.dataset.v;if(PG[k]&&PG[k].url)try{URL.revokeObjectURL(PG[k].url);}catch(_){}PG[k]=null;render();break;}
+    case"pg-attach":{if(exBlock())return;const sel=document.getElementById("pg-card");const cid=sel&&sel.value;if(!cid||!PG.report){toast("Pick a card first.");break;}
+      const c=byId("cards",cid);await put("cards",{...c,pregrade:pgSummary(PG.report)});toast(`Saved to ${c.code}`);break;}
     case"backup-make":{
       if(!S.cards.length&&!S.sales.length&&!S.shows.length&&!S.items.length){toast("Nothing to back up yet.");break;}
       const st=document.getElementById("bk-status");el.disabled=true;st.textContent="Packing your log and photos…";
@@ -1709,6 +1741,12 @@ document.addEventListener("input",e=>{
 });
 document.addEventListener("change",async e=>{
   if(e.target.id==="sort"){S.sort=e.target.value;render();}
+  if(e.target.id==="pg-in-front"||e.target.id==="pg-in-back"){
+    const k=e.target.id.slice(6);const file=e.target.files[0];if(!file)return;
+    try{PG.status="Loading photo…";const im=await pgLoad(file);if(PG[k]&&PG[k].url)try{URL.revokeObjectURL(PG[k].url);}catch(_){}PG[k]={im,url:im.url};PG.status="";}catch(err){PG.status=err.message||"Couldn't read that photo.";}
+    render();return;
+  }
+  if(e.target.name==="pgview"&&PG.report){PG.report.view=e.target.value;render();return;}
   if(e.target.id==="bk-file"){
     const file=e.target.files[0];if(!file)return;const st=document.getElementById("bk-status");
     try{const b=JSON.parse(await file.text());if(b.app!=="treasure-log"||!b.collections)throw new Error("not a Treasure Log backup");
@@ -1951,6 +1989,260 @@ async function exportCsv(what){
   try{await S.downloads.save({filename:`treasure-log-${what}-${today()}.csv`,data:csv});toast("Export ready");}
   catch(err){if(err&&err.code!=="declined")toast("Export didn't go through ("+(err.code||"error")+")");}
 }
+
+/* ================= PRE-GRADE: card measurement engine (runs on the phone, no AI) ================= */
+const PG={front:null,back:null,report:null,busy:false,frontUrl:"",backUrl:""};
+const PG_PX=24;            // px per mm for the straightened card
+const CARD_W=63,CARD_H=88; // mm
+function pgMedian(a){const b=Float64Array.from(a).sort();const n=b.length;return n?(n%2?b[(n-1)/2]:(b[n/2-1]+b[n/2])/2):0;}
+function pgMAD(a,m){return 1.4826*pgMedian(Array.from(a,v=>Math.abs(v-m)));}
+function pgLoad(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file);const img=new Image();
+  img.onload=()=>{try{const max=3200;const k=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));const w=Math.max(1,Math.round(img.naturalWidth*k)),h=Math.max(1,Math.round(img.naturalHeight*k));
+    const cv=document.createElement("canvas");cv.width=w;cv.height=h;const cx=cv.getContext("2d",{willReadFrequently:true});cx.drawImage(img,0,0,w,h);
+    res({w,h,d:cx.getImageData(0,0,w,h).data,url:u});}catch(e){rej(e);}};
+  img.onerror=()=>rej(new Error("That file isn't an image the app can read."));img.src=u;});}
+/* ---- background colour & distance ---- */
+function pgBackground(im){const {w,h,d}=im;
+  // 1) the four photo corners: outside a card's rounded corners even when the card fills the frame
+  const p=Math.max(4,Math.round(Math.min(w,h)*0.006));const patches=[[0,0],[w-p,0],[0,h-p],[w-p,h-p]].map(([x0,y0])=>{const R=[],G=[],B=[];for(let y=y0;y<y0+p;y++)for(let x=x0;x<x0+p;x++){const i=(y*w+x)*4;R.push(d[i]);G.push(d[i+1]);B.push(d[i+2]);}return [pgMedian(R),pgMedian(G),pgMedian(B)];});
+  const med=[0,1,2].map(c=>pgMedian(patches.map(q=>q[c])));
+  const spread=Math.max(...patches.map(q=>Math.hypot(q[0]-med[0],q[1]-med[1],q[2]-med[2])));
+  if(spread<35)return med;
+  // 2) otherwise the outer ring of the photo
+  const R=[],G=[],B=[];const m=Math.max(2,Math.round(Math.min(w,h)*0.012));const add=(x,y)=>{const i=(y*w+x)*4;R.push(d[i]);G.push(d[i+1]);B.push(d[i+2]);};
+  for(let x=0;x<w;x+=3){for(let y=0;y<m;y+=2){add(x,y);add(x,h-1-y);}}for(let y=0;y<h;y+=3){for(let x=0;x<m;x+=2){add(x,y);add(w-1-x,y);}}
+  return [pgMedian(R),pgMedian(G),pgMedian(B)];}
+function pgDist(im,bg,x,y){const i=(y*im.w+x)*4;const a=im.d[i]-bg[0],b=im.d[i+1]-bg[1],c=im.d[i+2]-bg[2];return Math.sqrt(a*a+b*b+c*c);}
+const PG_T=45;
+function pgFirstCross(get,n,T){for(let i=0;i<n-6;i++){if(get(i)>T){let ok=true;for(let k=1;k<6;k++)if(get(i+k)<=T){ok=false;break;}
+  if(!ok)continue;if(i===0)return {pos:0,touch:true};const p0=get(i-1),p1=get(i);return {pos:i-1+(T-p0)/(p1-p0),touch:false};}}return null;}
+function pgEdgePoints(im,bg){const {w,h}=im;const P={L:[],R:[],T:[],B:[]};let touch=0,total=0;
+  for(let y=Math.round(h*.12);y<h*.88;y+=3){
+    let r=pgFirstCross(i=>pgDist(im,bg,i,y),w,PG_T);if(r){P.L.push([r.pos,y]);total++;if(r.touch)touch++;}
+    r=pgFirstCross(i=>pgDist(im,bg,w-1-i,y),w,PG_T);if(r){P.R.push([w-1-r.pos,y]);total++;if(r.touch)touch++;}}
+  for(let x=Math.round(w*.12);x<w*.88;x+=3){
+    let r=pgFirstCross(i=>pgDist(im,bg,x,i),h,PG_T);if(r){P.T.push([x,r.pos]);total++;if(r.touch)touch++;}
+    r=pgFirstCross(i=>pgDist(im,bg,x,h-1-i),h,PG_T);if(r){P.B.push([x,h-1-r.pos]);total++;if(r.touch)touch++;}}
+  return {P,touchFrac:total?touch/total:1};}
+/* robust straight-line fit v = a*u + b */
+function pgFitLine(u,v){let keep=u.map(()=>true),a=0,b=0,sd=0;
+  for(let it=0;it<6;it++){let n=0,su=0,sv=0,suu=0,suv=0;for(let i=0;i<u.length;i++)if(keep[i]){n++;su+=u[i];sv+=v[i];suu+=u[i]*u[i];suv+=u[i]*v[i];}
+    if(n<3)break;const den=n*suu-su*su;a=den?(n*suv-su*sv)/den:0;b=(sv-a*su)/n;
+    const r=u.map((x,i)=>v[i]-(a*x+b));const rk=r.filter((_,i)=>keep[i]);const s=Math.max(1e-9,pgMAD(rk,pgMedian(rk)));sd=s;
+    keep=r.map(x=>Math.abs(x)<2.5*Math.max(s,0.5));}
+  const inl=keep.filter(Boolean).length/Math.max(1,u.length);return {a,b,sd,inl};}
+function pgCardLines(im,bg){const {P,touchFrac}=pgEdgePoints(im,bg);
+  for(const k of "LRTB")if(P[k].length<25)throw new Error("Couldn't find the card's edges. Use a plain background that contrasts with the card, and keep the whole card in the photo.");
+  const L=pgFitLine(P.L.map(p=>p[1]),P.L.map(p=>p[0])),R=pgFitLine(P.R.map(p=>p[1]),P.R.map(p=>p[0]));
+  const T=pgFitLine(P.T.map(p=>p[0]),P.T.map(p=>p[1])),B=pgFitLine(P.B.map(p=>p[0]),P.B.map(p=>p[1]));
+  const X=(v,hz)=>{const x=(v.a*hz.b+v.b)/(1-v.a*hz.a);return [x,hz.a*x+hz.b];};
+  return {L,R,T,B,TL:X(L,T),TR:X(R,T),BR:X(R,B),BL:X(L,B),touchFrac,fitSd:Math.max(L.sd,R.sd,T.sd,B.sd)};}
+/* homography: card mm -> image px */
+function pgHomography(src,dst){const A=[],bb=[];for(let i=0;i<4;i++){const [x,y]=dst[i],[u,v]=src[i];
+  A.push([x,y,1,0,0,0,-u*x,-u*y]);bb.push(u);A.push([0,0,0,x,y,1,-v*x,-v*y]);bb.push(v);}
+  const n=8;for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(A[r][c])>Math.abs(A[p][c]))p=r;[A[c],A[p]]=[A[p],A[c]];[bb[c],bb[p]]=[bb[p],bb[c]];
+    for(let r=0;r<n;r++){if(r===c)continue;const f=A[r][c]/A[c][c];for(let k=c;k<n;k++)A[r][k]-=f*A[c][k];bb[r]-=f*bb[c];}}
+  const h=bb.map((v,i)=>v/A[i][i]);return (x,y)=>{const z=h[6]*x+h[7]*y+1;return [(h[0]*x+h[1]*y+h[2])/z,(h[3]*x+h[4]*y+h[5])/z];};}
+function pgSample(im,x,y,bg){if(x<0||y<0||x>im.w-1.001||y>im.h-1.001)return bg;const x0=x|0,y0=y|0,fx=x-x0,fy=y-y0,w=im.w,d=im.d;const i=(y0*w+x0)*4,j=i+4,k=i+w*4,l=k+4;
+  return [0,1,2].map(c=>(d[i+c]*(1-fx)+d[j+c]*fx)*(1-fy)+(d[k+c]*(1-fx)+d[l+c]*fx)*fy);}
+/* straightened image: region of the card in mm [u0,u1]x[v0,v1] at px/mm */
+function pgWarp(im,H,bg,u0,v0,u1,v1,px){const W=Math.round((u1-u0)*px),Hh=Math.round((v1-v0)*px);const out=new Float32Array(W*Hh*3);
+  for(let y=0;y<Hh;y++){const v=v0+(y+.5)/px;for(let x=0;x<W;x++){const u=u0+(x+.5)/px;const [sx,sy]=H(u,v);const c=pgSample(im,sx,sy,bg);const o=(y*W+x)*3;out[o]=c[0];out[o+1]=c[1];out[o+2]=c[2];}}
+  return {w:W,h:Hh,d:out,px,u0,v0};}
+/* sRGB -> CIE Lab */
+const PG_LIN=new Float32Array(256).map((_,i)=>{const c=i/255;return c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4);});
+function pgLab(r,g,b){const R=PG_LIN[Math.max(0,Math.min(255,r|0))],G=PG_LIN[Math.max(0,Math.min(255,g|0))],B=PG_LIN[Math.max(0,Math.min(255,b|0))];
+  const X=(R*0.4124+G*0.3576+B*0.1805)/0.95047,Y=R*0.2126+G*0.7152+B*0.0722,Z=(R*0.0193+G*0.1192+B*0.9505)/1.08883;
+  const f=t=>t>0.008856?Math.cbrt(t):7.787*t+16/116;const fx=f(X),fy=f(Y),fz=f(Z);return [116*fy-16,500*(fx-fy),200*(fy-fz)];}
+/* one side of the straightened card as a Lab strip: rows run along the side, columns go inward from the cut */
+function pgStrip(wp,side,depthMm){const P=Math.round(0.5*wp.px);const cw=wp.w-2*P,ch=wp.h-2*P;const dep=Math.round(depthMm*wp.px);
+  const n=(side==="L"||side==="R")?ch:cw;const out=new Float32Array(n*dep*3);
+  for(let i=0;i<n;i++)for(let j=0;j<dep;j++){let x,y;if(side==="L"){x=P+j;y=P+i;}else if(side==="R"){x=P+cw-1-j;y=P+i;}else if(side==="T"){x=P+i;y=P+j;}else{x=P+i;y=P+ch-1-j;}
+    const o=(y*wp.w+x)*3;const L=pgLab(wp.d[o],wp.d[o+1],wp.d[o+2]);const q=(i*dep+j)*3;out[q]=L[0];out[q+1]=L[1];out[q+2]=L[2];}
+  return {n,dep,d:out,px:wp.px};}
+/* method A: strongest straight colour edge (good for crisp printed frames) */
+function pgFrameGradient(s){const {n,dep,d,px}=s;const g=new Float32Array(n*dep);
+  for(let i=1;i<n-1;i++)for(let j=1;j<dep-1;j++){let t=0;for(let c=0;c<3;c++){const q=(k,jj)=>d[(k*dep+jj)*3+c];t+=Math.abs((q(i-1,j+1)+2*q(i,j+1)+q(i+1,j+1))-(q(i-1,j-1)+2*q(i,j-1)+q(i+1,j-1)));}g[i*dep+j]=t;}
+  const r0=Math.round(n*.3),r1=Math.round(n*.7),prof=new Float32Array(dep);
+  for(let j=0;j<dep;j++){const col=[];for(let i=r0;i<r1;i+=2)col.push(g[i*dep+j]);prof[j]=pgMedian(col);}
+  const lo=Math.round(1.2*px),hi=Math.min(dep-2,Math.round(6.5*px));let bi=lo;for(let j=lo;j<hi;j++)if(prof[j]>prof[bi])bi=j;const best=prof[bi];
+  for(let j=Math.max(lo,bi-px);j<bi;j++){let lm=true;for(let k=-3;k<=3;k++)if(prof[j+k]>prof[j])lm=false;if(prof[j]>=0.7*best&&lm){bi=j;break;}}
+  const win=Math.round(0.5*px),u=[],v=[];
+  for(let i=Math.round(n*.1);i<n*.9;i+=2){let k=-1,mv=-1;for(let j=bi-win;j<=bi+win;j++)if(g[i*dep+j]>mv){mv=g[i*dep+j];k=j;}
+    if(mv<0.4*best||k<=bi-win||k>=bi+win)continue;const y0=g[i*dep+k-1],y1=g[i*dep+k],y2=g[i*dep+k+1],den=y0-2*y1+y2;u.push(i);v.push(k+(den?0.5*(y0-y2)/den:0));}
+  if(u.length<20)return null;const f=pgFitLine(u,v);
+  return {mm:(f.a*n/2+f.b)/px,tilt:Math.atan(f.a)*180/Math.PI,res:f.sd/px,inl:f.inl,strength:best,fit:f};}
+/* method B: strongest step in colour, per segment (robust to thin lines crossing a low-contrast border) */
+function pgFrameStep(s){const {n,dep,d,px}=s;const nseg=16,a=Math.round(n*.12),b=Math.round(n*.88),w=Math.round(0.35*px);const u=[],v=[],st=[];
+  for(let sgi=0;sgi<nseg;sgi++){const i0=Math.round(a+(b-a)*sgi/nseg),i1=Math.round(a+(b-a)*(sgi+1)/nseg);
+    const prof=[];for(let j=0;j<dep;j++){const c=[[],[],[]];for(let i=i0;i<i1;i+=2)for(let k=0;k<3;k++)c[k].push(d[(i*dep+j)*3+k]);prof.push(c.map(pgMedian));}
+    let bp=-1,bs=-1;for(let p=Math.round(1.2*px);p<Math.min(dep-w,6.5*px);p++){let s2=0;for(let k=0;k<3;k++){let m1=0,m2=0;for(let q=0;q<w;q++){m1+=prof[p+q][k];m2+=prof[p-1-q][k];}const dd=(m1-m2)/w;s2+=dd*dd;}if(s2>bs){bs=s2;bp=p;}}
+    u.push((i0+i1)/2);v.push(bp);st.push(Math.sqrt(bs));}
+  const med=pgMedian(st);const uu=[],vv=[];u.forEach((x,i)=>{if(st[i]>0.35*med){uu.push(x);vv.push(v[i]);}});if(uu.length<6)return null;
+  const f=pgFitLine(uu,vv);return {mm:(f.a*n/2+f.b)/px,tilt:Math.atan(f.a)*180/Math.PI,res:f.sd/px,inl:f.inl,strength:med,fit:f};}
+function pgCentering(wp){const strips={};for(const k of "LRTB")strips[k]=pgStrip(wp,k,7.5);
+  const M={A:{},B:{}};for(const k of "LRTB"){M.A[k]=pgFrameGradient(strips[k]);M.B[k]=pgFrameStep(strips[k]);}
+  const q=m=>{const s=Object.values(m);if(s.some(x=>!x))return 1e9;const r=pgMedian(s.map(x=>x.res)),t=Math.max(...s.map(x=>Math.abs(x.tilt)));return r+0.08*t;};
+  const qa=q(M.A),qb=q(M.B);const use=qa<=2.0*qb?"A":"B";if(typeof process!=="undefined"&&process.env.PGDEBUG)console.log("   qa",qa.toFixed(3),"qb",qb.toFixed(3));const m=M[use];const quality=Math.min(qa,qb);
+  if(quality>0.25)return {ok:false,why:"No clear printed border found. This looks like a full-art card; front centering for full-art cards is coming later."};
+  const lr=m.L.mm/(m.L.mm+m.R.mm)*100,tb=m.T.mm/(m.T.mm+m.B.mm)*100;
+  return {ok:true,method:use,quality,lr,tb,mm:{L:m.L.mm,R:m.R.mm,T:m.T.mm,B:m.B.mm},tilt:Math.max(...["L","R","T","B"].map(k=>Math.abs(m[k].tilt))),sides:m,
+    warn:quality>0.12?"The border edge was hard to read, so treat these numbers as approximate.":""};}
+/* ---- corners ---- */
+function pgFitCircle(pts){let sx=0,sy=0,n=pts.length;const A=[[0,0,0],[0,0,0],[0,0,0]],bv=[0,0,0];
+  for(const [x,y] of pts){const row=[2*x,2*y,1],t=x*x+y*y;for(let i=0;i<3;i++){for(let j=0;j<3;j++)A[i][j]+=row[i]*row[j];bv[i]+=row[i]*t;}}
+  const sol=pgSolve3(A,bv);let cx=sol[0],cy=sol[1],r=Math.sqrt(Math.max(1e-9,sol[2]+cx*cx+cy*cy));
+  for(let it=0;it<15;it++){const J=[[0,0,0],[0,0,0],[0,0,0]],g=[0,0,0];for(const [x,y] of pts){const dx=x-cx,dy=y-cy,dd=Math.hypot(dx,dy)||1e-9,row=[-dx/dd,-dy/dd,-1],res=dd-r;for(let i=0;i<3;i++){for(let j=0;j<3;j++)J[i][j]+=row[i]*row[j];g[i]-=row[i]*res;}}
+    const dp=pgSolve3(J,g);cx+=dp[0];cy+=dp[1];r+=dp[2];if(Math.abs(dp[0])+Math.abs(dp[1])+Math.abs(dp[2])<1e-7)break;}
+  let ss=0;for(const [x,y] of pts){const e=Math.hypot(x-cx,y-cy)-r;ss+=e*e;}return {cx,cy,r,rms:Math.sqrt(ss/Math.max(1,n))};}
+function pgSolve3(A,b){const M=A.map((r,i)=>[...r,b[i]]);for(let c=0;c<3;c++){let p=c;for(let r=c+1;r<3;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;[M[c],M[p]]=[M[p],M[c]];if(Math.abs(M[c][c])<1e-12)return [0,0,0];
+  for(let r=0;r<3;r++){if(r===c)continue;const f=M[r][c]/M[c][c];for(let k=c;k<4;k++)M[r][k]-=f*M[c][k];}}return M.map((r,i)=>r[3]/r[i]);}
+function pgCorner(im,H,bg,which,resUm){const px=40,pad=0.6,size=5.4;const flipX=which==="TR"||which==="BR",flipY=which==="BL"||which==="BR";
+  const Hm=(u,v)=>H(flipX?CARD_W-u:u,flipY?CARD_H-v:v);const wp=pgWarp(im,Hm,bg,-pad,-pad,size,size,px);
+  const dist=(x,y)=>{const o=(y*wp.w+x)*3;const a=wp.d[o]-bg[0],b=wp.d[o+1]-bg[1],c=wp.d[o+2]-bg[2];return Math.sqrt(a*a+b*b+c*c);};
+  const pts=[];for(let y=0;y<wp.h;y++){const r=pgFirstCross(i=>dist(i,y),wp.w,PG_T);if(r&&!r.touch)pts.push([r.pos/px-pad,(y+.5)/px-pad]);}
+  for(let x=0;x<wp.w;x++){const r=pgFirstCross(i=>dist(x,i),wp.h,PG_T);if(r&&!r.touch)pts.push([(x+.5)/px-pad,r.pos/px-pad]);}
+  let arc=pts.filter(([x,y])=>x>0.06&&y>0.06);if(arc.length<20)return {ok:false,wp,pts:[]};
+  let c=pgFitCircle(arc);const phi=([x,y])=>Math.atan2(c.cy-y,c.cx-x)*180/Math.PI;
+  for(let k=0;k<2;k++){const a2=arc.filter(p=>{const f=phi(p);return f>6&&f<84;});if(a2.length>20){c=pgFitCircle(a2);}}
+  arc=arc.filter(p=>{const f=phi(p);return f>6&&f<84;});
+  const res=arc.map(([x,y])=>Math.hypot(x-c.cx,y-c.cy)-c.r);  // + = sticks out, - = missing material
+  const mid=[],ends=[];arc.forEach((p,i)=>{const f=phi(p);if(Math.abs(f-45)<15)mid.push(res[i]);else if(Math.abs(f-45)>28)ends.push(res[i]);});
+  const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;const flat=(avg(ends)-avg(mid))*1000;
+  const inward=Math.max(0,...res.map(x=>-x))*1000;
+  // whitening: bright specks just inside the arc, only meaningful on dark borders
+  const inner=[];for(let y=0;y<wp.h;y+=1)for(let x=0;x<wp.w;x+=1){const u=(x+.5)/px-pad,v=(y+.5)/px-pad;const dd=Math.hypot(u-c.cx,v-c.cy);const f=Math.atan2(c.cy-v,c.cx-u)*180/Math.PI;
+    if(f>10&&f<80&&dd<c.r-0.12&&dd>c.r-0.4){const o=(y*wp.w+x)*3;inner.push(pgLab(wp.d[o],wp.d[o+1],wp.d[o+2])[0]);}}
+  const im2=pgMedian(inner),mad=pgMAD(inner,im2);const white=im2<55?inner.filter(v=>v>im2+Math.max(22,6*mad)).length:0;
+  const rough=c.rms*1000,thrR=Math.max(20,0.8*resUm),thrD=Math.max(80,2.5*resUm);
+  const chamfer=flat>60;
+  const fray=Math.max(0,1000-Math.max(0,Math.round((rough-thrR)/4))-Math.min(30,Math.round(white/3)));
+  const fill=Math.max(0,1000-Math.max(0,Math.round((inward-thrD)/20))-(chamfer?30:0));
+  return {ok:true,r:c.r,rms:rough,flat,inward,white,chamfer,fray,fill,wp,pts:arc,circle:c,px,pad};}
+/* ---- edges (between the corners) ---- */
+function pgEdge(wp,bg,side,resUm){const P=Math.round(0.5*wp.px),px=wp.px;const cw=wp.w-2*P,ch=wp.h-2*P;const n=(side==="L"||side==="R")?ch:cw;
+  const at=(i,j)=>{let x,y;if(side==="L"){x=j;y=P+i;}else if(side==="R"){x=wp.w-1-j;y=P+i;}else if(side==="T"){x=P+i;y=j;}else{x=P+i;y=wp.h-1-j;}return (y*wp.w+x)*3;};
+  const dist=(i,j)=>{const o=at(i,j);const a=wp.d[o]-bg[0],b=wp.d[o+1]-bg[1],c=wp.d[o+2]-bg[2];return Math.sqrt(a*a+b*b+c*c);};
+  const u=[],v=[];for(let i=Math.round(4.5*px);i<n-4.5*px;i++){const r=pgFirstCross(j=>dist(i,j),Math.round(2*px),PG_T);if(r&&!r.touch){u.push(i);v.push(r.pos);}}
+  if(u.length<50)return null;const f=pgFitLine(u,v);const r=u.map((x,k)=>(v[k]-(f.a*x+f.b))/px*1000);
+  const sm=r.map((_,k)=>{let s=0,c=0;for(let q=k-7;q<=k+7;q++)if(q>=0&&q<r.length){s+=r[q];c++;}return s/c;});
+  const rough=Math.sqrt(r.reduce((s,x,k)=>s+(x-sm[k])**2,0)/r.length);const sorted=[...r].sort((a,b)=>a-b);const dent=sorted[Math.floor(sorted.length*0.998)];
+  const band=[];for(let k=0;k<u.length;k+=1){const e=Math.round(f.a*u[k]+f.b);for(let j=e+3;j<e+10;j++){const o=at(u[k],j);band.push(pgLab(wp.d[o],wp.d[o+1],wp.d[o+2])[0]);}}
+  const bm=pgMedian(band),mad=pgMAD(band,bm);const white=bm<55?band.filter(x=>x>bm+Math.max(22,6*mad)).length:0;
+  const thrR=Math.max(20,0.8*resUm),thrD=Math.max(80,2.5*resUm);
+  return {rough,dent,white,fray:Math.max(0,1000-Math.max(0,Math.round((rough-thrR)/5))-Math.min(30,Math.round(white/3))),fill:Math.max(0,1000-Math.max(0,Math.round((dent-thrD)/20)))};}
+/* ---- one side of the card ---- */
+function pgAnalyze(im){const bg=pgBackground(im);const cl=pgCardLines(im,bg);
+  const H=pgHomography([cl.TL,cl.TR,cl.BR,cl.BL],[[0,0],[CARD_W,0],[CARD_W,CARD_H],[0,CARD_H]]);
+  const wPx=Math.hypot(cl.TR[0]-cl.TL[0],cl.TR[1]-cl.TL[1]),hPx=Math.hypot(cl.BL[0]-cl.TL[0],cl.BL[1]-cl.TL[1]);
+  const srcPxMm=wPx/CARD_W,resUm=1000/srcPxMm;
+  const wp=pgWarp(im,H,bg,-0.5,-0.5,CARD_W+0.5,CARD_H+0.5,PG_PX);
+  const cen=pgCentering(wp);
+  const corners={};for(const k of ["TL","TR","BL","BR"])corners[k]=pgCorner(im,H,bg,k,resUm);
+  // cut-corner angles from the straight edges in the photo (only meaningful when shot flat-on)
+  const angV=a=>Math.atan2(1,a)*180/Math.PI,angH=a=>Math.atan2(a,1)*180/Math.PI;
+  const aL=angV(cl.L.a),aR=angV(cl.R.a),aT=angH(cl.T.a),aB=angH(cl.B.a);const flat=Math.abs(aL-aR)<0.25&&Math.abs(aT-aB)<0.25;
+  const ang={TL:90+(aL-90)-aT,TR:90-(aR-90)+aT,BL:90-(aL-90)+aB,BR:90+(aR-90)-aB};
+  for(const k in corners){const c=corners[k];if(!c.ok)continue;c.angle=flat?ang[k]:null;c.angleScore=flat?Math.max(0,1000-Math.round(Math.abs(ang[k]-90)/0.05)):null;}
+  const edges={};for(const k of "TBLR")edges[k]=pgEdge(wp,bg,k,resUm);
+  const warns=[];if(cl.touchFrac>0.15)warns.push("The card touches the edge of the photo. Leave some background all around it.");
+  if(srcPxMm<15)warns.push(`Low resolution (${srcPxMm.toFixed(0)} px per mm). Get closer or use the main camera for sharper results.`);
+  if(!flat)warns.push("The photo isn't perfectly flat-on, so corner angles are skipped. Centering and the other checks still work.");
+  if(cen.warn)warns.push(cen.warn);
+  return {bg,lines:cl,wp,cen,corners,edges,ratio:hPx/wPx,srcPxMm,resUm,flat,warns};}
+/* ---- grading limits (centering only) ---- */
+const PG_LIMITS=[
+  {co:"PSA",grades:[["10",55,75],["9",60,90],["8",65,90]]},
+  {co:"BGS",grades:[["Pristine 10",50.5,55],["9.5",55,60],["9",55,70]]},
+  {co:"CGC",grades:[["Pristine 10",50.5,null],["10",55,75],["9",60,90]]},
+  {co:"TAG",grades:[["Pristine 10",51,52],["10",55,65],["9",60,75]]}];
+function pgWorst(c){return c&&c.ok?Math.max(c.lr,100-c.lr,c.tb,100-c.tb):null;}
+function pgCaps(fr,bk){const wf=pgWorst(fr&&fr.cen),wb=pgWorst(bk&&bk.cen);
+  return PG_LIMITS.map(({co,grades})=>{for(const [g,f,b] of grades){if((wf===null||wf<=f)&&(wb===null||b===null||wb<=b))return {co,g};}return {co,g:"below "+grades[grades.length-1][0]};});}
+/* ================= PRE-GRADE: report images ================= */
+function pgToURL(w,h,draw){const cv=document.createElement("canvas");cv.width=w;cv.height=h;const cx=cv.getContext("2d");draw(cx);return cv.toDataURL("image/jpeg",0.85);}
+function pgWpCanvas(wp,x0,y0,ww,hh){const cv=document.createElement("canvas");cv.width=ww;cv.height=hh;const cx=cv.getContext("2d");const id=cx.createImageData(ww,hh);
+  for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){const o=((y+y0)*wp.w+(x+x0))*3,q=(y*ww+x)*4;id.data[q]=wp.d[o];id.data[q+1]=wp.d[o+1];id.data[q+2]=wp.d[o+2];id.data[q+3]=255;}
+  cx.putImageData(id,0,0);return cv;}
+function pgImages(r){const out={};const wp=r.wp,P=Math.round(0.5*wp.px);
+  const full=pgWpCanvas(wp,0,0,wp.w,wp.h);const W=360,H=Math.round(W*wp.h/wp.w),k=W/wp.w;
+  out.card=pgToURL(W,H,cx=>{cx.drawImage(full,0,0,W,H);
+    if(r.cen.ok){cx.strokeStyle="#22c55e";cx.lineWidth=1.5;const m=r.cen.mm,px=wp.px;const L=(P+m.L*px)*k,R=(wp.w-P-m.R*px)*k,T=(P+m.T*px)*k,B=(wp.h-P-m.B*px)*k;
+      cx.beginPath();cx.moveTo(L,0);cx.lineTo(L,H);cx.moveTo(R,0);cx.lineTo(R,H);cx.moveTo(0,T);cx.lineTo(W,T);cx.moveTo(0,B);cx.lineTo(W,B);cx.stroke();}});
+  out.corners={};for(const key in r.corners){const c=r.corners[key];const cw=c.wp;const cv=pgWpCanvas(cw,0,0,cw.w,cw.h);const S=150;
+    out.corners[key]=pgToURL(S,S,cx=>{cx.save();cx.translate(key==="TR"||key==="BR"?S:0,key==="BL"||key==="BR"?S:0);cx.scale(key==="TR"||key==="BR"?-1:1,key==="BL"||key==="BR"?-1:1);
+      cx.drawImage(cv,0,0,S,S);if(c.ok){const f=S/cw.w;cx.fillStyle="#22c55e";for(const [u,v] of c.pts){cx.fillRect((u+c.pad)*c.px*f-1,(v+c.pad)*c.px*f-1,2,2);}}cx.restore();});}
+  out.edges={};const d=Math.round(3*wp.px),len=Math.round(24*wp.px);
+  const mid={T:[Math.round(wp.w/2-len/2),0,len,d],B:[Math.round(wp.w/2-len/2),wp.h-d,len,d],L:[0,Math.round(wp.h/2-len/2),d,len],R:[wp.w-d,Math.round(wp.h/2-len/2),d,len]};
+  for(const s in mid){const [x,y,w,h]=mid[s];const cv=pgWpCanvas(wp,x,y,w,h);const horiz=s==="T"||s==="B";const OW=horiz?240:30,OH=horiz?30:240;out.edges[s]=pgToURL(OW,OH,cx=>cx.drawImage(cv,0,0,OW,OH));}
+  return out;}
+
+/* ================= PRE-GRADE: tab + report ================= */
+const PG_SIDES=[["front","Front"],["back","Back"]];
+const pgF=v=>Math.round(v);
+function pgCenterText(c){return c&&c.ok?`${pgF(c.lr)}L/${100-pgF(c.lr)}R ${pgF(c.tb)}T/${100-pgF(c.tb)}B`:"—";}
+function pgDings(r){if(!r)return null;let corners=0,edges=0;for(const k in r.corners){const c=r.corners[k];if(c.ok&&(c.fray<990||c.fill<990||c.chamfer))corners++;}for(const k in r.edges){const e=r.edges[k];if(e&&(e.fray<990||e.fill<990))edges++;}return{corners,edges};}
+function vGrade(){
+  const R=PG.report;
+  const slot=([k,label])=>{const s=PG[k];return `<div class="panel pad pg-slot"><div class="label">${label}</div>
+    ${s?`<img class="pg-prev" src="${esc(s.url)}" alt="${label} photo">`:`<label class="pg-empty" for="pg-in-${k}">No photo</label>`}
+    <div class="bar" style="justify-content:center"><label class="btn sm" for="pg-in-${k}" style="cursor:pointer">${s?"Replace":"Take or choose"}</label>${s?`<button class="btn sm" data-act="pg-clear" data-v="${k}">Remove</button>`:""}</div>
+    <input id="pg-in-${k}" type="file" accept="image/*" hidden></div>`;};
+  return `<h2>Pre-grade</h2><p class="hint" style="margin:-4px 0 10px">Photograph the card straight on, on a plain background that contrasts with it, with space all around. Front, back or both. Everything is measured on your phone.</p>
+  <div class="pg-slots">${PG_SIDES.map(slot).join("")}</div>
+  <div class="bar" style="margin-top:12px"><button class="btn pri" data-act="pg-run" ${(!PG.front&&!PG.back)||PG.busy?"disabled":""}>${PG.busy?"Measuring…":"Analyze"}</button><span class="hint" id="pg-status">${esc(PG.status||"")}</span></div>
+  ${R?pgReport(R):""}`;
+}
+function pgScore(v,warn){return `<b class="num ${v<990?"neg":""}">${v==null?"—":v}</b>`;}
+function pgReport(R){
+  const sides=PG_SIDES.filter(([k])=>R[k]);const tab=R.view&&R[R.view]?R.view:sides[0][0];const r=R[tab];
+  const d={front:pgDings(R.front),back:pgDings(R.back)};
+  const line=(k,f)=>R[k]?`<div><span class="muted">${k==="front"?"F":"B"}:</span> ${f(R[k],d[k])}</div>`:"";
+  const caps=pgCaps(R.front,R.back);
+  const c=r.cen;const m=c.ok?c:null;
+  return `<div class="section">
+  <div class="pg-grid">
+    <div class="panel pad pg-card full"><div class="label">Centering</div>${line("front",x=>x.cen.ok?`<b class="num">${pgCenterText(x.cen)}</b>`:`<span class="hint">${esc(x.cen.why)}</span>`)}${line("back",x=>x.cen.ok?`<b class="num">${pgCenterText(x.cen)}</b>`:`<span class="hint">${esc(x.cen.why)}</span>`)}
+      <div class="stat-line">${caps.map(x=>`<span class="chip ${/^below/.test(x.g)?"warn":"ok"}">${x.co} ${esc(x.g)}</span>`).join("")}</div><p class="hint" style="margin:4px 0 0">Best grade each company allows for this centering${(R.front&&R.front.cen.ok)&&(R.back&&R.back.cen.ok)?"":(R.front&&R.front.cen.ok)?", based on the front only":(R.back&&R.back.cen.ok)?", based on the back only":""}. Centering only; other flaws can still lower it.</p></div>
+    <div class="panel pad pg-card"><div class="label">Corners</div>${line("front",(x,dd)=>`<b>${dd.corners} dings</b>`)}${line("back",(x,dd)=>`<b>${dd.corners} dings</b>`)}</div>
+    <div class="panel pad pg-card"><div class="label">Edges</div>${line("front",(x,dd)=>`<b>${dd.edges} dings</b>`)}${line("back",(x,dd)=>`<b>${dd.edges} dings</b>`)}</div>
+    <div class="panel pad pg-card"><div class="label">Surface</div><span class="hint">Not measured yet</span></div>
+    <div class="panel pad pg-card"><div class="label">Shape</div>${line("front",x=>`<b class="num">${x.ratio.toFixed(4)}</b>`)}${line("back",x=>`<b class="num">${x.ratio.toFixed(4)}</b>`)}<span class="hint">height ÷ width · standard 1.3968</span></div>
+  </div>
+  ${sides.length>1?`<div class="seg" style="margin-top:14px">${sides.map(([k,l])=>`<label><input type="radio" name="pgview" value="${k}" ${k===tab?"checked":""}>${l}</label>`).join("")}</div>`:""}
+  <h3 style="margin-top:14px">${tab==="front"?"Front":"Back"}</h3>
+  <div class="pg-map">
+    <img src="${R.img[tab].card}" alt="Straightened ${tab} with detected border" class="pg-cardimg">
+    <div class="pg-mapbox num">${m?`<div class="pg-c t">${m.tb.toFixed(2)}</div><div class="pg-c b">${(100-m.tb).toFixed(2)}</div><div class="pg-c l">${m.lr.toFixed(2)}</div><div class="pg-c r">${(100-m.lr).toFixed(2)}</div>
+      <div class="pg-inner"><span>Borders (mm)</span><span>L ${m.mm.L.toFixed(2)} · R ${m.mm.R.toFixed(2)}</span><span>T ${m.mm.T.toFixed(2)} · B ${m.mm.B.toFixed(2)}</span><span>Print tilt ${m.tilt.toFixed(2)}°</span></div>`:`<div class="pg-inner"><span class="hint">${esc(c.why)}</span></div>`}</div>
+  </div>
+  <h3 style="margin-top:14px">Corners</h3>
+  <div class="pg-corners">${["TL","TR","BL","BR"].map(k=>{const q=r.corners[k];const nm={TL:"Top left",TR:"Top right",BL:"Bottom left",BR:"Bottom right"}[k];
+    return `<div class="pg-tile"><img src="${R.img[tab].corners[k]}" alt="${nm} corner"><div class="label">${nm}</div>${q.ok?`<div class="pg-kv"><span>Fray</span>${pgScore(q.fray)}</div><div class="pg-kv"><span>Fill</span>${pgScore(q.fill)}</div><div class="pg-kv"><span>Angle</span>${q.angle!=null?pgScore(q.angleScore):"<b>—</b>"}</div>
+      <div class="hint num">r ${q.r.toFixed(2)} mm${q.angle!=null?` · ${q.angle.toFixed(2)}°`:""}${q.chamfer?` · <b class="neg">chamfer-like</b>`:""}${q.white?` · ${q.white} light px`:""}</div>`:`<div class="hint">Couldn't trace this corner</div>`}</div>`;}).join("")}</div>
+  <h3 style="margin-top:14px">Edges</h3>
+  <div class="pg-edges">${["T","B","L","R"].map(k=>{const e=r.edges[k];const nm={T:"Top",B:"Bottom",L:"Left",R:"Right"}[k];
+    return `<div class="pg-tile ${k==="L"||k==="R"?"v":""}"><img src="${R.img[tab].edges[k]}" alt="${nm} edge"><div><div class="label">${nm}</div>${e?`<div class="pg-kv"><span>Fray</span>${pgScore(e.fray)}</div><div class="pg-kv"><span>Fill</span>${pgScore(e.fill)}</div>`:`<div class="hint">Couldn't trace</div>`}</div></div>`;}).join("")}</div>
+  ${r.warns.length?`<div class="note grdn" style="display:block"><b>About this photo</b><ul style="margin:6px 0 0;padding-left:18px">${r.warns.map(w=>`<li>${esc(w)}</li>`).join("")}</ul></div>`:""}
+  <p class="hint" style="margin-top:10px">Scores are Treasure Log's own 1000-point estimate, not TAG's. Photo resolution: ${r.srcPxMm.toFixed(0)} px per mm (${r.resUm.toFixed(0)} µm per pixel). Flaws smaller than a pixel can't be seen.</p>
+  <div class="panel pad" style="margin-top:12px"><div class="label">Keep this result (optional)</div>
+    <div class="bar" style="margin-top:6px"><select id="pg-card" class="small" style="flex:1;min-width:0"><option value="">Attach to a card…</option>${D("cards").filter(x=>x.status!=="sold").sort((a,b)=>String(a.code).localeCompare(String(b.code))).map(x=>`<option value="${esc(x.id)}">${esc(x.code)} ${esc(x.name||"")} · ${esc(gradeLabel(x))}</option>`).join("")}</select><button class="btn sm" data-act="pg-attach">Save to card</button></div></div>
+  </div>`;
+}
+async function pgRun(){
+  if(PG.busy)return;PG.busy=true;PG.status="";render();
+  const setS=t=>{PG.status=t;const el=document.getElementById("pg-status");if(el)el.textContent=t;};
+  const R={date:today(),img:{}};
+  try{
+    for(const [k,label] of PG_SIDES){if(!PG[k])continue;setS(`Measuring the ${label.toLowerCase()}…`);await new Promise(r=>setTimeout(r,60));
+      const res=pgAnalyze(PG[k].im);R[k]=res;R.img[k]=pgImages(res);}
+    PG.report=R;setS("");
+  }catch(e){setS(e.message||"Something went wrong measuring this photo.");}
+  PG.busy=false;render();
+  const sc=document.getElementById("scroller");const rep=document.querySelector("#main .section");if(sc&&rep)sc.scrollTo({top:rep.offsetTop-10,behavior:"smooth"});
+}
+function pgSummary(R){const s=x=>x&&x.cen.ok?{lr:+x.cen.lr.toFixed(2),tb:+x.cen.tb.toFixed(2)}:null;const d={front:pgDings(R.front),back:pgDings(R.back)};
+  return {date:R.date,front:s(R.front),back:s(R.back),dings:d,caps:pgCaps(R.front,R.back)};}
 
 /* ---------- boot ---------- */
 render();
