@@ -19,3 +19,4 @@ Reading card photos and pasted comps with Claude needs your own Anthropic API ke
 - `index.html`: the whole app
 - `sw.js`: lets it work offline and pick up updates
 - `manifest.webmanifest` and the icons: home-screen install
+- `ocr/`: the on-phone text reader used to read card codes ([Tesseract.js](https://github.com/naptha/tesseract.js), Apache 2.0)
