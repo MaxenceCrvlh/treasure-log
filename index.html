@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="bc534d61";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="ca011fe6";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -232,6 +232,7 @@ table.t td.r,table.t th.r{text-align:right}
 .vpick{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;min-height:40px;align-items:flex-start}
 .vpick button{border:2px solid transparent;border-radius:9px;padding:2px;background:none;cursor:pointer;flex-shrink:0;width:88px;text-align:center;font-size:11px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;gap:3px;align-items:center}
 .vpick button img{width:80px;aspect-ratio:63/88;object-fit:cover;border-radius:6px;display:block;background:var(--surface2)}
+.cand-noimg{display:grid;place-items:center;width:80px;aspect-ratio:63/88;border-radius:6px;background:var(--surface2);color:var(--ink);font-size:11px;padding:4px;text-align:center;box-sizing:border-box}
 .vpick button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
 .vpick .none{width:80px;aspect-ratio:63/88;border:1px dashed var(--line);border-radius:6px;display:grid;place-items:center;font-size:11px}
 .check{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
@@ -2653,7 +2654,7 @@ function scParseLabel(txt){const T=String(txt||"").toUpperCase().replace(/[|]/g,
   for(const [w,g] of SC_GRADEWORDS){const k=w.replace(/[\s-]/g,"");const i=sq.replace(/-/g,"").indexOf(k);if(i<0)continue;
     const after=sq.replace(/-/g,"").slice(i+k.length,i+k.length+4).match(/^(10|[1-9](?:\.5)?)/);out.grade=after?after[1]:String(g);break;}
   if(!out.grade){const m=flat.match(/\b(?:GRADE|PSA|BGS|CGC|TAG)\s*(10|[1-9](?:\.5)?)\b/);if(m)out.grade=m[1];}
-  const num=(flat.match(/#\s*([A-Z]{0,4}\d{0,2}-?)?(\d{3})\b/)||[]);if(num[2])out.num=num[2];
+  const num=(flat.match(/#\s*([A-Z]{0,4}\d{0,2}-?)?([0-9OIL]{3})\b/)||[]);if(num[2])out.num=num[2].replace(/O/g,"0").replace(/[IL]/g,"1");
   const set=(flat.match(/\b(OP|ST|EB|PRB)\s?-?(\d{2})\b/)||[]);if(set[1])out.set=set[1]+set[2];
   out.lang=/\bJPN\b|JAPANESE|\bJP\b/.test(flat)?"JP":(out.grader?"EN":null);
   out.letters=flat.replace(/[^A-Z]/g,"");return out;}
@@ -2663,7 +2664,7 @@ function scNameCover(name,letters){const nm=String(name||"").toUpperCase().repla
 /* cards whose English name matches noisy text; optional card number (e.g. "106") and set hint */
 function scByName(letters,num,setHint){letters=String(letters||"").replace(/CHARACTER|COUNTER|SPECIAL|LEADER|EVENT|STAGE|TRIGGER|BLOCKER/g,"");const byName={};for(const [code,e] of Object.entries(CARDDB)){if(!e[0])continue;if(num&&!code.endsWith("-"+num))continue;(byName[e[0]]=byName[e[0]]||[]).push(code);}
   let best=[];for(const [nm,codes] of Object.entries(byName)){const c=scNameCover(nm,letters);const L=nm.replace(/[^A-Za-z]/g,"").length;
-    if((c>=0.6&&c*L>=(num?3:6))||(c===1&&L>=4))best.push({nm,codes,score:c*L-0.5*(1-c)*L});}
+    if(num?((c>=0.6&&c*L>=3)||(c===1&&L>=3)):((c>=0.75&&c*L>=7)||(c===1&&L>=5)))best.push({nm,codes,score:c*L-0.5*(1-c)*L});}
   best.sort((a,b)=>b.score-a.score);if(!best.length)return [];const top=best.filter(b=>b.score>=best[0].score-0.5);
   const rank=c=>{const m=c.match(/^([A-Z]+)(\d*)-(\d+)/)||[];return [{OP:0,EB:1,PRB:2,ST:3,P:4}[m[1]]??5,-(+m[2]||0),+m[3]||0];};
   let codes=[].concat(...top.map(b=>b.codes)).sort((a,b)=>{const x=rank(a),y=rank(b);return x[0]-y[0]||x[1]-y[1]||x[2]-y[2];});if(setHint)codes.sort((a,b)=>(b.startsWith(setHint)?1:0)-(a.startsWith(setHint)?1:0));return codes.slice(0,20);}
@@ -2714,6 +2715,7 @@ async function scanCard(file,status){
     const L=scParseLabel(t);if(L.grader||L.cert||L.num)label=L;}
   let cands=[];
   if(!code&&label&&label.num){const c=scByName(label.letters,label.num,label.set);if(c.length===1)code=c[0];else cands=c;}
+  if(!code&&!cands.length&&label&&label.letters){const words=label.letters.replace(/ONEPIECE|JAPANESE|JPN|GEMMT|GEMMINT|MINT|SPECIAL|ALTART|PARALLEL|MANGA|PROMO|PSA|BGS|CGC|TAG|BECKETT|CERT/g,"");cands=scByName(words,null,label.set);}
   // 3) still nothing: read the card's name and offer the matching cards
   if(!code&&!cands.length){status("Reading the name…");let letters="";
     for(const g of scCodeViews(im0,H,[6,72,57,82.5,12]).slice(0,8))letters+=" "+(await scOCR(w,g,"11")).text.toUpperCase().replace(/[^A-Z]/g,"");
@@ -2749,7 +2751,10 @@ async function scanIntoForm(form,file){
     // several possible cards: let the user tap the right one
     const lang=r.lang||(L&&L.lang)||"EN";
     say(`Couldn't read the code clearly${slab}. It looks like ${[...new Set(r.cands.map(c=>CARDDB[c][0]))].join(" or ")}. Tap your card:`);
-    box.innerHTML=r.cands.map(c=>`<button type="button" data-code="${esc(c)}" aria-pressed="false" title="${esc(c)}">${CAN_OFFICIAL?`<img src="${esc(officialUrl(c,lang,""))}" alt="" loading="lazy" referrerpolicy="no-referrer">`:""}<span class="mono" style="font-size:11px">${esc(c)} ${esc(CARDDB[c][2]||"")}</span></button>`).join("");
+    box.innerHTML=r.cands.map(c=>{const e=CARDDB[c];const nm=esc(e[0]||e[1]);const alt=lang==="JP"?"EN":"JP";
+      // picture from the official site in the card's language, then the other site, then just the name
+      const img=CAN_OFFICIAL?`<img src="${esc(officialUrl(c,lang,""))}" data-alt="${esc(officialUrl(c,alt,""))}" alt="${nm}" referrerpolicy="no-referrer" onerror="if(this.dataset.alt){this.src=this.dataset.alt;this.dataset.alt='';}else{this.replaceWith(Object.assign(document.createElement('span'),{className:'cand-noimg',textContent:this.alt}));}">`:`<span class="cand-noimg">${nm}</span>`;
+      return `<button type="button" data-code="${esc(c)}" aria-pressed="false" title="${esc(c)} ${nm}">${img}<span class="mono" style="font-size:11px">${esc(c)} ${esc(e[2]||"")}</span><span style="font-size:10.5px;font-weight:500;line-height:1.2">${nm}</span></button>`;}).join("");
     box.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{const c=b.dataset.code;
       scFill(form,c,r.lang||(CARDDB[c][0]?(L&&L.lang)||"EN":"JP"),L);box.innerHTML="";say(`Picked ${c} · ${CARDDB[c][0]||CARDDB[c][1]}${slab}. Check it, then pick your version below.`);}));
     if(L&&L.grader)scFill(form,form.code.value.trim(),L.lang,L);
