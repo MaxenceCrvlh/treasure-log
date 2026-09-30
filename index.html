@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="0a7a3ac5";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="606714ec";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -2623,6 +2623,49 @@ function scLangFromText(txt,enName){const T=String(txt||"").toUpperCase();const 
   let nameHit=false;if(nm.length>=3){// longest common substring share
     let best=0;for(let i=0;i<nm.length;i++)for(let j=i+3;j<=nm.length;j++){if(j-i<=best)continue;if(letters.includes(nm.slice(i,j)))best=j-i;}nameHit=best>=Math.min(nm.length,Math.max(4,Math.round(nm.length*0.6)));}
   return {lang:nameHit||common>=3?"EN":"JP",common,nameHit};}
+/* extra views of the code line for full-art / foil cards where the code is outlined lettering on busy art:
+   plain grey, each colour channel, both polarities, and a local-contrast version. Only answers that match a real card are trusted. */
+function scCodeViews(im,H,box){const b=box||[42,81.9,57.4,85.7],px=b[4]||24,wp=pgWarp(im,H,[255,255,255],b[0],b[1],b[2],b[3],px);const W=wp.w,Hh=wp.h,n=W*Hh;const views=[];
+  const chan=f=>{const g=new Float32Array(n);for(let i=0;i<n;i++)g[i]=f(wp.d[i*3],wp.d[i*3+1],wp.d[i*3+2]);return g;};
+  const norm=(g,inv)=>{const s=[...g].sort((a,b)=>a-b);const lo=s[Math.floor(n*0.02)],hi=s[Math.floor(n*0.98)];const out=new Uint8ClampedArray(n);
+    for(let i=0;i<n;i++){let t=(g[i]-lo)/Math.max(1,hi-lo);t=Math.max(0,Math.min(1,t));out[i]=Math.round(255*(inv?1-t:t));}return {w:W,h:Hh,d:out};};
+  const lum=chan((r,g,b)=>0.299*r+0.587*g+0.114*b);
+  // local contrast: pixel minus its neighbourhood (flattens the art behind the letters)
+  const bl=Float32Array.from(lum);pgBoxBlur(bl,W,Hh,Math.round(0.6*px));pgBoxBlur(bl,W,Hh,Math.round(0.6*px));const lc=new Float32Array(n);for(let i=0;i<n;i++)lc[i]=lum[i]-bl[i];
+  const chans=[lum,lc,chan((r,g,b)=>r),chan((r,g,b)=>g),chan((r,g,b)=>b),chan((r,g,b)=>Math.max(r,g,b)-Math.min(r,g,b))];
+  for(const c of chans){views.push(norm(c,true));views.push(norm(c,false));}
+  // binary views: letters as solid dark shapes on white
+  const bin=m=>{const out=new Uint8ClampedArray(n);for(let i=0;i<n;i++)out[i]=m[i]?0:255;return {w:W,h:Hh,d:out};};
+  const fillHoles=m=>{const seen=new Uint8Array(n),st=[];for(let x=0;x<W;x++){st.push(x,(Hh-1)*W+x);}for(let y=0;y<Hh;y++){st.push(y*W,y*W+W-1);}
+    while(st.length){const j=st.pop();if(seen[j]||m[j])continue;seen[j]=1;const x=j%W,y=(j/W)|0;if(x>0)st.push(j-1);if(x<W-1)st.push(j+1);if(y>0)st.push(j-W);if(y<Hh-1)st.push(j+W);}
+    const o=new Uint8Array(n);for(let i=0;i<n;i++)o[i]=seen[i]?0:1;return o;};
+  const sd=Math.sqrt(lc.reduce((a,v)=>a+v*v,0)/n);
+  for(const k of [0.6,1.0]){const hi=new Uint8Array(n),lo=new Uint8Array(n);for(let i=0;i<n;i++){hi[i]=lc[i]>k*sd?1:0;lo[i]=lc[i]<-k*sd?1:0;}
+    views.push(bin(hi));views.push(bin(fillHoles(lo)));}
+  return views;}
+/* ---- graded slab label (PSA, BGS, CGC, TAG): grade, cert, card number, language ---- */
+const SC_GRADEWORDS=[["GEM MINT",10],["GEM MT",10],["PRISTINE",10],["MINT",9],["NM-MT",8],["NM MT",8],["EX-MT",6],["EX MT",6],["VG-EX",4],["VG EX",4],["NM",7],["EX",5],["VG",3],["GOOD",2],["FAIR",1.5],["POOR",1]];
+function scParseLabel(txt){const T=String(txt||"").toUpperCase().replace(/[|]/g," ");const flat=T.replace(/\s+/g," ");const out={};
+  const cert=(flat.match(/\b(\d{8,10})\b/)||[])[1];if(cert)out.cert=cert;
+  if(/BECKETT|\bBGS\b/.test(flat))out.grader="BGS (Beckett)";else if(/\bCGC\b/.test(flat))out.grader="CGC";else if(/\bTAG\b/.test(flat))out.grader="TAG";
+  else if(/\bPSA\b|GEM\s*M|NM-?\s*MT|EX-?\s*MT|\bMINT\b/.test(flat))out.grader="PSA";
+  const sq=flat.replace(/\s+/g,"");
+  for(const [w,g] of SC_GRADEWORDS){const k=w.replace(/[\s-]/g,"");const i=sq.replace(/-/g,"").indexOf(k);if(i<0)continue;
+    const after=sq.replace(/-/g,"").slice(i+k.length,i+k.length+4).match(/^(10|[1-9](?:\.5)?)/);out.grade=after?after[1]:String(g);break;}
+  if(!out.grade){const m=flat.match(/\b(?:GRADE|PSA|BGS|CGC|TAG)\s*(10|[1-9](?:\.5)?)\b/);if(m)out.grade=m[1];}
+  const num=(flat.match(/#\s*([A-Z]{0,4}\d{0,2}-?)?(\d{3})\b/)||[]);if(num[2])out.num=num[2];
+  const set=(flat.match(/\b(OP|ST|EB|PRB)\s?-?(\d{2})\b/)||[]);if(set[1])out.set=set[1]+set[2];
+  out.lang=/\bJPN\b|JAPANESE|\bJP\b/.test(flat)?"JP":(out.grader?"EN":null);
+  out.letters=flat.replace(/[^A-Z]/g,"");return out;}
+/* how much of a name shows up in noisy text: share of its letters covered by pieces (3+ letters) found in the text */
+function scNameCover(name,letters){const nm=String(name||"").toUpperCase().replace(/[^A-Z]/g,"");if(nm.length<3)return 0;let cov=0,i=0;
+  while(i<nm.length){let best=0;for(let j=nm.length;j>=i+3;j--){if(letters.includes(nm.slice(i,j))){best=j-i;break;}}if(best){cov+=best;i+=best;}else i++;}return cov/nm.length;}
+/* cards whose English name matches noisy text; optional card number (e.g. "106") and set hint */
+function scByName(letters,num,setHint){letters=String(letters||"").replace(/CHARACTER|COUNTER|SPECIAL|LEADER|EVENT|STAGE|TRIGGER|BLOCKER/g,"");const byName={};for(const [code,e] of Object.entries(CARDDB)){if(!e[0])continue;if(num&&!code.endsWith("-"+num))continue;(byName[e[0]]=byName[e[0]]||[]).push(code);}
+  let best=[];for(const [nm,codes] of Object.entries(byName)){const c=scNameCover(nm,letters);const L=nm.replace(/[^A-Za-z]/g,"").length;
+    if((c>=0.6&&c*L>=(num?3:6))||(c===1&&L>=4))best.push({nm,codes,score:c*L-0.5*(1-c)*L});}
+  best.sort((a,b)=>b.score-a.score);if(!best.length)return [];const top=best.filter(b=>b.score>=best[0].score-0.5);
+  let codes=[].concat(...top.map(b=>b.codes)).sort((a,b)=>b.localeCompare(a));if(setHint)codes.sort((a,b)=>(b.startsWith(setHint)?1:0)-(a.startsWith(setHint)?1:0));return codes.slice(0,12);}
 
 /* ---- on-phone text reader (Tesseract.js, open source), loaded the first time it's needed ---- */
 let SC_WORKER=null;
@@ -2633,12 +2676,14 @@ async function scWorker(){
     const local=!!window.TL_STANDALONE,base=local?new URL("ocr/",location.href).href:null;
     await scLoadScript(local?base+"tesseract.min.js":"https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js");
     const opts=local?{workerPath:base+"worker.min.js",corePath:base+"core",langPath:base+"lang",workerBlobURL:false}:{};
-    const w=await Tesseract.createWorker("eng",1,opts);return w;})();
+    return await Tesseract.createWorker("eng",1,opts);})();
   try{return await SC_WORKER;}catch(e){SC_WORKER=null;throw e;}
 }
 function scCanvas(g){const c=document.createElement("canvas");c.width=g.w;c.height=g.h;const x=c.getContext("2d");const id=x.createImageData(g.w,g.h);
   for(let i=0;i<g.w*g.h;i++){const v=g.d[i];id.data[i*4]=v;id.data[i*4+1]=v;id.data[i*4+2]=v;id.data[i*4+3]=255;}x.putImageData(id,0,0);return c;}
-/* photo -> {code, entry, lang} ; status(text) reports progress */
+async function scOCR(w,g,mode,whitelist){await w.setParameters({tessedit_char_whitelist:whitelist||"",tessedit_pageseg_mode:mode});const r=await w.recognize(scCanvas(g));return r.data;}
+const SC_CODECHARS="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-";
+/* photo -> what could be read: {code, entry, lang, label, cands} */
 async function scanCard(file,status){
   status("Finding the card…");await new Promise(r=>setTimeout(r,30));
   const im0=await pgLoad(file);try{URL.revokeObjectURL(im0.url);}catch(_){}
@@ -2647,36 +2692,66 @@ async function scanCard(file,status){
   const H=pgHomography([cl.TL,cl.TR,cl.BR,cl.BL],[[0,0],[CARD_W,0],[CARD_W,CARD_H],[0,CARD_H]]);
   status("Loading the text reader…");
   let w;try{w=await scWorker();}catch(e){return {err:"reader"};}
-  status("Reading the code…");
-  let code=null,HH=null,raw="",conf=0;
-  for(const Hx of [H,(u,v)=>H(CARD_W-u,CARD_H-v)]){const ci=scCodeImage(im0,Hx);if(!ci)continue;
-    await w.setParameters({tessedit_char_whitelist:"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-",tessedit_pageseg_mode:"7"});
-    const cv=scCanvas(ci);const r=await w.recognize(cv);raw=r.data.text.trim();conf=r.data.confidence;code=scParse(raw);window.TL_SCAN_LAST={raw,conf,img:cv.toDataURL()};if(code){HH=Hx;break;}}
-  if(!code)return {err:"nocode",raw};
-  const entry=CARDDB[code]||null;let lang=null;
-  if(entry&&!entry[0])lang="JP";            // only printed in Japan
-  else{status("Checking the language…");
-    await w.setParameters({tessedit_char_whitelist:"",tessedit_pageseg_mode:"11"});
-    const r=await w.recognize(scCanvas(scTextImage(im0,HH)));lang=scLangFromText(r.data.text,entry&&entry[0]).lang;}
-  return {code,entry,lang,conf};
+  // 1) the code: read several prepared views; trust a code only when views agree (or the clean read matches a real card)
+  const votes={};let code=null,HH=null;
+  const vote=(c,wt)=>{if(!c)return;votes[c]=(votes[c]||0)+wt*(CARDDB[c]?1:0.4);};
+  const pick=()=>{let b=null;for(const c in votes)if(!b||votes[c]>votes[b])b=c;return b&&votes[b]>=2?b:null;};
+  for(const Hx of [H,(u,v)=>H(CARD_W-u,CARD_H-v)]){
+    status("Reading the code…");
+    const ci=scCodeImage(im0,Hx);if(ci){const d=await scOCR(w,ci,"7",SC_CODECHARS);const c=scParse(d.text);window.TL_SCAN_LAST={raw:d.text,conf:d.confidence};if(c&&CARDDB[c]&&d.confidence>=45){code=c;HH=Hx;break;}vote(c,1);}
+    const views=scCodeViews(im0,Hx);
+    for(let k=0;k<views.length&&!pick();k++){if(k===4)status("The code is hard to read, trying harder…");vote(scParse((await scOCR(w,views[k],"7",SC_CODECHARS)).text),1);}
+    code=pick();if(code){HH=Hx;break;}
+  }
+  // 2) graded slab: the label above the card
+  let label=null;const ch=Math.hypot(cl.BL[0]-cl.TL[0],cl.BL[1]-cl.TL[1]),top=Math.min(cl.TL[1],cl.TR[1]);
+  if(top>ch*0.12){status("Reading the slab label…");
+    const y0=Math.max(0,Math.round(top-0.42*ch)),y1=Math.round(top-0.02*ch),x0=Math.max(0,Math.round(Math.min(cl.TL[0],cl.BL[0])-0.12*ch)),x1=Math.min(im0.w,Math.round(Math.max(cl.TR[0],cl.BR[0])+0.12*ch));
+    const k=Math.min(2,1400/Math.max(1,x1-x0)),W=Math.round((x1-x0)*k),Hh=Math.round((y1-y0)*k),g=new Uint8ClampedArray(W*Hh);
+    for(let y=0;y<Hh;y++)for(let x=0;x<W;x++){const sx=Math.min(im0.w-1,Math.round(x0+x/k)),sy=Math.min(im0.h-1,Math.round(y0+y/k)),i=(sy*im0.w+sx)*4;g[y*W+x]=Math.round(0.299*im0.d[i]+0.587*im0.d[i+1]+0.114*im0.d[i+2]);}
+    const t=(await scOCR(w,{w:W,h:Hh,d:g},"6")).text+" "+(await scOCR(w,{w:W,h:Hh,d:g},"11")).text;
+    const L=scParseLabel(t);if(L.grader||L.cert||L.num)label=L;}
+  let cands=[];
+  if(!code&&label&&label.num){const c=scByName(label.letters,label.num,label.set);if(c.length===1)code=c[0];else cands=c;}
+  // 3) still nothing: read the card's name and offer the matching cards
+  if(!code&&!cands.length){status("Reading the name…");let letters="";
+    for(const g of scCodeViews(im0,H,[6,72,57,82.5,12]).slice(0,8))letters+=" "+(await scOCR(w,g,"11")).text.toUpperCase().replace(/[^A-Z]/g,"");
+    cands=scByName(letters);}
+  const entry=code?CARDDB[code]||null:null;let lang=label&&label.lang||null;
+  if(code&&!lang){if(entry&&!entry[0])lang="JP";else{status("Checking the language…");lang=scLangFromText((await scOCR(w,scTextImage(im0,HH||H),"11")).text,entry&&entry[0]).lang;}}
+  if(!code&&!cands.length)return {err:"nocode",label};
+  return {code,entry,lang,label,cands};
+}
+function scFill(form,code,lang,label){
+  const e=CARDDB[code]||null;
+  const set=(name,v)=>{const el=form.elements[name];if(!el||v==null||v==="")return;if(el instanceof RadioNodeList)[...el].forEach(x=>x.checked=x.value===v);else el.value=v;};
+  set("code",code);if(e){set("name",e[0]||e[1]);if(RARITIES.includes(e[2]))set("rarity",e[2]);}
+  if(lang){set("lang",lang);if(form.imgSuffix&&form.imgSuffix.value!=="link"&&form.officialImg)form.officialImg.value="";}
+  if(label&&label.grader){set("kind","graded");form.querySelector("#rawBox").hidden=true;form.querySelector("#gradedBox").hidden=false;
+    if(GRADERS.includes(label.grader))set("grader",label.grader);set("grade",label.grade);set("cert",label.cert);}
+  if(form._refreshPicker)form._refreshPicker();
 }
 async function scanIntoForm(form,file){
   const st=form.querySelector("#f-readst"),btn=form.querySelector("#f-scan");if(!file)return;
+  let box=form.querySelector("#f-cands");if(!box){box=document.createElement("div");box.id="f-cands";box.className="vpick";box.style.marginTop="6px";st.after(box);}box.innerHTML="";
   if(btn)btn.disabled=true;const say=t=>{st.textContent=t;};
   try{
     const r=await scanCard(file,say);
     if(r.err==="nocard"){say("Couldn't find the card in the photo. Lay it on a plain surface, fill most of the frame, and try again, or type the code.");return;}
     if(r.err==="reader"){say("The text reader couldn't load. Connect to the internet once so it can download (about 7 MB), then it works offline.");return;}
-    if(r.err==="nocode"){say("Couldn't read the code. Try a sharper, closer photo without glare on the bottom-right corner, or type it.");return;}
-    const set=(name,v)=>{const el=form.elements[name];if(!el||v==null||v==="")return;if(el instanceof RadioNodeList)[...el].forEach(x=>x.checked=x.value===v);else el.value=v;};
-    set("code",r.code);
-    if(r.entry){set("name",r.entry[0]||r.entry[1]);if(RARITIES.includes(r.entry[2]))set("rarity",r.entry[2]);}
-    if(r.lang){set("lang",r.lang);if(form.imgSuffix&&form.imgSuffix.value!=="link"&&form.officialImg)form.officialImg.value="";}
-    if(form._refreshPicker)form._refreshPicker();
-    const jp=r.entry&&r.entry[1]&&r.lang==="JP"?` (${r.entry[1]})`:"";
-    const next=r.conf<35?"The photo was hard to read, so double-check the code, then pick your version below.":"Check it, then pick your version below.";
-    say(r.entry?`Read ${r.code} · ${r.entry[0]||r.entry[1]}${jp} · looks ${r.lang==="JP"?"Japanese":"English"}. ${next}`
-               :`Read ${r.code}, but it isn't in the card list yet (newer set?). Check the code and type the name.`);
+    const L=r.label,slab=L&&L.grader?` · ${L.grader.split(" ")[0]} ${L.grade||"?"}${L.cert?` · cert ${L.cert}`:""}`:"";
+    if(r.err==="nocode"){if(L&&L.grader)scFill(form,form.code.value.trim(),L.lang,L);
+      say(`Couldn't read the code${slab?` (filled in the slab details${slab})`:""}. Try a sharper, closer photo without glare on the bottom-right corner, or type it.`);return;}
+    if(r.code){scFill(form,r.code,r.lang,L);const e=r.entry;const jp=e&&e[1]&&r.lang==="JP"?` (${e[1]})`:"";
+      say(e?`Read ${r.code} · ${e[0]||e[1]}${jp} · ${r.lang==="JP"?"Japanese":"English"}${slab}. Check it, then pick your version below.`
+           :`Read ${r.code}${slab}, but it isn't in the card list yet (newer set?). Check the code and type the name.`);return;}
+    // several possible cards: let the user tap the right one
+    const lang=r.lang||(L&&L.lang)||"EN";
+    say(`Couldn't read the code clearly${slab}. It looks like ${[...new Set(r.cands.map(c=>CARDDB[c][0]))].join(" or ")}. Tap your card:`);
+    box.innerHTML=r.cands.map(c=>`<button type="button" data-code="${esc(c)}" aria-pressed="false" title="${esc(c)}">${CAN_OFFICIAL?`<img src="${esc(officialUrl(c,lang,""))}" alt="" loading="lazy" referrerpolicy="no-referrer">`:""}<span class="mono" style="font-size:11px">${esc(c)} ${esc(CARDDB[c][2]||"")}</span></button>`).join("");
+    box.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{const c=b.dataset.code;
+      scFill(form,c,r.lang||(CARDDB[c][0]?(L&&L.lang)||"EN":"JP"),L);box.innerHTML="";say(`Picked ${c} · ${CARDDB[c][0]||CARDDB[c][1]}${slab}. Check it, then pick your version below.`);}));
+    if(L&&L.grader)scFill(form,form.code.value.trim(),L.lang,L);
   }catch(e){say("Something went wrong reading the photo. Type the code instead.");}
   finally{if(btn)btn.disabled=false;}
 }
