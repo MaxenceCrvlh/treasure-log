@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="fc02d2f0";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="fbda5e8d";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -2035,6 +2035,17 @@ function pgLearnFeat(im,H){const bgS=[],cdS=[];const push=(arr,u,v)=>{const [x,y
   const proj=a=>a.map(p=>w[0]*(p[0]-mb[0])+w[1]*(p[1]-mb[1])+w[2]*(p[2]-mb[2]));const pb=proj(bgS),pc=proj(cdS);
   const sd=x=>{const m=x.reduce((s,v)=>s+v,0)/x.length;return Math.sqrt(x.reduce((s,v)=>s+(v-m)**2,0)/x.length);};
   return {w,m:mb,k:100/sep,snr:sep/Math.max(1e-9,Math.sqrt((sd(pb)**2+sd(pc)**2)/2))};}
+/* the card's real edge is the sharpest step near where the threshold was crossed: a soft cast shadow
+   (a gentle ramp just outside the card) or glow is skipped. sign=+1 when values rise going into the card. */
+function pgSnap(get,n,pos,back,fwd,sign){if(pos==null)return pos;const a=Math.max(1,Math.floor(pos-back)),b=Math.min(n-2,Math.ceil(pos+fwd));if(b<=a)return pos;
+  const g=i=>sign*(get(i+1)-get(i-1));let mx=0;for(let i=a;i<=b;i++)mx=Math.max(mx,g(i));if(mx<=0)return pos;
+  // already on a steep part of the edge: keep the threshold position (steadier on clean, blurry edges)
+  {const k=Math.round(pos);if(k>=1&&k<=n-2){const gc=g(k);if(gc>=0.5*mx){PG_SNAPG=gc;return pos;}}}
+  // the first strong step met coming from outside (not a stronger printed line further in)
+  const from=sign>0?a:b,to=sign>0?b:a,st=sign>0?1:-1;let bi=-1;
+  for(let i=from;st>0?i<=to:i>=to;i+=st){const v=g(i);if(v>=0.6*mx&&v>=g(i-1)&&v>=g(i+1)){bi=i;break;}}if(bi<0)return pos;
+  let off=0;if(bi>a&&bi<b){const g0=g(bi-1),g1=g(bi),g2=g(bi+1),den=g0-2*g1+g2;if(den<0)off=Math.max(-0.5,Math.min(0.5,0.5*(g0-g2)/den));}PG_SNAPG=g(bi);return bi+off;}
+let PG_SNAPG=0;
 function pgCross(get,n,T){return PG_INOUT?pgLastCross(get,n,T):pgFirstCross(get,n,T);}
 function pgFirstCross(get,n,T){for(let i=0;i<n-6;i++){if(get(i)>T){let ok=true;for(let k=1;k<6;k++)if(get(i+k)<=T){ok=false;break;}
   if(!ok)continue;if(i===0)return {pos:0,touch:true};const p0=get(i-1),p1=get(i);return {pos:i-1+(T-p0)/(p1-p0),touch:false};}}return null;}
@@ -2246,6 +2257,7 @@ function pgCardLines(im,bg){
   for(let pass=0;pass<(im.flat?2:1);pass++){if(pass)full=refined;
   const qc=[0,1,2,3].map(k=>pgIntersect(full[(k+3)%4],full[k]));  // corner k = between side k-1 and side k
   refined=[];mids=[];refPts=[];
+  const pxmm=Math.max(1,(Math.hypot(qc[1][0]-qc[0][0],qc[1][1]-qc[0][1])+Math.hypot(qc[2][0]-qc[1][0],qc[2][1]-qc[1][1])+Math.hypot(qc[3][0]-qc[2][0],qc[3][1]-qc[2][1])+Math.hypot(qc[0][0]-qc[3][0],qc[0][1]-qc[3][1]))/(2*(CARD_W+CARD_H)));
   for(let k=0;k<4;k++){const L=full[k],A=qc[k],B=qc[(k+1)%4];let nx=L.nx,ny=L.ny;
     const mxp=(A[0]+B[0])/2,myp=(A[1]+B[1])/2;if((cx-mxp)*nx+(cy-myp)*ny<0){nx=-nx;ny=-ny;} // n points into the card
     const pts=[];
@@ -2255,7 +2267,7 @@ function pgCardLines(im,bg){
       const N=Math.round(2*reach),arr=new Float32Array(N);for(let i=0;i<N;i++)arr[i]=get(i);
       const lo=(arr[0]+arr[1]+arr[2]+arr[3]+arr[4])/5,hi=pgMedian(Array.from(arr.subarray(Math.round(N*0.72))));
       if(im.flat&&hi-lo<segT*0.7)continue;const mid=im.flat?(lo+hi)/2:PG_T;if(im.flat)mids.push(mid);
-      const r=pgFirstCross(i=>arr[i],N,mid);if(r&&!r.touch){const o=r.pos-reach;pts.push([bx+nx*o,by+ny*o]);}}
+      const r=pgFirstCross(i=>arr[i],N,mid);if(r&&!r.touch){const o=pgSnap(i=>arr[i],N,r.pos,Math.max(2,0.12*pxmm),Math.max(3,0.25*pxmm),1)-reach;pts.push([bx+nx*o,by+ny*o]);}}
     refPts.push(pts);refined.push(pts.length>=20?(im.flat?pgLineRansac(pts,2.5):pgLineTLS(pts)):L);}}
   if(mids.length>40)PG_T=Math.max(segT*0.8,pgQuantile(mids,0.2));  // threshold used by the corner and edge checks
   // 6) which side is which: long sides are the card's height; the top is whichever end points up in the photo
@@ -2351,28 +2363,47 @@ function pgFitCircle(pts){let sx=0,sy=0,n=pts.length;const A=[[0,0,0],[0,0,0],[0
   let ss=0;for(const [x,y] of pts){const e=Math.hypot(x-cx,y-cy)-r;ss+=e*e;}return {cx,cy,r,rms:Math.sqrt(ss/Math.max(1,n))};}
 function pgSolve3(A,b){const M=A.map((r,i)=>[...r,b[i]]);for(let c=0;c<3;c++){let p=c;for(let r=c+1;r<3;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;[M[c],M[p]]=[M[p],M[c]];if(Math.abs(M[c][c])<1e-12)return [0,0,0];
   for(let r=0;r<3;r++){if(r===c)continue;const f=M[r][c]/M[c][c];for(let k=c;k<4;k++)M[r][k]-=f*M[c][k];}}return M.map((r,i)=>r[3]/r[i]);}
-function pgCorner(im,H,bg,which,resUm,loc){const px=40,pad=PG_FEAT?1.1:0.6,size=5.4;const flipX=which==="TR"||which==="BR",flipY=which==="BL"||which==="BR";
+function pgCorner(im,H,bg,which,resUm,loc){const px=40,pad=1.1,size=5.4;const flipX=which==="TR"||which==="BR",flipY=which==="BL"||which==="BR";
   const Hm=loc||((u,v)=>H(flipX?CARD_W-u:u,flipY?CARD_H-v:v));const wp=pgWarp(im,Hm,bg,-pad,-pad,size,size,px);
   const dist=(x,y)=>{const o=(y*wp.w+x)*3;return pgD(wp.d[o],wp.d[o+1],wp.d[o+2],bg);};
-  const pts=[];
-  if(PG_FEAT){ // low contrast: look straight across the edge (radially from the corner's centre), threshold set per line
+  const ptsA=[];
+  if(PG_FEAT){ // low contrast: threshold set per ray
     const R0=3,fs=(u,v)=>{const x=(u+pad)*px-0.5,y=(v+pad)*px-0.5;if(x<0||y<0||x>wp.w-1.001||y>wp.h-1.001)return 0;const x0=x|0,y0=y|0,fx=x-x0,fy=y-y0;
-      const g=(xx,yy)=>dist(xx,yy);return (g(x0,y0)*(1-fx)+g(x0+1,y0)*fx)*(1-fy)+(g(x0,y0+1)*(1-fx)+g(x0+1,y0+1)*fx)*fy;};
+      return (dist(x0,y0)*(1-fx)+dist(x0+1,y0)*fx)*(1-fy)+(dist(x0,y0+1)*(1-fx)+dist(x0+1,y0+1)*fx)*fy;};
     const r0=R0-1.3,r1=R0+1.0,N=Math.round((r1-r0)*px);
     for(let a=1;a<=89;a+=0.25){const t=a*Math.PI/180,dx=-Math.cos(t),dy=-Math.sin(t);const arr=new Float32Array(N);
       for(let i=0;i<N;i++){const rr=r0+i/px;arr[i]=fs(R0+dx*rr,R0+dy*rr);}
       const hi=pgMedian(Array.from(arr.subarray(0,Math.round(N*0.3)))),lo=(arr[N-1]+arr[N-2]+arr[N-3]+arr[N-4]+arr[N-5])/5;if(hi-lo<12)continue;const mid=(lo+hi)/2;
       for(let i=1;i<N-6;i++){if(arr[i]<mid){let ok=true;for(let k=1;k<6;k++)if(arr[i+k]>=mid){ok=false;break;}if(!ok)continue;
-        const rr=r0+(i-1+(arr[i-1]-mid)/(arr[i-1]-arr[i]))/px;pts.push([R0+dx*rr,R0+dy*rr]);break;}}}
+        const rr=r0+(i-1+(arr[i-1]-mid)/(arr[i-1]-arr[i]))/px;ptsA.push([R0+dx*rr,R0+dy*rr]);break;}}}
   }else{
-  for(let y=0;y<wp.h;y++){const r=pgCross(i=>dist(i,y),wp.w,PG_T);if(r&&!r.touch)pts.push([r.pos/px-pad,(y+.5)/px-pad]);}
-  for(let x=0;x<wp.w;x++){const r=pgCross(i=>dist(x,i),wp.h,PG_T);if(r&&!r.touch)pts.push([(x+.5)/px-pad,r.pos/px-pad]);}}
+    for(let y=0;y<wp.h;y++){const r=pgCross(i=>dist(i,y),wp.w,PG_T);if(r&&!r.touch)ptsA.push([r.pos/px-pad,(y+.5)/px-pad]);}
+    for(let x=0;x<wp.w;x++){const r=pgCross(i=>dist(x,i),wp.h,PG_T);if(r&&!r.touch)ptsA.push([(x+.5)/px-pad,r.pos/px-pad]);}}
+  const ptsB=[];
+  // look straight across the edge along rays from the corner's centre; the card edge is the first sharp step met from outside
+  // (a soft cast shadow or glow is a gentle ramp and is skipped); rays where the edge barely shows are left out
+  {const R0=3,fs=(u,v)=>{const x=(u+pad)*px-0.5,y=(v+pad)*px-0.5;if(x<0||y<0||x>wp.w-1.001||y>wp.h-1.001)return 0;const x0=x|0,y0=y|0,fx=x-x0,fy=y-y0;
+      return (dist(x0,y0)*(1-fx)+dist(x0+1,y0)*fx)*(1-fy)+(dist(x0,y0+1)*(1-fx)+dist(x0+1,y0+1)*fx)*fy;};
+    const r0=R0-1.3,r1=R0+1.0,N=Math.round((r1-r0)*px),found=[];
+    for(let a=1;a<=89;a+=0.25){const t=a*Math.PI/180,dx=-Math.cos(t),dy=-Math.sin(t);const out=new Float32Array(N); // out[0] = outermost
+      for(let i=0;i<N;i++){const rr=r1-i/px;out[i]=fs(R0+dx*rr,R0+dy*rr);}
+      const sm=new Float32Array(N);for(let i=0;i<N;i++){let q=0,c=0;for(let k=-1;k<=1;k++){const j=i+k;if(j>=0&&j<N){q+=out[j];c++;}}sm[i]=q/c;}
+      let mx=0;for(let i=2;i<N-2;i++)mx=Math.max(mx,sm[i+1]-sm[i-1]);if(mx<=0)continue;
+      for(let i=2;i<N-2;i++){const gi=sm[i+1]-sm[i-1];if(gi>=0.6*mx&&gi>=sm[i]-sm[i-2]&&gi>=sm[i+2]-sm[i]){
+          const g0=sm[i]-sm[i-2],g2=sm[i+2]-sm[i],den=g0-2*gi+g2;const off=den<0?Math.max(-0.5,Math.min(0.5,0.5*(g0-g2)/den)):0;
+          const rr=r1-(i+off)/px;found.push([R0+dx*rr,R0+dy*rr,gi]);break;}}}
+    const gm=pgMedian(found.map(f=>f[2]));for(const f of found)if(f[2]>=0.35*gm)ptsB.push([f[0],f[1]]);}
+  // two ways of tracing the corner; keep whichever gives the cleaner arc
+  const q=P0=>{const A=P0.filter(([x,y])=>x>0.06&&y>0.06);if(A.length<30)return Infinity;let c=pgFitCircle(A);const ph=([x,y])=>Math.atan2(c.cy-y,c.cx-x)*180/Math.PI;const A2=A.filter(p=>{const f=ph(p);return f>6&&f<84;});if(A2.length<30||!(c.r>1.5&&c.r<5)||new Set(A2.map(p=>Math.floor(ph(p)/6))).size<10)return Infinity;return pgFitCircle(A2).rms*(A2.length<60?1.5:1);};
+  const qa=q(ptsA),qb=q(ptsB);const pts=qb<qa?ptsB:ptsA;if(globalThis.PG_DEBUG)console.log('  corner',which,'rowcol',qa.toFixed?qa.toFixed(4):qa,'rays',qb.toFixed?qb.toFixed(4):qb);
   let arc=pts.filter(([x,y])=>x>0.06&&y>0.06);if(arc.length<20)return {ok:false,wp,pts:[]};
   let c=pgFitCircle(arc);const phi=([x,y])=>Math.atan2(c.cy-y,c.cx-x)*180/Math.PI;
   for(let k=0;k<2;k++){const a2=arc.filter(p=>{const f=phi(p);return f>6&&f<84;});if(a2.length>20){c=pgFitCircle(a2);}}
   arc=arc.filter(p=>{const f=phi(p);return f>6&&f<84;});
   // a traced 'corner' far from a real card corner's shape means the edge was lost (background texture, blur): say so instead of scoring it
   if(!(c.r>1.5&&c.r<5)||arc.length<20)return {ok:false,wp,pts:[]};
+  // only part of the curve could be seen (e.g. pale art at the corner on a pale table): don't score a guess
+  {const bins=new Set(arc.map(p=>Math.floor(phi(p)/6)));if(bins.size<10)return {ok:false,wp,pts:[],faint:true};}
   const res=arc.map(([x,y])=>Math.hypot(x-c.cx,y-c.cy)-c.r);  // + = sticks out, - = missing material
   const mid=[],ends=[];arc.forEach((p,i)=>{const f=phi(p);if(Math.abs(f-45)<15)mid.push(res[i]);else if(Math.abs(f-45)>28)ends.push(res[i]);});
   const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;const flat=(avg(ends)-avg(mid))*1000;
@@ -2390,8 +2421,13 @@ function pgCorner(im,H,bg,which,resUm,loc){const px=40,pad=PG_FEAT?1.1:0.6,size=
 function pgEdge(wp,bg,side,resUm){const P=Math.round(0.5*wp.px),px=wp.px;const cw=wp.w-2*P,ch=wp.h-2*P;const n=(side==="L"||side==="R")?ch:cw;
   const at=(i,j)=>{let x,y;if(side==="L"){x=j;y=P+i;}else if(side==="R"){x=wp.w-1-j;y=P+i;}else if(side==="T"){x=P+i;y=j;}else{x=P+i;y=wp.h-1-j;}return (y*wp.w+x)*3;};
   const dist=(i,j)=>{const o=at(i,j);return pgD(wp.d[o],wp.d[o+1],wp.d[o+2],bg);};
-  const u=[],v=[];for(let i=Math.round(4.5*px);i<n-4.5*px;i++){let r;if(PG_FEAT){const N=Math.round(2*px),arr=new Float32Array(N);for(let j=0;j<N;j++)arr[j]=dist(i,j);const lo=(arr[0]+arr[1]+arr[2]+arr[3])/4,hi=pgMedian(Array.from(arr.subarray(Math.round(1.2*px))));
-      r=hi-lo<12?null:pgLastCross(j=>arr[j],N,(lo+hi)/2);}else r=pgCross(j=>dist(i,j),Math.round(2*px),PG_T);if(r&&!r.touch){u.push(i);v.push(r.pos);}}
+  const u=[],v=[],gs=[];for(let i=Math.round(4.5*px);i<n-4.5*px;i++){let r;if(PG_FEAT){const N=Math.round(2*px),arr=new Float32Array(N);for(let j=0;j<N;j++)arr[j]=dist(i,j);const lo=(arr[0]+arr[1]+arr[2]+arr[3])/4,hi=pgMedian(Array.from(arr.subarray(Math.round(1.2*px))));
+      r=hi-lo<12?null:pgLastCross(j=>arr[j],N,(lo+hi)/2);}else r=pgCross(j=>dist(i,j),Math.round(2*px),PG_T);if(r&&!r.touch){const N2=Math.round(2*px),g=j=>dist(i,j);PG_SNAPG=0;const vp=pgSnap(g,N2,r.pos,Math.round(0.12*px),Math.round(0.25*px),1);
+        // found well inside the expected edge: a real dent shows background colour in between; pale printing (card present but faint) doesn't
+        if(!PG_FEAT&&vp>P+0.25*px){let sm=0,c=0;for(let j=Math.round(P+0.05*px);j<vp-2;j++){sm+=g(j);c++;}if(c&&sm/c>0.3*PG_T)continue;}
+        u.push(i);v.push(vp);gs.push(PG_SNAPG);}}
+  // stretches where the card's edge barely differs from the background (e.g. white art on a white table) can't be read: leave them out
+  {const gm=pgMedian(gs.filter(x=>x>0));if(gm>0){const k2=gs.map(x=>x>=0.35*gm);for(const A of [u,v]){const f=A.filter((_,k)=>k2[k]);A.length=0;A.push(...f);}}}
   if(u.length<50)return null;const f=pgFitQuad(u,v);const r=u.map((x,k)=>(v[k]-f.at(x))/px*1000);
   const sm=r.map((_,k)=>{let s=0,c=0;for(let q=k-7;q<=k+7;q++)if(q>=0&&q<r.length){s+=r[q];c++;}return s/c;});
   const rough=Math.sqrt(r.reduce((s,x,k)=>s+(x-sm[k])**2,0)/r.length);const sorted=[...r].sort((a,b)=>a-b);const dent=sorted[Math.floor(sorted.length*0.998)];
@@ -2452,7 +2488,9 @@ function pgImages(r,im){const out={};
   const full=pgWpCanvas(wp,0,0,wp.w,wp.h);const W=360,H=Math.round(W*wp.h/wp.w),k=W/wp.w;
   out.card=pgToURL(W,H,cx=>{cx.drawImage(full,0,0,W,H);
     if(r.cen.ok){cx.strokeStyle="#22c55e";cx.lineWidth=1.5;const m=r.cen.mm,px=wp.px;const L=(P+m.L*px)*k,R=(wp.w-P-m.R*px)*k,T=(P+m.T*px)*k,B=(wp.h-P-m.B*px)*k;
-      cx.beginPath();cx.moveTo(L,0);cx.lineTo(L,H);cx.moveTo(R,0);cx.lineTo(R,H);cx.moveTo(0,T);cx.lineTo(W,T);cx.moveTo(0,B);cx.lineTo(W,B);cx.stroke();}});
+      cx.beginPath();cx.moveTo(L,0);cx.lineTo(L,H);cx.moveTo(R,0);cx.lineTo(R,H);cx.moveTo(0,T);cx.lineTo(W,T);cx.moveTo(0,B);cx.lineTo(W,B);cx.stroke();}
+    // the card's own edge (the photo keeps a thin strip of table around it on purpose, so the edge itself is visible)
+    cx.strokeStyle="#ef4444";cx.lineWidth=1.25;cx.strokeRect(P*k,P*k,(wp.w-2*P)*k,(wp.h-2*P)*k);});
   out.corners={};for(const key in r.corners){const c=r.corners[key];const cw=c.wp;const cv=pgWpCanvas(cw,0,0,cw.w,cw.h);const S=150;
     out.corners[key]=pgToURL(S,S,cx=>{cx.save();cx.translate(key==="TR"||key==="BR"?S:0,key==="BL"||key==="BR"?S:0);cx.scale(key==="TR"||key==="BR"?-1:1,key==="BL"||key==="BR"?-1:1);
       cx.drawImage(cv,0,0,S,S);if(c.ok){const f=S/cw.w;cx.fillStyle="#22c55e";for(const [u,v] of c.pts){cx.fillRect((u+c.pad)*c.px*f-1,(v+c.pad)*c.px*f-1,2,2);}}cx.restore();});}
@@ -2495,7 +2533,7 @@ function pgReport(R){
   </div>
   ${sides.length>1?`<div class="seg" style="margin-top:14px">${sides.map(([k,l])=>`<label><input type="radio" name="pgview" value="${k}" ${k===tab?"checked":""}>${l}</label>`).join("")}</div>`:""}
   <h3 style="margin-top:14px">${tab==="front"?"Front":"Back"}</h3>
-  ${R.img[tab].photo?`<div class="pg-map" style="margin-bottom:10px"><figure style="margin:0"><img src="${R.img[tab].photo}" alt="Your photo with the detected card outline" class="pg-cardimg"><figcaption class="hint" style="text-align:center">Your photo · card found</figcaption></figure><figure style="margin:0"><img src="${R.img[tab].card}" alt="Straightened card" class="pg-cardimg"><figcaption class="hint" style="text-align:center">Straightened to 63 × 88 mm · border in green</figcaption></figure></div>`:""}
+  ${R.img[tab].photo?`<div class="pg-map" style="margin-bottom:10px"><figure style="margin:0"><img src="${R.img[tab].photo}" alt="Your photo with the detected card outline" class="pg-cardimg"><figcaption class="hint" style="text-align:center">Your photo · card found</figcaption></figure><figure style="margin:0"><img src="${R.img[tab].card}" alt="Straightened card" class="pg-cardimg"><figcaption class="hint" style="text-align:center">Straightened to 63 × 88 mm · <span style="color:#ef4444">card edge in red</span>, <span style="color:#22c55e">printed border in green</span>. Centering is measured between the two.</figcaption></figure></div>`:""}
   <div class="pg-map" ${R.img[tab].photo?'style="grid-template-columns:1fr;max-width:62%;margin-inline:auto"':""}>
     ${R.img[tab].photo?"":`<img src="${R.img[tab].card}" alt="Straightened ${tab} with detected border" class="pg-cardimg">`}
     <div class="pg-mapbox num">${m?`<div class="pg-c t">${m.tb.toFixed(2)}</div><div class="pg-c b">${(100-m.tb).toFixed(2)}</div><div class="pg-c l">${m.lr.toFixed(2)}</div><div class="pg-c r">${(100-m.lr).toFixed(2)}</div>
@@ -2504,7 +2542,7 @@ function pgReport(R){
   <h3 style="margin-top:14px">Corners</h3>
   <div class="pg-corners">${["TL","TR","BL","BR"].map(k=>{const q=r.corners[k];const nm={TL:"Top left",TR:"Top right",BL:"Bottom left",BR:"Bottom right"}[k];
     return `<div class="pg-tile"><img src="${R.img[tab].corners[k]}" alt="${nm} corner"><div class="label">${nm}</div>${q.ok?`<div class="pg-kv"><span>Fray</span>${pgScore(q.fray)}</div><div class="pg-kv"><span>Fill</span>${pgScore(q.fill)}</div><div class="pg-kv"><span>Angle</span>${q.angle!=null?pgScore(q.angleScore):"<b>—</b>"}</div>
-      <div class="hint num">r ${q.r.toFixed(2)} mm${q.angle!=null?` · ${q.angle.toFixed(2)}°`:""}${q.chamfer?` · <b class="neg">chamfer-like</b>`:""}${q.white?` · ${q.white} light px`:""}</div>`:`<div class="hint">Couldn't trace this corner</div>`}</div>`;}).join("")}</div>
+      <div class="hint num">r ${q.r.toFixed(2)} mm${q.angle!=null?` · ${q.angle.toFixed(2)}°`:""}${q.chamfer?` · <b class="neg">chamfer-like</b>`:""}${q.white?` · ${q.white} light px`:""}</div>`:`<div class="hint">${q.faint?"Edge too faint to read here. Try a background that contrasts with this corner.":"Couldn't trace this corner"}</div>`}</div>`;}).join("")}</div>
   <h3 style="margin-top:14px">Edges</h3>
   <div class="pg-edges">${["T","B","L","R"].map(k=>{const e=r.edges[k];const nm={T:"Top",B:"Bottom",L:"Left",R:"Right"}[k];
     return `<div class="pg-tile ${k==="L"||k==="R"?"v":""}"><img src="${R.img[tab].edges[k]}" alt="${nm} edge"><div><div class="label">${nm}</div>${e?`<div class="pg-kv"><span>Fray</span>${pgScore(e.fray)}</div><div class="pg-kv"><span>Fill</span>${pgScore(e.fill)}</div>`:`<div class="hint">Couldn't trace</div>`}</div></div>`;}).join("")}</div>
