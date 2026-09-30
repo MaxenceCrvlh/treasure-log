@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="ca011fe6";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="d8bd5122";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -2683,14 +2683,19 @@ async function scWorker(){
 }
 function scCanvas(g){const c=document.createElement("canvas");c.width=g.w;c.height=g.h;const x=c.getContext("2d");const id=x.createImageData(g.w,g.h);
   for(let i=0;i<g.w*g.h;i++){const v=g.d[i];id.data[i*4]=v;id.data[i*4+1]=v;id.data[i*4+2]=v;id.data[i*4+3]=255;}x.putImageData(id,0,0);return c;}
-async function scOCR(w,g,mode,whitelist){await w.setParameters({tessedit_char_whitelist:whitelist||"",tessedit_pageseg_mode:mode});const r=await w.recognize(scCanvas(g));return r.data;}
+let SC_LOG=null;
+async function scOCR(w,g,mode,whitelist,tag){await w.setParameters({tessedit_char_whitelist:whitelist||"",tessedit_pageseg_mode:mode});const cv=scCanvas(g);const r=await w.recognize(cv);
+  if(SC_LOG&&SC_LOG.reads.length<60){const e={tag:tag||"",mode,text:String(r.data.text||"").trim(),conf:Math.round(r.data.confidence||0)};if(SC_LOG.imgs<24){try{e.img=cv.toDataURL("image/jpeg",0.8);SC_LOG.imgs++;}catch(_){}}SC_LOG.reads.push(e);}
+  return r.data;}
 const SC_CODECHARS="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-";
 /* photo -> what could be read: {code, entry, lang, label, cands} */
 async function scanCard(file,status){
   status("Finding the card…");await new Promise(r=>setTimeout(r,30));
-  const im0=await pgLoad(file);try{URL.revokeObjectURL(im0.url);}catch(_){}
+  SC_LOG={version:window.TL_VERSION||"",when:new Date().toISOString(),ua:navigator.userAgent,file:{name:file.name,type:file.type,size:file.size},reads:[],imgs:0};
+  const im0=await pgLoad(file);SC_LOG.image=[im0.w,im0.h];try{URL.revokeObjectURL(im0.url);}catch(_){}
   let im=pgFlatten(im0),bg;if(im.ok)bg=im.bgRef;else{im=im0;bg=pgBackground(im0);}
-  let cl;try{cl=pgCardLines(im,bg);}catch(e){return {err:"nocard"};}
+  let cl;try{cl=pgCardLines(im,bg);}catch(e){SC_LOG.err="nocard: "+e.message;return {err:"nocard"};}
+  SC_LOG.card=[cl.TL,cl.TR,cl.BR,cl.BL].map(p=>p.map(v=>Math.round(v)));SC_LOG.flat=!!im.ok;
   const H=pgHomography([cl.TL,cl.TR,cl.BR,cl.BL],[[0,0],[CARD_W,0],[CARD_W,CARD_H],[0,CARD_H]]);
   status("Loading the text reader…");
   let w;try{w=await scWorker();}catch(e){return {err:"reader"};}
@@ -2700,9 +2705,9 @@ async function scanCard(file,status){
   const pick=()=>{let b=null;for(const c in votes)if(!b||votes[c]>votes[b])b=c;return b&&votes[b]>=2?b:null;};
   for(const Hx of [H,(u,v)=>H(CARD_W-u,CARD_H-v)]){
     status("Reading the code…");
-    const ci=scCodeImage(im0,Hx);if(ci){const d=await scOCR(w,ci,"7",SC_CODECHARS);const c=scParse(d.text);window.TL_SCAN_LAST={raw:d.text,conf:d.confidence};if(c&&CARDDB[c]&&d.confidence>=45){code=c;HH=Hx;break;}vote(c,1);}
+    const ci=scCodeImage(im0,Hx);if(ci){const d=await scOCR(w,ci,"7",SC_CODECHARS,"code-clean");const c=scParse(d.text);window.TL_SCAN_LAST={raw:d.text,conf:d.confidence};if(c&&CARDDB[c]&&d.confidence>=45){code=c;HH=Hx;break;}vote(c,1);}
     const views=scCodeViews(im0,Hx);
-    for(let k=0;k<views.length&&!pick();k++){if(k===4)status("The code is hard to read, trying harder…");vote(scParse((await scOCR(w,views[k],"7",SC_CODECHARS)).text),1);}
+    for(let k=0;k<views.length&&!pick();k++){if(k===4)status("The code is hard to read, trying harder…");vote(scParse((await scOCR(w,views[k],"7",SC_CODECHARS,"code-view"+k)).text),1);}
     code=pick();if(code){HH=Hx;break;}
   }
   // 2) graded slab: the label above the card
@@ -2711,17 +2716,18 @@ async function scanCard(file,status){
     const y0=Math.max(0,Math.round(top-0.42*ch)),y1=Math.round(top-0.02*ch),x0=Math.max(0,Math.round(Math.min(cl.TL[0],cl.BL[0])-0.12*ch)),x1=Math.min(im0.w,Math.round(Math.max(cl.TR[0],cl.BR[0])+0.12*ch));
     const k=Math.min(2,1400/Math.max(1,x1-x0)),W=Math.round((x1-x0)*k),Hh=Math.round((y1-y0)*k),g=new Uint8ClampedArray(W*Hh);
     for(let y=0;y<Hh;y++)for(let x=0;x<W;x++){const sx=Math.min(im0.w-1,Math.round(x0+x/k)),sy=Math.min(im0.h-1,Math.round(y0+y/k)),i=(sy*im0.w+sx)*4;g[y*W+x]=Math.round(0.299*im0.d[i]+0.587*im0.d[i+1]+0.114*im0.d[i+2]);}
-    const t=(await scOCR(w,{w:W,h:Hh,d:g},"6")).text+" "+(await scOCR(w,{w:W,h:Hh,d:g},"11")).text;
-    const L=scParseLabel(t);if(L.grader||L.cert||L.num)label=L;}
+    const t=(await scOCR(w,{w:W,h:Hh,d:g},"6","","label")).text+" "+(await scOCR(w,{w:W,h:Hh,d:g},"11","","label")).text;
+    const L=scParseLabel(t);SC_LOG.label={...L};if(L.grader||L.cert||L.num)label=L;}
   let cands=[];
   if(!code&&label&&label.num){const c=scByName(label.letters,label.num,label.set);if(c.length===1)code=c[0];else cands=c;}
   if(!code&&!cands.length&&label&&label.letters){const words=label.letters.replace(/ONEPIECE|JAPANESE|JPN|GEMMT|GEMMINT|MINT|SPECIAL|ALTART|PARALLEL|MANGA|PROMO|PSA|BGS|CGC|TAG|BECKETT|CERT/g,"");cands=scByName(words,null,label.set);}
   // 3) still nothing: read the card's name and offer the matching cards
   if(!code&&!cands.length){status("Reading the name…");let letters="";
-    for(const g of scCodeViews(im0,H,[6,72,57,82.5,12]).slice(0,8))letters+=" "+(await scOCR(w,g,"11")).text.toUpperCase().replace(/[^A-Z]/g,"");
-    cands=scByName(letters);}
+    for(const g of scCodeViews(im0,H,[6,72,57,82.5,12]).slice(0,8))letters+=" "+(await scOCR(w,g,"11","","name")).text.toUpperCase().replace(/[^A-Z]/g,"");
+    cands=scByName(letters);SC_LOG.nameLetters=letters;}
   const entry=code?CARDDB[code]||null:null;let lang=label&&label.lang||null;
   if(code&&!lang){if(entry&&!entry[0])lang="JP";else{status("Checking the language…");lang=scLangFromText((await scOCR(w,scTextImage(im0,HH||H),"11")).text,entry&&entry[0]).lang;}}
+  SC_LOG.votes=votes;SC_LOG.result={code,lang,cands};
   if(!code&&!cands.length)return {err:"nocode",label};
   return {code,entry,lang,label,cands};
 }
@@ -2758,8 +2764,13 @@ async function scanIntoForm(form,file){
     box.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{const c=b.dataset.code;
       scFill(form,c,r.lang||(CARDDB[c][0]?(L&&L.lang)||"EN":"JP"),L);box.innerHTML="";say(`Picked ${c} · ${CARDDB[c][0]||CARDDB[c][1]}${slab}. Check it, then pick your version below.`);}));
     if(L&&L.grader)scFill(form,form.code.value.trim(),L.lang,L);
-  }catch(e){say("Something went wrong reading the photo. Type the code instead.");}
-  finally{if(btn)btn.disabled=false;}
+  }catch(e){say("Something went wrong reading the photo. Type the code instead.");if(SC_LOG)SC_LOG.err=String(e&&e.stack||e);}
+  finally{if(btn)btn.disabled=false;
+    // if it didn't simply work, offer the details so they can be sent for a fix
+    if(SC_LOG&&!(SC_LOG.result&&SC_LOG.result.code)){const d=document.createElement("button");d.type="button";d.className="btn sm";d.style.marginTop="6px";d.textContent="Save scan details";
+      d.title="Saves what the reader saw, so you can send it for a fix";const log=SC_LOG;
+      d.addEventListener("click",async()=>{try{await S.downloads.save({filename:`treasure-log-scan-${today()}.json`,data:new Blob([JSON.stringify(log)],{type:"application/json"})});}catch(_){}});
+      const old=form.querySelector("#f-scandbg");if(old)old.remove();d.id="f-scandbg";box.after(d);}}
 }
 
 /* ---------- boot ---------- */
