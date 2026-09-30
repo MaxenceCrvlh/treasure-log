@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="606714ec";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="bc534d61";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -2665,7 +2665,8 @@ function scByName(letters,num,setHint){letters=String(letters||"").replace(/CHAR
   let best=[];for(const [nm,codes] of Object.entries(byName)){const c=scNameCover(nm,letters);const L=nm.replace(/[^A-Za-z]/g,"").length;
     if((c>=0.6&&c*L>=(num?3:6))||(c===1&&L>=4))best.push({nm,codes,score:c*L-0.5*(1-c)*L});}
   best.sort((a,b)=>b.score-a.score);if(!best.length)return [];const top=best.filter(b=>b.score>=best[0].score-0.5);
-  let codes=[].concat(...top.map(b=>b.codes)).sort((a,b)=>b.localeCompare(a));if(setHint)codes.sort((a,b)=>(b.startsWith(setHint)?1:0)-(a.startsWith(setHint)?1:0));return codes.slice(0,12);}
+  const rank=c=>{const m=c.match(/^([A-Z]+)(\d*)-(\d+)/)||[];return [{OP:0,EB:1,PRB:2,ST:3,P:4}[m[1]]??5,-(+m[2]||0),+m[3]||0];};
+  let codes=[].concat(...top.map(b=>b.codes)).sort((a,b)=>{const x=rank(a),y=rank(b);return x[0]-y[0]||x[1]-y[1]||x[2]-y[2];});if(setHint)codes.sort((a,b)=>(b.startsWith(setHint)?1:0)-(a.startsWith(setHint)?1:0));return codes.slice(0,20);}
 
 /* ---- on-phone text reader (Tesseract.js, open source), loaded the first time it's needed ---- */
 let SC_WORKER=null;
