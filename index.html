@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="d8bd5122";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="701165c6";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -918,8 +918,8 @@ function vTools(){
     <div class="bar"><button class="btn pri" data-act="backup-make" id="bk-make">Create backup</button><button class="btn" data-act="backup-save" id="bk-save" hidden>Save backup file</button><label class="btn" for="bk-file" style="cursor:pointer">Restore from a file</label><input id="bk-file" type="file" accept="application/json,.json" hidden></div>
     <div id="bk-status" class="hint" style="margin-top:8px"></div>
   </div>
-  ${window.TL_STANDALONE?`<h2>Claude features (optional)</h2><div class="panel pad"><p class="hint" style="margin:0 0 8px">Reading card photos and pasted comps with Claude needs your own Anthropic API key (get one at console.anthropic.com). It stays on this phone and costs about a cent or less per use. Without a key, pasted comps are still read by the app itself.</p>
-    <form data-form="apikey" class="bar"><input id="k-key" name="key" type="password" autocomplete="off" class="search" placeholder="${getApiKey()?"Key saved ••••"+esc(getApiKey().slice(-4)):"sk-ant-…"}" aria-label="Anthropic API key"><button class="btn" type="submit">Save key</button>${getApiKey()?`<button class="btn danger" type="button" data-act="key-remove">Remove</button>`:""}</form></div>`:""}
+  ${window.TL_STANDALONE?`<h2>Claude features (optional)</h2><div class="panel pad"><p class="hint" style="margin:0 0 8px">With your own Claude API key (from platform.claude.com), Claude reads every card photo you scan (about $0.002 each) and can check prices online for any card (about 2–5 cents each, in the background). The key stays on this phone. Without a key, the app reads cards and pasted comps on its own.</p>
+    <form data-form="apikey" class="bar"><input id="k-key" name="key" type="password" autocomplete="off" class="search" placeholder="${getApiKey()?"Key saved ••••"+esc(getApiKey().slice(-4)):"sk-ant-…"}" aria-label="Anthropic API key"><button class="btn" type="submit">Save key</button>${getApiKey()?`<button class="btn danger" type="button" data-act="key-remove">Remove</button>`:""}</form>${getApiKey()?`<div class="bar" style="margin-top:10px"><button class="btn" data-act="pc-bulk">Price check cards with no market value</button></div>`:""}</div>`:""}
   <h2>Export</h2><div class="panel pad bar"><button class="btn" data-act="export" data-what="cards">Cards CSV</button><button class="btn" data-act="export" data-what="sales">Sales CSV</button><button class="btn" data-act="export" data-what="shows">Shows CSV</button><button class="btn" data-act="export" data-what="items">Side items CSV</button><button class="btn" data-act="export" data-what="trades">Trades CSV</button><span class="hint">Opens in Excel or Google Sheets. Handy for taxes.</span></div>
   <h2>Pricing a lot</h2><div class="panel pad guide">
     <p>A lot's value starts as the sum of its cards' market values. Cards with no market value count at what you paid, so add comps to each card first.</p>
@@ -1037,7 +1037,7 @@ const SHEETS={
     </form>`,after(){
       const form=document.querySelector('form[data-form="card"]');
       form.addEventListener("change",e=>{if(e.target.name==="kind"){form.querySelector("#rawBox").hidden=e.target.value==="graded";form.querySelector("#gradedBox").hidden=e.target.value!=="graded";}});
-      form.querySelector("#f-photo").addEventListener("change",async e=>{const file=e.target.files[0];if(!file)return;try{const blob=await shrink(file);S.pendingPhoto={blob,url:URL.createObjectURL(blob)};document.getElementById("phPrev").innerHTML=`<img class="thumb" src="${S.pendingPhoto.url}" alt="">`;form.querySelector("#f-read").hidden=!S.sampleImg;form._scanFile=file;form.querySelector("#f-scan").hidden=false;if(!form.code.value.trim())scanIntoForm(form,file);}catch(err){toast("Couldn't read that image. Try a JPG or PNG.");}});
+      form.querySelector("#f-photo").addEventListener("change",async e=>{const file=e.target.files[0];if(!file)return;try{const blob=await shrink(file);S.pendingPhoto={blob,url:URL.createObjectURL(blob)};document.getElementById("phPrev").innerHTML=`<img class="thumb" src="${S.pendingPhoto.url}" alt="">`;form.querySelector("#f-read").hidden=true;form._scanFile=file;form.querySelector("#f-scan").hidden=false;if(!form.code.value.trim())scanIntoForm(form,file);}catch(err){toast("Couldn't read that image. Try a JPG or PNG.");}});
       form.querySelector("#f-scan").addEventListener("click",()=>scanIntoForm(form,form._scanFile));
       form.querySelector("#f-read").addEventListener("click",()=>readCardPhoto(form));
       if(CAN_OFFICIAL){
@@ -1091,6 +1091,7 @@ const SHEETS={
       ${gr?`<div class="note grdn"><span>At <b>${esc(gr.company||"grading")}</b> since ${fdate(gr.sent)} (${daysSince(gr.sent)??0} days)${gr.service?` · ${esc(gr.service)}`:""}${gr.sub?` · sub <span class="mono">${esc(gr.sub)}</span>`:""}${n(gr.fee)?` · fee ${money(gr.fee)}`:""}</span><span class="bar"><button class="btn sm pri" data-act="grade-return" data-id="${esc(c.id)}">It's back: enter grade</button><button class="btn sm" data-act="grade-cancel" data-id="${esc(c.id)}">Cancel grading</button></span></div>`:""}
       <div class="bar" style="margin-top:14px">${n(c.qty)>0&&!L&&!gr&&c.status!=="sold"?`<button class="btn pri" data-act="sell" data-id="${esc(c.id)}">Sell</button>`:""}${L&&L.status!=="sold"?`<button class="btn pri" data-act="sell-lot" data-id="${esc(L.id)}">Sell whole lot</button>`:""}${n(c.qty)>0&&!gr&&c.kind==="raw"&&!L&&c.status!=="sold"?`<button class="btn" data-act="grade-send" data-id="${esc(c.id)}">Send for grading</button>`:""}${n(c.qty)>0&&!gr&&!L&&c.status!=="sold"?`<button class="btn" data-act="lot-add" data-id="${esc(c.id)}">Add to lot</button>`:""}<button class="btn" data-act="edit-card" data-id="${esc(c.id)}">Edit</button><button class="btn" data-act="dup-card" data-id="${esc(c.id)}">Log another copy</button><button class="btn danger" data-act="del-card" data-id="${esc(c.id)}">Delete</button></div>
 
+      ${pcSection(c)}
       <div class="section"><div class="bar spread"><h3 style="margin:0">Price comps</h3>${cs.n?`<span class="hint">${cs.n} sold · newest ${fdate(cs.newest)}</span>`:""}</div>
         ${cs.n?`<div class="kv num" style="margin-top:8px"><div><span class="label">Average</span><b>${money(cs.mean)}</b></div><div><span class="label">Median</span><b>${money(cs.median)}</b></div><div><span class="label">Range</span><b style="font-size:16px">${money(cs.low)}–${money(cs.high)}</b></div></div>
         <div class="bar" style="margin-top:8px"><button class="btn sm" data-act="use-avg" data-id="${esc(c.id)}" data-v="${cs.n>=5?cs.trimmed.toFixed(2):cs.mean.toFixed(2)}">Set market to ${money(cs.n>=5?cs.trimmed:cs.mean)} (${cs.n>=5?"trimmed avg":"average"})</button><button class="btn sm" data-act="use-avg" data-id="${esc(c.id)}" data-v="${cs.median.toFixed(2)}">Use median</button></div>`:`<p class="hint">Look up recent sales below, then log 3–5 of them. The app averages sold prices from the last ${S.settings.compDays} days, so one lucky sale doesn't set your price.</p>`}
@@ -1704,6 +1705,9 @@ document.addEventListener("click",async e=>{
     case"add-expense":if(exBlock())return;openSheet("expenseForm",{});break;
     case"expense":if(exBlock())return;openSheet("expenseForm",{id});break;
     case"del-expense":{if(!confirmTap(el,"de"+id,"Tap again to delete"))return;const e0=byId("expenses",id);if(e0&&e0.supplyId&&n(e0.qty)){const s0=byId("supplies",e0.supplyId);if(s0)await put("supplies",{...s0,onHand:Math.max(0,n(s0.onHand)-n(e0.qty))});}await del("expenses",id);closeSheet();break;}
+    case"pc-run":{if(exBlock())return;await pcEnqueue([id]);break;}
+    case"pc-use":{if(exBlock())return;await pcApply(id);break;}
+    case"pc-bulk":{if(exBlock())return;const ids=D("cards").filter(c=>c.status!=="sold"&&n(c.qty)>0&&!(n(c.market)>0)&&!(c.priceCheck&&["queued","running","waiting"].includes(c.priceCheck.status))).map(c=>c.id).slice(0,40);if(!ids.length){toast("Every card in stock already has a market value.");break;}if(!confirm(`Check prices for ${ids.length} card${ids.length>1?"s":""} with no market value? About $${(ids.length*0.04).toFixed(2)} in Claude credit, roughly 30 seconds each in the background.`))break;await pcEnqueue(ids);break;}
     case"use-avg":{if(exBlock())return;const col=el.dataset.col||"cards";const c=byId(col,id);const v=Math.round(n(el.dataset.v)*100)/100;await put(col,{...c,market:v,marketDate:today()});toast((col==="lots"?"Lot value set to ":"Market value set to ")+money(v));break;}
     case"del-comp":{if(exBlock())return;const col=el.dataset.col||"cards";const c=byId(col,id);const comps=[...(c.comps||[])];comps.splice(+el.dataset.i,1);await put(col,{...c,comps});break;}
     case"lot-clear-market":{if(exBlock())return;const L=byId("lots",id);await put("lots",{...L,market:null,marketDate:""});toast("Lot now priced by its cards");break;}
@@ -2740,7 +2744,7 @@ function scFill(form,code,lang,label){
     if(GRADERS.includes(label.grader))set("grader",label.grader);set("grade",label.grade);set("cert",label.cert);}
   if(form._refreshPicker)form._refreshPicker();
 }
-async function scanIntoForm(form,file){
+async function scanOnPhone(form,file){
   const st=form.querySelector("#f-readst"),btn=form.querySelector("#f-scan");if(!file)return;
   let box=form.querySelector("#f-cands");if(!box){box=document.createElement("div");box.id="f-cands";box.className="vpick";box.style.marginTop="6px";st.after(box);}box.innerHTML="";
   if(btn)btn.disabled=true;const say=t=>{st.textContent=t;};
@@ -2773,6 +2777,167 @@ async function scanIntoForm(form,file){
       const old=form.querySelector("#f-scandbg");if(old)old.remove();d.id="f-scandbg";box.after(d);}}
 }
 
+/* ================= CLAUDE: card reading and price checks (uses your own API key) ================= */
+const CL_MODELS={"claude-haiku-4-5-20251001":{name:"Haiku 4.5",inp:1,out:5},"claude-sonnet-5-5":{name:"Sonnet 5.5",inp:2,out:10}};
+const CL_PRICE_MODELS=["claude-haiku-4-5-20251001","claude-sonnet-5-5"];
+function clErr(code,msg){const e=new Error(msg||code);e.code=code;return e;}
+async function clApi(body){
+  const key=getApiKey();if(!key)throw clErr("no_key");
+  let r;try{r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(body)});}
+  catch(e){throw clErr("offline");}
+  if(r.status===401||r.status===403)throw clErr("bad_key");
+  if(r.status===429)throw clErr("rate_limited");
+  if(r.status>=500)throw clErr("overloaded");
+  if(!r.ok){let m="";try{m=(await r.json()).error.message;}catch(_){}throw clErr("bad_request",m||("error "+r.status));}
+  return r.json();
+}
+function clCanvasBlob(c){return new Promise(res=>c.toBlob(b=>res(b),"image/jpeg",0.9));}
+function clWarpCanvas(wp){const c=document.createElement("canvas");c.width=wp.w;c.height=wp.h;const x=c.getContext("2d");const id=x.createImageData(wp.w,wp.h);
+  for(let i=0;i<wp.w*wp.h;i++){id.data[i*4]=wp.d[i*3];id.data[i*4+1]=wp.d[i*3+1];id.data[i*4+2]=wp.d[i*3+2];id.data[i*4+3]=255;}x.putImageData(id,0,0);return c;}
+/* sharp close-ups cut from the full-size photo: both bottom corners of the straightened card (the code), and the slab label if there is one */
+async function clCloseUps(file){
+  const im0=await pgLoad(file);try{URL.revokeObjectURL(im0.url);}catch(_){}
+  let im=pgFlatten(im0),bg;if(im.ok)bg=im.bgRef;else{im=im0;bg=pgBackground(im0);}
+  let cl;try{cl=pgCardLines(im,bg);}catch(e){return [];}
+  const H=pgHomography([cl.TL,cl.TR,cl.BR,cl.BL],[[0,0],[CARD_W,0],[CARD_W,CARD_H],[0,CARD_H]]);
+  const out=[];
+  for(const Hx of [H,(u,v)=>H(CARD_W-u,CARD_H-v)])out.push({what:"corner",blob:await clCanvasBlob(clWarpCanvas(pgWarp(im0,Hx,[255,255,255],33,78.5,63,88,20)))});
+  const ch=Math.hypot(cl.BL[0]-cl.TL[0],cl.BL[1]-cl.TL[1]),top=Math.min(cl.TL[1],cl.TR[1]);
+  if(top>ch*0.12){const y0=Math.max(0,Math.round(top-0.42*ch)),y1=Math.round(top-0.02*ch),x0=Math.max(0,Math.round(Math.min(cl.TL[0],cl.BL[0])-0.12*ch)),x1=Math.min(im0.w,Math.round(Math.max(cl.TR[0],cl.BR[0])+0.12*ch));
+    const k=Math.min(1,1200/Math.max(1,x1-x0)),c=document.createElement("canvas");c.width=Math.round((x1-x0)*k);c.height=Math.round((y1-y0)*k);
+    const t=document.createElement("canvas");t.width=im0.w;t.height=im0.h;t.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(im0.d.buffer,im0.d.byteOffset,im0.d.length),im0.w,im0.h),0,0);
+    c.getContext("2d").drawImage(t,x0,y0,x1-x0,y1-y0,0,0,c.width,c.height);out.push({what:"label",blob:await clCanvasBlob(c)});}
+  return out;
+}
+async function clReadCard(file,photoBlob){
+  let ups=[];try{ups=await clCloseUps(file);}catch(_){}
+  const label=ups.find(u=>u.what==="label");
+  const prompt=`You identify One Piece Card Game cards from photos. Image 1 is the whole photo.${ups.length?` Images 2 and 3 are sharp close-ups of the bottom of the card, one of them upside down: the card code is printed in the bottom-right corner (formats like OP06-094, ST01-012, EB01-001, PRB01-001, P-082), next to a small rarity box.`:""}${label?" Image 4 is the grading company's label on the slab.":""}
+Reply with only JSON: {"code":"OP06-094 or null","name":"English card name or null","lang":"EN or JP (JP if the card's text is Japanese)","rarity":"C, UC, R, SR, SEC, L, SP, TR, P or null","variant":"one of ${VARIANTS.join(" | ")}","graded":true or false,"grader":"PSA, BGS (Beckett), CGC, TAG, ARS, SGC or null","grade":"10, 9.5 ... or null","cert":"cert number or null","confidence":"high, medium or low"}
+Read the code exactly as printed. Use null for anything you can't read; never guess digits.`;
+  const r=await S.sample.json(prompt,{images:[photoBlob,...ups.map(u=>u.blob)]});
+  if(!r||typeof r!=="object")throw clErr("bad_reply");
+  const code=r.code?(scParse(r.code)||String(r.code).toUpperCase().trim()):null;
+  return {...r,code};
+}
+/* scanning: Claude first when a key is set and there's signal; the on-phone reader otherwise or as a fallback */
+async function scanIntoForm(form,file){
+  if(!file)return;
+  if(S.sample&&S.sampleImg&&navigator.onLine!==false&&S.pendingPhoto){
+    const st=form.querySelector("#f-readst"),btn=form.querySelector("#f-scan");const box=form.querySelector("#f-cands");if(box)box.innerHTML="";
+    if(btn)btn.disabled=true;st.textContent="Reading the card with Claude…";
+    try{
+      const r=await clReadCard(file,S.pendingPhoto.blob);
+      const label=r.graded&&GRADERS.includes(r.grader)?{grader:r.grader,grade:r.grade!=null?String(r.grade):"",cert:r.cert!=null?String(r.cert).replace(/\D/g,""):""}:null;
+      const lang=r.lang==="JP"||r.lang==="EN"?r.lang:null;
+      if(r.code&&(CARDDB[r.code]||(/^(OP|ST|EB|PRB)\d{2}-\d{3}$|^P-\d{3}$/.test(r.code)&&r.confidence==="high"))){
+        scFill(form,r.code,lang,label);if(!CARDDB[r.code]&&r.name)form.name.value=r.name;
+        if(VARIANTS.includes(r.variant)&&r.variant!=="Regular")form.variant.value=r.variant;
+        const e=CARDDB[r.code];const slab=label?` · ${label.grader.split(" ")[0]} ${label.grade||"?"}${label.cert?` · cert ${label.cert}`:""}`:"";
+        st.textContent=`Claude read ${r.code} · ${(e&&(e[0]||e[1]))||r.name||""}${e&&e[1]&&lang==="JP"?` (${e[1]})`:""} · ${lang==="JP"?"Japanese":"English"}${slab}.${e?"":" It isn't in the card list yet, so check the name."}${r.confidence==="low"?" Claude wasn't sure, so double-check the code.":""} Then pick your version below.`;
+        if(btn)btn.disabled=false;return;}
+      st.textContent="Claude couldn't read the code for sure. Trying the on-phone reader…";
+    }catch(err){st.textContent=err&&err.code==="bad_key"?"Your Claude API key was rejected (check it in Tools). Using the on-phone reader…":"Couldn't reach Claude. Using the on-phone reader…";}
+    if(btn)btn.disabled=false;await new Promise(r=>setTimeout(r,600));
+  }
+  return scanOnPhone(form,file);
+}
+/* ---- price check: Claude searches the web for recent prices of this exact card ---- */
+function pcDescribe(c){const e=CARDDB[String(c.code||"").toUpperCase()]||[];
+  const ver=[c.variant||"Regular",c.variantNote,c.imgSuffix&&/^_p\d/.test(c.imgSuffix)?`official picture ${c.imgSuffix.replace("_","")} (parallel / alt art)`:""].filter(Boolean).join(", ");
+  return [`- Code: ${c.code}`,`- Name: ${c.name||e[0]||"?"}${e[1]?` (Japanese name ${e[1]})`:""}`,`- Print language: ${c.lang==="JP"?"Japanese":"English"}`,`- Version: ${ver}`,`- Rarity: ${c.rarity||e[2]||"?"}`,
+    `- Condition: ${c.kind==="graded"?`graded ${c.grader||"PSA"} ${c.grade||""}${c.cert?` (cert ${c.cert})`:""}`:`raw / ungraded, ${c.cond||"NM"}`}`].join("\n");}
+async function pcRunCheck(c){
+  const prompt=`Today is ${today()}. Find the current market price in USD of this exact One Piece Card Game card:
+${pcDescribe(c)}
+
+Steps:
+1. Search PriceCharting first (for example "pricecharting one piece ${c.code} ${c.name||""}${c.lang==="JP"?" japanese":""}"). PriceCharting has a separate page for each language and each parallel / alt-art version, and lists prices by condition ("Ungraded" = raw, "Grade 9", "PSA 10", etc.). Use only the line matching this card's condition.
+2. Then look for recent sold prices on eBay, the TCGplayer market price, or other price sites, for the same exact version, language and condition.
+3. Ignore results for other versions (regular vs alt art / parallel / manga / special), the other language, or other grades. If you can't tell whether a result is the same version, say so.
+Finish with only a JSON block:
+{"value": best market value in USD for this condition or null, "low": number or null, "high": number or null, "confidence": "high, medium or low", "matched": true only if the sources clearly match the exact version, language and condition, "doubt": "short note if the version, language or grade match is uncertain, else null", "basis": "one short line, e.g. PSA 10 · PriceCharting + 4 eBay sales", "sources": [{"site": "PriceCharting, eBay, TCGplayer...", "url": "...", "price": number, "date": "YYYY-MM-DD or null", "sales": number of sales behind this price or null, "what": "what this price is, e.g. PSA 10 average of recent sales"}]}`;
+  let lastErr=null;
+  let pref="";try{pref=localStorage.getItem("tl-pcmodel")||"";}catch(_){}
+  const models=pref&&CL_PRICE_MODELS.includes(pref)?[pref,...CL_PRICE_MODELS.filter(m=>m!==pref)]:CL_PRICE_MODELS;
+  for(const model of models){
+    const messages=[{role:"user",content:prompt}];let use={inp:0,out:0,searches:0},resp=null;
+    try{
+      for(let turn=0;turn<5;turn++){
+        resp=await clApi({model,max_tokens:3000,messages,tools:[{type:"web_search_20250305",name:"web_search",max_uses:6}]});
+        const u=resp.usage||{};use.inp+=u.input_tokens||0;use.out+=u.output_tokens||0;use.searches+=(u.server_tool_use&&u.server_tool_use.web_search_requests)||0;
+        if(resp.stop_reason==="pause_turn"){messages.push({role:"assistant",content:resp.content});continue;}
+        break;}
+    }catch(e){lastErr=e;if(e.code==="bad_request"&&/tool|web_search|not support|model/i.test(e.message))continue;throw e;}
+    try{localStorage.setItem("tl-pcmodel",model);}catch(_){}
+    const text=(resp.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
+    const j=parseLooseJson(text);
+    // links Claude actually used, in case the JSON leaves them out
+    const cited=[];for(const b of resp.content||[])for(const ct of (b.citations||[]))if(ct.url&&!cited.includes(ct.url))cited.push(ct.url);
+    if(!j||typeof j!=="object")throw clErr("bad_reply","Claude's answer couldn't be read.");
+    const num=v=>{const x=parseFloat(String(v??"").replace(/[$,]/g,""));return isFinite(x)&&x>0?Math.round(x*100)/100:null;};
+    const p=CL_MODELS[model]||{inp:2,out:10};
+    return {value:num(j.value),low:num(j.low),high:num(j.high),confidence:["high","medium","low"].includes(j.confidence)?j.confidence:"low",matched:j.matched===true,
+      doubt:j.doubt?String(j.doubt).slice(0,300):null,basis:j.basis?String(j.basis).slice(0,160):"",
+      sources:(Array.isArray(j.sources)?j.sources:[]).slice(0,8).map(s=>({site:String(s.site||"").slice(0,40),url:/^https?:\/\//.test(s.url||"")?String(s.url):"",price:num(s.price),date:/^\d{4}-\d{2}-\d{2}$/.test(s.date||"")?s.date:null,sales:Number.isFinite(+s.sales)&&s.sales!==null?+s.sales:null,what:String(s.what||"").slice(0,120)})),
+      cited:cited.slice(0,8),model:p.name||model,searches:use.searches,cost:Math.round(((use.inp*p.inp+use.out*p.out)/1e6+use.searches*0.01)*1000)/1000,
+      checked:today(),forKind:c.kind==="graded"?`${c.grader||""} ${c.grade||""}`.trim():"raw"};
+  }
+  throw lastErr||clErr("bad_request","No model could search the web.");
+}
+/* background queue: checks run one after another while you keep using the app; waits for signal if offline */
+const PC={queue:[],running:false};
+async function pcPatch(id,patch){const c=byId("cards",id);if(!c)return;await put("cards",{...c,priceCheck:{...(c.priceCheck||{}),...patch}});}
+async function pcEnqueue(ids){
+  if(!getApiKey()){toast("Add your Claude API key in Tools first.");return;}
+  let k=0;for(const id of ids){if(PC.queue.includes(id))continue;PC.queue.push(id);k++;await pcPatch(id,{status:"queued",error:null,queuedAt:new Date().toISOString()});}
+  if(k>1)toast(`${k} price checks queued. Keep logging; results land on each card.`);pcLoop();}
+async function pcLoop(){
+  if(PC.running)return;PC.running=true;
+  try{while(PC.queue.length){
+    const id=PC.queue[0];const c=byId("cards",id);if(!c){PC.queue.shift();continue;}
+    if(navigator.onLine===false){await pcPatch(id,{status:"waiting"});await new Promise(r=>window.addEventListener("online",r,{once:true}));}
+    await pcPatch(id,{status:"running",startedAt:new Date().toISOString()});
+    let tries=0;
+    for(;;){try{const res=await pcRunCheck(byId("cards",id)||c);await pcPatch(id,{status:"done",result:res,error:null});toast(`Price check ready: ${c.code}${res.value?" · "+money(res.value):""}`);break;}
+      catch(e){tries++;
+        if(["offline","overloaded","rate_limited"].includes(e.code)&&tries<5){await pcPatch(id,{status:"waiting",error:null});await new Promise(r=>setTimeout(r,(e.code==="rate_limited"?30:10)*1000*tries));
+          if(navigator.onLine===false)await new Promise(r=>window.addEventListener("online",r,{once:true}));await pcPatch(id,{status:"running"});continue;}
+        const msg=e.code==="bad_key"?"Your API key was rejected. Check it in Tools.":e.code==="no_key"?"Add your Claude API key in Tools.":e.code==="offline"?"No connection. Try again when you have signal.":e.code==="overloaded"||e.code==="rate_limited"?"Claude is busy right now. Try again in a few minutes.":"Couldn't get a price: "+(e.message||"unknown error");
+        await pcPatch(id,{status:"error",error:msg});if(e.code==="bad_key"||e.code==="no_key"){for(const q of PC.queue.slice(1))await pcPatch(q,{status:"error",error:msg});PC.queue.length=1;}
+        break;}}
+    PC.queue.shift();}}
+  finally{PC.running=false;}
+}
+function pcResume(){const ids=D("cards").filter(c=>c.priceCheck&&["queued","running","waiting"].includes(c.priceCheck.status)).map(c=>c.id);if(ids.length&&getApiKey()){PC.queue.push(...ids.filter(i=>!PC.queue.includes(i)));pcLoop();}}
+const PC_SRC=s=>{const t=String(s||"").toLowerCase();return t.includes("pricecharting")?"PriceCharting":t.includes("ebay")?"eBay sold":t.includes("tcgplayer")?"TCGplayer":t.includes("130")?"130point":t.includes("ladder")?"Card Ladder":t.includes("yuyu")?"Yuyu-tei":"Other";};
+function pcSection(c){
+  if(!window.TL_STANDALONE&&!getApiKey())return "";
+  const pc=c.priceCheck||{},r=pc.result,key=!!getApiKey();
+  const head=`<div class="bar spread"><h3 style="margin:0">Price check</h3>${key&&!["queued","running","waiting"].includes(pc.status)?`<button class="btn sm ${r?"":"pri"}" data-act="pc-run" data-id="${esc(c.id)}">${r?"Check again":"Check price online"}</button>`:""}</div>`;
+  if(!key)return `<div class="section">${head}<p class="hint">Claude can look up recent prices for this exact card (PriceCharting, eBay and others) in about 15–30 seconds, for a few cents. Add your Claude API key in Tools to turn it on.</p></div>`;
+  let body="";
+  if(pc.status==="queued"||pc.status==="running")body=`<p class="hint">${pc.status==="running"?"Claude is searching prices…":"Queued…"} This takes about 15–30 seconds. You can close this and keep logging; the result will appear here.</p>`;
+  else if(pc.status==="waiting")body=`<p class="hint">Waiting for a connection or for Claude to be free. It will continue on its own.</p>`;
+  else if(pc.status==="error")body=`<p class="hint" style="color:var(--bad)">${esc(pc.error||"Something went wrong.")}</p>`;
+  if(r&&pc.status!=="running"&&pc.status!=="queued"){
+    const stale=r.forKind!==(c.kind==="graded"?`${c.grader||""} ${c.grade||""}`.trim():"raw");
+    const conf={high:"ok",medium:"",low:"warn"}[r.confidence]||"warn";
+    body+=`<div class="panel pad" style="margin-top:8px">
+      ${r.value?`<div class="kv num"><div><span class="label">Market value</span><b>${money(r.value)}</b></div>${r.low&&r.high?`<div><span class="label">Range</span><b style="font-size:16px">${money(r.low)}–${money(r.high)}</b></div>`:""}<div><span class="label">Confidence</span><span class="chip ${conf}">${esc(r.confidence)}</span></div></div>`:`<p class="hint" style="margin:0">Claude couldn't find a reliable price for this exact card.</p>`}
+      ${r.basis?`<p class="hint" style="margin:6px 0 0">${esc(r.basis)}</p>`:""}
+      ${!r.matched||r.doubt?`<div class="note" style="display:block;margin-top:8px"><b>Check the version.</b> ${esc(r.doubt||"Claude couldn't confirm the sources are this exact version, language and grade.")} Open the links before using this price.</div>`:""}
+      ${stale?`<div class="note" style="display:block;margin-top:8px">This check was for <b>${esc(r.forKind)}</b>, but the card is now <b>${esc(c.kind==="graded"?`${c.grader} ${c.grade}`:"raw")}</b>. Check again.</div>`:""}
+      ${r.sources.length?`<div class="scroll" style="margin-top:8px"><table class="t num"><tbody>${r.sources.map(s=>`<tr><td>${s.url?`<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.site||"Link")}</a>`:esc(s.site)}<div class="hint" style="font-size:11.5px">${esc(s.what)}${s.sales!=null?` · ${s.sales} sale${s.sales===1?"":"s"}`:""}</div></td><td>${s.date?fdate(s.date):""}</td><td class="r"><b>${s.price?money(s.price):"—"}</b></td></tr>`).join("")}</tbody></table></div>`:""}
+      <p class="hint" style="margin:6px 0 0">Checked ${fdate(String(r.checked).slice(0,10))} by Claude ${esc(r.model)} · ${r.searches} search${r.searches===1?"":"es"} · about $${r.cost.toFixed(3)}. Prices from the web can be wrong; open the links for big buys.</p>
+      ${r.value&&!pc.applied?`<div class="bar" style="margin-top:8px"><button class="btn sm pri" data-act="pc-use" data-id="${esc(c.id)}">Use ${money(r.value)} and log these comps</button></div>`:pc.applied?`<p class="hint" style="margin:6px 0 0">Applied to this card's market value and comps.</p>`:""}
+    </div>`;}
+  return `<div class="section">${head}${body}</div>`;
+}
+async function pcApply(id){const c=byId("cards",id);const r=c&&c.priceCheck&&c.priceCheck.result;if(!r||!r.value)return;
+  const add=r.sources.filter(s=>s.price>0).map(s=>({src:PC_SRC(s.site),price:s.price,date:s.date||today(),kind:"sold",note:"Claude price check"}));
+  await put("cards",{...c,market:r.value,marketDate:today(),comps:[...(c.comps||[]),...add],priceCheck:{...c.priceCheck,applied:true}});toast(`Market value set to ${money(r.value)}`);}
+
 /* ---------- boot ---------- */
 render();
 (async()=>{
@@ -2782,7 +2947,7 @@ render();
       for(const col of COLS)S[col]=(await IDB.all(col)).map(([,v])=>v);
       const st=await IDB.get("settings","main");if(st)S.settings={...DEFAULT_SETTINGS,...st};
       for(const [id,blob] of await IDB.all("photos")){try{PHOTO_URLS[id]=URL.createObjectURL(blob);}catch(_){}}
-      S.idb=true;S.live=true;S.assets=localAssets;S.downloads=localDownloads;useApiKey();
+      S.idb=true;S.live=true;S.assets=localAssets;S.downloads=localDownloads;useApiKey();setTimeout(pcResume,1500);
       try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist();}catch(_){}
     }catch(e){S.live=false;S.downloads=localDownloads;}
     S.loaded=true;render();return;
