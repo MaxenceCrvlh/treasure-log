@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="70f5b944";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="1397b94a";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -2817,7 +2817,7 @@ async function clReadCard(file,photoBlob){
   const label=ups.find(u=>u.what==="label");
   const prompt=`You identify One Piece Card Game cards from photos. Image 1 is the whole photo.${ups.length?` Images 2 and 3 are sharp close-ups of the bottom of the card, one of them upside down: the card code is printed in the bottom-right corner (formats like OP06-094, ST01-012, EB01-001, PRB01-001, P-082), next to a small rarity box.`:""}${label?" Image 4 is the grading company's label on the slab.":""}
 Reply with only JSON: {"code":"OP06-094 or null","name":"English card name or null","lang":"EN or JP (JP if the card's text is Japanese)","rarity":"C, UC, R, SR, SEC, L, SP, TR, P or null","variant":"one of ${VARIANTS.join(" | ")}","graded":true or false,"grader":"PSA, BGS (Beckett), CGC, TAG, ARS, SGC or null","grade":"10, 9.5 ... or null","cert":"cert number or null","confidence":"high, medium or low"}
-Read the code exactly as printed. Use null for anything you can't read; never guess digits.`;
+Read the code exactly as printed on the card itself (the close-ups), not from the slab label: a label like "OP09-SPECIAL ALT.ART #106" names the box it came from, which can differ from the printed code (e.g. a reprint printed OP08-106). "name" is the character name printed on the card or label. Use null for anything you can't read; never guess digits.`;
   const r=await S.sample.json(prompt,{images:[photoBlob,...ups.map(u=>u.blob)]});
   if(!r||typeof r!=="object")throw clErr("bad_reply");
   const code=r.code?(scParse(r.code)||String(r.code).toUpperCase().trim()):null;
@@ -2837,11 +2837,18 @@ async function scanIntoForm(form,file,mode){
       const r=await clReadCard(file,S.pendingPhoto.blob);CL_LAST.reply=r;
       const label=r.graded&&GRADERS.includes(r.grader)?{grader:r.grader,grade:r.grade!=null?String(r.grade):"",cert:r.cert!=null?String(r.cert).replace(/\D/g,""):""}:null;
       const lang=r.lang==="JP"||r.lang==="EN"?r.lang:null;
+      // the code must belong to the card Claude says it is; if not, find the card with that name and number
+      let fixNote="";
+      if(r.name){const nm=String(r.name).toUpperCase().replace(/[^A-Z]/g,"");const e0=r.code&&CARDDB[r.code];
+        const same=e0&&e0[0]&&(scNameCover(e0[0],nm)>=0.8||scNameCover(r.name,e0[0].toUpperCase().replace(/[^A-Z]/g,""))>=0.8);
+        if(nm.length>=3&&!same){const num=(String(r.code||"").match(/(\d{3})$/)||[])[1];const c2=scByName(nm,num||null);
+          if(c2.length===1){fixNote=r.code?` (Claude read ${r.code}, but that's ${e0&&e0[0]?e0[0]:"not a known card"}; the card is ${r.name}, so it's ${c2[0]})`:"";r.code=c2[0];}
+          else if(c2.length>1&&e0){CL_LAST.mismatch={read:r.code,name:r.name,cands:c2};r.code=null;}}}
       if(r.code&&(CARDDB[r.code]||(/^(OP|ST|EB|PRB)\d{2}-\d{3}$|^P-\d{3}$/.test(r.code)&&r.confidence==="high"))){
         scFill(form,r.code,lang,label);if(!CARDDB[r.code]&&r.name)form.name.value=r.name;
         if(VARIANTS.includes(r.variant)&&r.variant!=="Regular")form.variant.value=r.variant;
         const e=CARDDB[r.code];const slab=label?` · ${label.grader.split(" ")[0]} ${label.grade||"?"}${label.cert?` · cert ${label.cert}`:""}`:"";
-        st.textContent=`Claude read ${r.code} · ${(e&&(e[0]||e[1]))||r.name||""}${e&&e[1]&&lang==="JP"?` (${e[1]})`:""} · ${lang==="JP"?"Japanese":"English"}${slab}.${e?"":" It isn't in the card list yet, so check the name."}${r.confidence==="low"?" Claude wasn't sure, so double-check the code.":""} Then pick your version below.`;
+        st.textContent=`Claude read ${r.code} · ${(e&&(e[0]||e[1]))||r.name||""}${e&&e[1]&&lang==="JP"?` (${e[1]})`:""} · ${lang==="JP"?"Japanese":"English"}${slab}.${e?"":" It isn't in the card list yet, so check the name."}${fixNote}${r.confidence==="low"?" Claude wasn't sure, so double-check the code.":""} Then pick your version below.`;
         btns.forEach(b=>b&&(b.disabled=false));return;}
       note=`Claude read ${r.code?`"${r.code}"`:"no code"}${r.name?` (${r.name})`:""}, which isn't a card in the list.`;
     }catch(err){CL_LAST.error={code:err&&err.code,message:String(err&&err.message||err)};
