@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="ff0cb8a6";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="200485dd";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -421,6 +421,7 @@ async function mountPicker(el,code,lang,selected,onPick){
   const token=(el._tok=(el._tok||0)+1);
   let res;try{res=await findVersions(code,lang);}catch(e){res={v:[],other:false};}
   if(el._tok!==token)return;
+  el._nv=res.v.length;el.dispatchEvent(new CustomEvent("versions",{detail:res.v.length}));
   if(!res.v.length){el.innerHTML=`<span class="hint">No official picture found for ${esc(code)}${navigator.onLine===false?" (you're offline)":""}. New cards and some promos aren't listed yet. Get one from another site below, or use your own photo.</span>`;return;}
   el.innerHTML=(res.other?`<span class="hint" style="align-self:center;width:90px;flex-shrink:0">Only on the ${res.v[0].lang==="JP"?"Japanese":"English"} site:</span>`:"")+res.v.map((x,k)=>`<button type="button" data-k="${k}" aria-pressed="${x.url===selected}"><img src="${esc(x.url)}" alt="${esc(code)} ${esc(vLabel(x.suf))}" referrerpolicy="no-referrer" loading="lazy">${esc(vLabel(x.suf))}</button>`).join("")+`<button type="button" data-k="none" aria-pressed="${!selected}"><span class="none">✕</span>No picture</button>`;
   el.querySelectorAll("button").forEach(b=>b.onclick=()=>{el.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");onPick(b.dataset.k==="none"?null:res.v[+b.dataset.k]);});
@@ -589,6 +590,7 @@ function apiSample(key){
   f.json=async(p,o)=>parseLooseJson(await call(p,o));
   return f;
 }
+function getAutoPrice(){try{return localStorage.getItem("tl-autoprice")!=="off";}catch(e){return true;}}
 function getReadWith(){try{return localStorage.getItem("tl-readwith")||"claude";}catch(e){return"claude";}}
 function useApiKey(){const k=getApiKey();S.sample=k?apiSample(k):null;S.sampleImg=!!k;}
 
@@ -925,7 +927,7 @@ function vTools(){
     <div id="bk-status" class="hint" style="margin-top:8px"></div>
   </div>
   ${window.TL_STANDALONE?`<h2>Claude features (optional)</h2><div class="panel pad"><p class="hint" style="margin:0 0 8px">With your own Claude API key (from platform.claude.com), Claude reads every card photo you scan (about $0.002 each) and can check prices online from PriceCharting (about 1–3 cents each, in the background). The key stays on this phone. Without a key, the app reads cards and pasted comps on its own.</p>
-    <form data-form="apikey" class="bar"><input id="k-key" name="key" type="password" autocomplete="off" class="search" placeholder="${getApiKey()?"Key saved ••••"+esc(getApiKey().slice(-4)):"sk-ant-…"}" aria-label="Anthropic API key"><button class="btn" type="submit">Save key</button>${getApiKey()?`<button class="btn danger" type="button" data-act="key-remove">Remove</button>`:""}</form>${getApiKey()?`<div class="field" style="margin-top:12px"><label>Read scanned cards with</label>${seg("readwith",[["claude","Claude when online"],["phone","Phone only (free, offline)"]],getReadWith())}<span class="hint">Either way, both buttons stay on the Log a card screen so you can pick per card.</span></div><div class="bar" style="margin-top:10px"><button class="btn" data-act="pc-bulk">Price check cards with no market value</button></div><p class="hint" style="margin:6px 0 0">Price checks this month: ${clSpend().n} · about $${clSpend().total.toFixed(2)}. Your exact balance is on platform.claude.com.</p>`:""}</div>`:""}
+    <form data-form="apikey" class="bar"><input id="k-key" name="key" type="password" autocomplete="off" class="search" placeholder="${getApiKey()?"Key saved ••••"+esc(getApiKey().slice(-4)):"sk-ant-…"}" aria-label="Anthropic API key"><button class="btn" type="submit">Save key</button>${getApiKey()?`<button class="btn danger" type="button" data-act="key-remove">Remove</button>`:""}</form>${getApiKey()?`<div class="field" style="margin-top:12px"><label>Read scanned cards with</label>${seg("readwith",[["claude","Claude when online"],["phone","Phone only (free, offline)"]],getReadWith())}<span class="hint">Either way, both buttons stay on the Log a card screen so you can pick per card.</span></div><div class="field" style="margin-top:12px"><label>When Claude reads a new card</label>${seg("autoprice",[["on","Also check its price (≈2¢)"],["off","Just read it (≈0.2¢)"]],getAutoPrice()?"on":"off")}</div><div class="bar" style="margin-top:10px"><button class="btn" data-act="pc-bulk">Price check cards with no market value</button></div><p class="hint" style="margin:6px 0 0">Price checks this month: ${clSpend().n} · about $${clSpend().total.toFixed(2)}. Your exact balance is on platform.claude.com.</p>`:""}</div>`:""}
   <h2>Export</h2><div class="panel pad bar"><button class="btn" data-act="export" data-what="cards">Cards CSV</button><button class="btn" data-act="export" data-what="sales">Sales CSV</button><button class="btn" data-act="export" data-what="shows">Shows CSV</button><button class="btn" data-act="export" data-what="items">Side items CSV</button><button class="btn" data-act="export" data-what="trades">Trades CSV</button><span class="hint">Opens in Excel or Google Sheets. Handy for taxes.</span></div>
   <h2>Pricing a lot</h2><div class="panel pad guide">
     <p>A lot's value starts as the sum of its cards' market values. Cards with no market value count at what you paid, so add comps to each card first.</p>
@@ -989,7 +991,7 @@ function openSheet(type,arg,refresh){
   if(out.after)out.after();
   if(!refresh)document.body.style.overflow="hidden";
 }
-function closeSheet(){S.pcLink=null;document.getElementById("sheetRoot").innerHTML="";S.sheet=null;S.pendingPhoto=null;document.body.style.overflow="";}
+function closeSheet(){S.pcLink=null;S.pendingPC=null;document.getElementById("sheetRoot").innerHTML="";S.sheet=null;S.pendingPhoto=null;document.body.style.overflow="";}
 
 const VARIANTS=["Regular","Alt art (parallel)","Manga alt art","SP","Treasure rare","Special / box topper","Promo","Pre-release / event stamp","Championship / prize","Other"];
 const RARITIES=["","C","UC","R","SR","SEC","L","SP","TR","P","DON!!"];
@@ -1032,6 +1034,7 @@ const SHEETS={
       </div>
       <div class="section grid">
         <div class="field"><label for="f-mkt">Market value ($)</label><input id="f-mkt" name="market" type="number" inputmode="decimal" step="0.01" min="0" value="${esc(c.market??"")}" placeholder="from comps"></div>
+        <div class="field full" id="f-pc" hidden></div>
         <div class="field"><label for="f-list">Sticker price ($)</label><input id="f-list" name="list" type="number" inputmode="decimal" step="0.01" min="0" value="${esc(c.list??"")}" placeholder="auto from market"></div>
         <div class="field"><label for="f-loc">Where it is</label><input id="f-loc" name="location" placeholder="Case 1, Binder A…" value="${esc(c.location||"")}" list="locs"><datalist id="locs">${[...new Set(D("cards").map(x=>x.location).filter(Boolean))].map(l=>`<option value="${esc(l)}">`).join("")}</datalist></div>
         ${c.status==="grading"?`<div class="field"><label>Status</label><span class="chip grd" style="align-self:flex-start;margin-top:8px">At grading</span></div>`:`<div class="field"><label for="f-status">Status</label><select id="f-status" name="status"><option value="stock" ${c.status!=="pc"?"selected":""}>For sale</option><option value="pc" ${c.status==="pc"?"selected":""}>My collection (not for sale)</option></select></div>`}
@@ -1050,6 +1053,7 @@ const SHEETS={
       if(CAN_OFFICIAL){
         const vp=form.querySelector("#vp");let tm;
         const refresh=()=>{const lang=(form.querySelector('input[name="lang"]:checked')||{}).value||"EN";mountPicker(vp,form.code.value,lang,form.officialImg.value,v=>{
+          if(form._afterPick)setTimeout(()=>{const f=form._afterPick;form._afterPick=null;f();},0);
           form.officialImg.value=v?v.url:"";form.imgSuffix.value=v?v.suf:"";
           if(v&&v.suf){if(form.variant.value==="Regular")form.variant.value="Alt art (parallel)";if(!form.variantNote.value)form.variantNote.value=v.suf.replace("_","");}
           if(v&&!v.suf&&form.variant.value==="Alt art (parallel)")form.variant.value="Regular";
@@ -1713,6 +1717,7 @@ document.addEventListener("click",async e=>{
     case"expense":if(exBlock())return;openSheet("expenseForm",{id});break;
     case"del-expense":{if(!confirmTap(el,"de"+id,"Tap again to delete"))return;const e0=byId("expenses",id);if(e0&&e0.supplyId&&n(e0.qty)){const s0=byId("supplies",e0.supplyId);if(s0)await put("supplies",{...s0,onHand:Math.max(0,n(s0.onHand)-n(e0.qty))});}await del("expenses",id);closeSheet();break;}
     case"pc-run":{if(exBlock())return;await pcEnqueue([id]);break;}
+    case"pc-pick":{if(exBlock())return;const c=byId("cards",id);await put("cards",{...c,pcUrl:el.dataset.v});await pcEnqueue([id]);break;}
     case"pc-deep":{if(exBlock())return;PC.deep[id]=true;await pcEnqueue([id]);break;}
     case"pc-use":{if(exBlock())return;await pcApply(id);break;}
     case"pc-bulk":{if(exBlock())return;const ids=D("cards").filter(c=>c.status!=="sold"&&n(c.qty)>0&&!(n(c.market)>0)&&!(c.priceCheck&&["queued","running","waiting"].includes(c.priceCheck.status))).map(c=>c.id).slice(0,40);if(!ids.length){toast("Every card in stock already has a market value.");break;}if(!confirm(`Check prices for ${ids.length} card${ids.length>1?"s":""} with no market value? About $${(ids.length*0.025).toFixed(2)} in Claude credit, roughly 30 seconds each in the background.`))break;await pcEnqueue(ids);break;}
@@ -1760,6 +1765,7 @@ document.addEventListener("change",async e=>{
     try{PG.status="Loading photo…";const im=await pgLoad(file);if(PG[k]&&PG[k].url)try{URL.revokeObjectURL(PG[k].url);}catch(_){}PG[k]={im,url:im.url};PG.status="";}catch(err){PG.status=err.message||"Couldn't read that photo.";}
     render();return;
   }
+  if(e.target.name==="autoprice"){try{localStorage.setItem("tl-autoprice",e.target.value);}catch(_){}toast(e.target.value==="on"?"New cards read by Claude get priced too.":"Claude will only read new cards; check prices from the card when you want.");return;}
   if(e.target.name==="readwith"){try{localStorage.setItem("tl-readwith",e.target.value);}catch(_){}toast(e.target.value==="phone"?"Cards will be read on the phone (free, offline).":"Cards will be read by Claude when you have signal.");return;}
   if(e.target.name==="pgview"&&PG.report){PG.report.view=e.target.value;render();return;}
   if(e.target.id==="bk-file"){
@@ -1793,6 +1799,9 @@ document.addEventListener("submit",async e=>{
     if(c.kind==="raw"){c.grader="";c.grade="";c.cert="";}else c.cond="";
     if(!prev)c.qtyBought=c.qty;
     if(c.market&&!prev?.market)c.marketDate=today();
+    if(!prev&&S.pendingPC&&S.pendingPC.code===c.code){const r=S.pendingPC.result;const used=r.value&&Math.abs(n(c.market)-r.value)<0.005;
+      if(r.pcUrl&&!c.pcUrl)c.pcUrl=r.pcUrl;c.priceCheck={status:"done",result:r,applied:!!used};
+      if(used)c.comps=[...(c.comps||[]),...r.sources.filter(s=>s.price>0).map(s=>({src:PC_SRC(s.site),price:s.price,date:s.date||today(),kind:"sold",note:"Claude price check"}))];}
     if(S.pendingPhoto){
       if(S.assets){try{const r=await S.assets.upload(S.pendingPhoto.blob,{type:"image/jpeg"});c.photoId=r.id;delete c.photoUrl;}catch(err){toast("Photo didn't upload ("+(err.code||"error")+"). Card saved without it.");}}
       else c.photoUrl=S.pendingPhoto.url;
@@ -2857,7 +2866,9 @@ async function scanIntoForm(form,file,mode){
         if(VARIANTS.includes(r.variant)&&r.variant!=="Regular")form.variant.value=r.variant;
         const e=CARDDB[r.code];const slab=label?` · ${label.grader.split(" ")[0]} ${label.grade||"?"}${label.cert?` · cert ${label.cert}`:""}`:"";
         st.textContent=`Claude read ${r.code} · ${(e&&(e[0]||e[1]))||r.name||""}${e&&e[1]&&lang==="JP"?` (${e[1]})`:""} · ${lang==="JP"?"Japanese":"English"}${slab}.${e?"":" It isn't in the card list yet, so check the name."}${fixNote}${r.confidence==="low"?" Claude wasn't sure, so double-check the code.":""} Then pick your version below.`;
-        btns.forEach(b=>b&&(b.disabled=false));return;}
+        btns.forEach(b=>b&&(b.disabled=false));
+        if(getAutoPrice()&&getApiKey())formPriceAfterVersion(form);
+        return;}
       note=`Claude read ${r.code?`"${r.code}"`:"no code"}${r.name?` (${r.name})`:""}, which isn't a card in the list.`;
     }catch(err){CL_LAST.error={code:err&&err.code,message:String(err&&err.message||err)};
       note=err&&err.code==="bad_key"?"Claude rejected your API key (check it in Tools).":err&&err.code==="rate_limited"?"Claude is rate-limited right now.":`Couldn't use Claude (${String(err&&err.message||"no connection").slice(0,140)}).`;}
@@ -2867,6 +2878,37 @@ async function scanIntoForm(form,file,mode){
   }else if(mode==="claude"){form.querySelector("#f-readst").textContent=canClaude?"No connection, so Claude can't read it right now.":"Add your Claude API key in Tools to read cards with Claude.";return;}
   await scanOnPhone(form,file);
   if(note){const st=form.querySelector("#f-readst");st.textContent=note+" On-phone reader: "+st.textContent;}
+}
+/* ---- new card form: price it right after Claude reads it ---- */
+function formCard(form){const g=n=>{const el=form.elements[n];if(!el)return"";if(el instanceof RadioNodeList)return ([...el].find(x=>x.checked)||{}).value||"";return el.value;};
+  return {code:g("code").trim().toUpperCase(),name:g("name"),lang:g("lang")||"EN",variant:g("variant"),variantNote:g("variantNote"),imgSuffix:g("imgSuffix"),rarity:g("rarity"),kind:g("kind")||"raw",grader:g("grader"),grade:g("grade"),cond:g("cond"),pcUrl:S.pcLink||null};}
+function formPriceAfterVersion(form){
+  const box=form.querySelector("#f-pc"),vp=form.querySelector("#vp");if(!box)return;box.hidden=false;
+  const go=()=>formPrice(form);
+  if(!CAN_OFFICIAL||!vp){go();return;}
+  box.innerHTML=`<span class="hint">Price: looking up the official versions…</span>`;
+  let done=false;const decide=nv=>{if(done)return;done=true;
+    if(nv>1){box.innerHTML=`<span class="hint">Price: tap your version above (regular, parallel…) and Claude will price that exact one.</span>`;form._afterPick=go;}else go();};
+  vp.addEventListener("versions",e=>decide(e.detail),{once:true});setTimeout(()=>decide(vp._nv||0),12000);
+}
+async function formPrice(form,pcUrl){
+  const box=form.querySelector("#f-pc");if(!box)return;box.hidden=false;const card=formCard(form);if(pcUrl)card.pcUrl=pcUrl;
+  if(!card.code){box.innerHTML="";return;}
+  const tok=(form._pcTok=(form._pcTok||0)+1);
+  box.innerHTML=`<span class="hint">Price: Claude is reading PriceCharting for ${esc(card.code)} ${esc(card.kind==="graded"?`${card.grader||""} ${card.grade||""}`:"raw")}… (about 15–30 s, you can keep filling in)</span>`;
+  try{const r=await pcRunCheck(card,false);if(form._pcTok!==tok||!document.body.contains(form))return;
+    S.pendingPC={code:card.code,result:r};const mk=form.elements.market;
+    if(r.value&&!mk.value){mk.value=r.value;}
+    const conf={high:"ok",medium:"",low:"warn"}[r.confidence]||"warn";
+    box.innerHTML=`<div class="panel pad" style="margin:0">${r.value?`<b>${money(r.value)}</b> <span class="chip ${conf}">${esc(r.confidence)}</span> <span class="hint">${esc(r.basis||"")}${r.value&&mk.value==r.value?" · filled in as market value":""}</span>`:`<span class="hint">No reliable price found on PriceCharting for this exact card.</span>`}
+      ${(!r.matched||r.doubt)&&r.value?`<div class="hint" style="margin-top:4px">⚠ ${esc(r.doubt||"Not sure it's the exact version; check the link.")}</div>`:""}
+      ${r.choices&&r.choices.length&&!r.value?`<p class="hint" style="margin:6px 0 4px">Several possible matches on PriceCharting. Tap yours (about 1¢):</p><div class="bar">${r.choices.map(x=>`<button type="button" class="btn sm" data-pcpick="${esc(x.url)}">${esc(x.title)}</button>`).join("")}</div>`:""}
+      <div class="hint" style="margin-top:4px">${r.pcUrl?`<a href="${esc(r.pcUrl)}" target="_blank" rel="noopener">PriceCharting page</a> · `:""}about $${r.cost.toFixed(3)} · <button type="button" class="btn sm" data-pcagain="1">Check again</button></div></div>`;
+    box.querySelectorAll("[data-pcpick]").forEach(b=>b.onclick=()=>{S.pcLink=b.dataset.pcpick;formPrice(form,b.dataset.pcpick);});
+    const ag=box.querySelector("[data-pcagain]");if(ag)ag.onclick=()=>formPrice(form);
+  }catch(e){if(form._pcTok!==tok)return;
+    box.innerHTML=`<span class="hint">Price: ${esc(e.code==="offline"?"no connection right now.":e.code==="bad_key"?"your API key was rejected (Tools).":"couldn't get a price ("+(e.message||"error")+").")}</span> <button type="button" class="btn sm" data-pcagain="1">Try again</button>`;
+    const ag=box.querySelector("[data-pcagain]");if(ag)ag.onclick=()=>formPrice(form);}
 }
 /* ---- price check: Claude searches the web for recent prices of this exact card ---- */
 function pcDescribe(c){const e=CARDDB[String(c.code||"").toUpperCase()]||[];
@@ -2886,7 +2928,7 @@ ${c.pcUrl?`Read this PriceCharting page for the card: ${c.pcUrl}`:`Read PriceCha
 PriceCharting product pages list prices by condition: "Ungraded" (raw), "Grade 7", "Grade 8", "Grade 9", "Grade 9.5", "PSA 10", sometimes BGS 10 / CGC 10. Use the line for ${grade}, and note the number of recent sales if shown.
 ${deep?"If PriceCharting has no price for this grade, do ONE web search for recent eBay sold prices of the same exact version, language and grade.":"Don't search the web; use only the PriceCharting pages."} Keep your answer short.
 Finish with only a JSON block:
-{"value": market value in USD for ${grade} or null, "low": number or null, "high": number or null, "confidence": "high, medium or low", "matched": true only if the page clearly is the exact version, language and grade, "doubt": "short note if unsure, else null", "basis": "one short line, e.g. PSA 10 · PriceCharting (12 sales)", "pricecharting_url": "the product page you used or null", "sources": [{"site": "PriceCharting, eBay...", "url": "...", "price": number, "date": "YYYY-MM-DD or null", "sales": number or null, "what": "e.g. PSA 10 price"}]}`;
+{"value": market value in USD for ${grade} or null, "low": number or null, "high": number or null, "confidence": "high, medium or low", "matched": true only if the page clearly is the exact version, language and grade, "doubt": "short note if unsure, else null", "basis": "one short line, e.g. PSA 10 · PriceCharting (12 sales)", "pricecharting_url": "the product page you used or null", "choices": [{"title": "product title", "url": "product page"}] ONLY if several PriceCharting products could be this card and you can't tell which (then leave value null), else [], "sources": [{"site": "PriceCharting, eBay...", "url": "...", "price": number, "date": "YYYY-MM-DD or null", "sales": number or null, "what": "e.g. PSA 10 price"}]}`;
   const fetchTool={type:"web_fetch_20250910",name:"web_fetch",max_uses:c.pcUrl?1:2,allowed_domains:["pricecharting.com","www.pricecharting.com"],max_content_tokens:6000};
   const searchTool={type:"web_search_20250305",name:"web_search",max_uses:1,allowed_domains:PC_DOMAINS};
   const model=CL_PRICE_MODELS[0];
@@ -2911,6 +2953,7 @@ Finish with only a JSON block:
     const pcu=/^https?:\/\/(www\.)?pricecharting\.com\/game\//.test(j.pricecharting_url||"")?String(j.pricecharting_url):null;
     return {value:num(j.value),low:num(j.low),high:num(j.high),confidence:["high","medium","low"].includes(j.confidence)?j.confidence:"low",matched:j.matched===true,
       doubt:j.doubt?String(j.doubt).slice(0,300):null,basis:j.basis?String(j.basis).slice(0,160):"",pcUrl:pcu,deep:!!deep,
+      choices:(Array.isArray(j.choices)?j.choices:[]).filter(x=>x&&/^https?:\/\/(www\.)?pricecharting\.com\/game\//.test(x.url||"")).slice(0,6).map(x=>({title:String(x.title||x.url).slice(0,90),url:String(x.url)})),
       sources:(Array.isArray(j.sources)?j.sources:[]).slice(0,8).map(s=>({site:String(s.site||"").slice(0,40),url:/^https?:\/\//.test(s.url||"")?String(s.url):"",price:num(s.price),date:/^\d{4}-\d{2}-\d{2}$/.test(s.date||"")?s.date:null,sales:Number.isFinite(+s.sales)&&s.sales!==null&&s.sales!==""?+s.sales:null,what:String(s.what||"").slice(0,120)})),
       cited:cited.slice(0,8),model:p.name||model,searches:use.searches,cost,checked:today(),forKind:c.kind==="graded"?`${c.grader||""} ${c.grade||""}`.trim():"raw"};
   }
@@ -2972,7 +3015,8 @@ function pcSection(c){
       ${stale?`<div class="note" style="display:block;margin-top:8px">This check was for <b>${esc(r.forKind)}</b>, but the card is now <b>${esc(c.kind==="graded"?`${c.grader} ${c.grade}`:"raw")}</b>. Check again.</div>`:""}
       ${r.sources.length?`<div class="scroll" style="margin-top:8px"><table class="t num"><tbody>${r.sources.map(s=>`<tr><td>${s.url?`<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.site||"Link")}</a>`:esc(s.site)}<div class="hint" style="font-size:11.5px">${esc(s.what)}${s.sales!=null?` · ${s.sales} sale${s.sales===1?"":"s"}`:""}</div></td><td>${s.date?fdate(s.date):""}</td><td class="r"><b>${s.price?money(s.price):"—"}</b></td></tr>`).join("")}</tbody></table></div>`:""}
       <p class="hint" style="margin:6px 0 0">Checked ${fdate(String(r.checked).slice(0,10))} by Claude ${esc(r.model)} · ${r.searches} search${r.searches===1?"":"es"} · about $${r.cost.toFixed(3)}. Prices from the web can be wrong; open the links for big buys.</p>
-      ${!r.deep&&(!r.value||r.confidence==="low")?`<div class="bar" style="margin-top:8px"><button class="btn sm" data-act="pc-deep" data-id="${esc(c.id)}">Search eBay too (about 3–6¢ more)</button></div>`:""}
+      ${r.choices&&r.choices.length&&!r.value?`<p class="hint" style="margin:8px 0 4px">PriceCharting has several possible matches. Tap yours (about 1¢ to read it):</p><div class="bar">${r.choices.map(x=>`<button class="btn sm" data-act="pc-pick" data-id="${esc(c.id)}" data-v="${esc(x.url)}">${esc(x.title)}</button>`).join("")}</div>`:""}
+      ${!r.deep&&(!r.value||r.confidence==="low")&&!(r.choices&&r.choices.length)?`<div class="bar" style="margin-top:8px"><button class="btn sm" data-act="pc-deep" data-id="${esc(c.id)}">Search eBay too (about 3–6¢ more)</button></div>`:""}
       ${r.value&&!pc.applied?`<div class="bar" style="margin-top:8px"><button class="btn sm pri" data-act="pc-use" data-id="${esc(c.id)}">Use ${money(r.value)} and log these comps</button></div>`:pc.applied?`<p class="hint" style="margin:6px 0 0">Applied to this card's market value and comps.</p>`:""}
     </div>`;}
   if(c.pcUrl)body+=`<p class="hint" style="margin:6px 0 0">PriceCharting page: <a href="${esc(c.pcUrl)}" target="_blank" rel="noopener">open</a> · used for price checks</p>`;
