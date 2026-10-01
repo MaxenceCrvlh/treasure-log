@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="701165c6";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="70f5b944";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -577,13 +577,14 @@ function apiSample(key){
     catch(e){const err=new Error("offline");err.code="unavailable";throw err;}
     if(r.status===401||r.status===403){const err=new Error("bad key");err.code="bad_key";throw err;}
     if(r.status===429){const err=new Error("rate");err.code="rate_limited";throw err;}
-    if(!r.ok){const err=new Error("api "+r.status);err.code="unavailable";throw err;}
+    if(!r.ok){let m="";try{m=(await r.json()).error.message||"";}catch(_){}const err=new Error("error "+r.status+(m?": "+m:""));err.code="unavailable";throw err;}
     const j=await r.json();return (j.content||[]).filter(x=>x.type==="text").map(x=>x.text).join("");
   };
   const f=async(p,o)=>({text:await call(p,o)});
   f.json=async(p,o)=>parseLooseJson(await call(p,o));
   return f;
 }
+function getReadWith(){try{return localStorage.getItem("tl-readwith")||"claude";}catch(e){return"claude";}}
 function useApiKey(){const k=getApiKey();S.sample=k?apiSample(k):null;S.sampleImg=!!k;}
 
 /* ---------- backup & restore ---------- */
@@ -919,7 +920,7 @@ function vTools(){
     <div id="bk-status" class="hint" style="margin-top:8px"></div>
   </div>
   ${window.TL_STANDALONE?`<h2>Claude features (optional)</h2><div class="panel pad"><p class="hint" style="margin:0 0 8px">With your own Claude API key (from platform.claude.com), Claude reads every card photo you scan (about $0.002 each) and can check prices online for any card (about 2–5 cents each, in the background). The key stays on this phone. Without a key, the app reads cards and pasted comps on its own.</p>
-    <form data-form="apikey" class="bar"><input id="k-key" name="key" type="password" autocomplete="off" class="search" placeholder="${getApiKey()?"Key saved ••••"+esc(getApiKey().slice(-4)):"sk-ant-…"}" aria-label="Anthropic API key"><button class="btn" type="submit">Save key</button>${getApiKey()?`<button class="btn danger" type="button" data-act="key-remove">Remove</button>`:""}</form>${getApiKey()?`<div class="bar" style="margin-top:10px"><button class="btn" data-act="pc-bulk">Price check cards with no market value</button></div>`:""}</div>`:""}
+    <form data-form="apikey" class="bar"><input id="k-key" name="key" type="password" autocomplete="off" class="search" placeholder="${getApiKey()?"Key saved ••••"+esc(getApiKey().slice(-4)):"sk-ant-…"}" aria-label="Anthropic API key"><button class="btn" type="submit">Save key</button>${getApiKey()?`<button class="btn danger" type="button" data-act="key-remove">Remove</button>`:""}</form>${getApiKey()?`<div class="field" style="margin-top:12px"><label>Read scanned cards with</label>${seg("readwith",[["claude","Claude when online"],["phone","Phone only (free, offline)"]],getReadWith())}<span class="hint">Either way, both buttons stay on the Log a card screen so you can pick per card.</span></div><div class="bar" style="margin-top:10px"><button class="btn" data-act="pc-bulk">Price check cards with no market value</button></div>`:""}</div>`:""}
   <h2>Export</h2><div class="panel pad bar"><button class="btn" data-act="export" data-what="cards">Cards CSV</button><button class="btn" data-act="export" data-what="sales">Sales CSV</button><button class="btn" data-act="export" data-what="shows">Shows CSV</button><button class="btn" data-act="export" data-what="items">Side items CSV</button><button class="btn" data-act="export" data-what="trades">Trades CSV</button><span class="hint">Opens in Excel or Google Sheets. Handy for taxes.</span></div>
   <h2>Pricing a lot</h2><div class="panel pad guide">
     <p>A lot's value starts as the sum of its cards' market values. Cards with no market value count at what you paid, so add comps to each card first.</p>
@@ -1001,7 +1002,7 @@ const SHEETS={
     const src=imgSrc(c);
     return{title:editing?"Edit card":"Log a card",body:`<form data-form="card" data-id="${esc(c.id||"")}">
       <div class="photo-drop"><div id="phPrev">${src?`<img class="thumb" src="${esc(src)}" alt="">`:`<div class="thumb">No photo</div>`}</div>
-        <div class="field" style="flex:1"><label for="f-photo">Photo of the card</label><input id="f-photo" type="file" accept="image/*"><span class="hint">Snap it with your phone. The app reads the card code and fills in the details.</span><button class="btn sm" type="button" id="f-scan" hidden style="margin-top:6px;align-self:flex-start">Read code from photo</button><button class="btn sm" type="button" id="f-read" hidden style="margin-top:6px;align-self:flex-start">Fill in details from photo</button><span class="hint" id="f-readst"></span></div></div>
+        <div class="field" style="flex:1"><label for="f-photo">Photo of the card</label><input id="f-photo" type="file" accept="image/*"><span class="hint">Snap it with your phone. The app reads the card code and fills in the details.</span><span class="bar" style="margin-top:6px"><button class="btn sm" type="button" id="f-claude" hidden>Read with Claude</button><button class="btn sm" type="button" id="f-scan" hidden>Read on phone</button></span><button class="btn sm" type="button" id="f-read" hidden style="margin-top:6px;align-self:flex-start">Fill in details from photo</button><span class="hint" id="f-readst"></span></div></div>
       <div class="grid" style="margin-top:12px">
         <div class="field"><label for="f-code">Card code</label><input id="f-code" name="code" required placeholder="OP05-119" value="${esc(c.code||"")}" autocapitalize="characters" class="mono"></div>
         <div class="field"><label for="f-name">Name</label><input id="f-name" name="name" placeholder="Monkey.D.Luffy" value="${esc(c.name||"")}"></div>
@@ -1037,8 +1038,9 @@ const SHEETS={
     </form>`,after(){
       const form=document.querySelector('form[data-form="card"]');
       form.addEventListener("change",e=>{if(e.target.name==="kind"){form.querySelector("#rawBox").hidden=e.target.value==="graded";form.querySelector("#gradedBox").hidden=e.target.value!=="graded";}});
-      form.querySelector("#f-photo").addEventListener("change",async e=>{const file=e.target.files[0];if(!file)return;try{const blob=await shrink(file);S.pendingPhoto={blob,url:URL.createObjectURL(blob)};document.getElementById("phPrev").innerHTML=`<img class="thumb" src="${S.pendingPhoto.url}" alt="">`;form.querySelector("#f-read").hidden=true;form._scanFile=file;form.querySelector("#f-scan").hidden=false;if(!form.code.value.trim())scanIntoForm(form,file);}catch(err){toast("Couldn't read that image. Try a JPG or PNG.");}});
-      form.querySelector("#f-scan").addEventListener("click",()=>scanIntoForm(form,form._scanFile));
+      form.querySelector("#f-photo").addEventListener("change",async e=>{const file=e.target.files[0];if(!file)return;try{const blob=await shrink(file);S.pendingPhoto={blob,url:URL.createObjectURL(blob)};document.getElementById("phPrev").innerHTML=`<img class="thumb" src="${S.pendingPhoto.url}" alt="">`;form.querySelector("#f-read").hidden=true;form._scanFile=file;form.querySelector("#f-scan").hidden=false;form.querySelector("#f-claude").hidden=!(S.sample&&S.sampleImg);if(!form.code.value.trim())scanIntoForm(form,file,"auto");}catch(err){toast("Couldn't read that image. Try a JPG or PNG.");}});
+      form.querySelector("#f-scan").addEventListener("click",()=>scanIntoForm(form,form._scanFile,"phone"));
+      form.querySelector("#f-claude").addEventListener("click",()=>scanIntoForm(form,form._scanFile,"claude"));
       form.querySelector("#f-read").addEventListener("click",()=>readCardPhoto(form));
       if(CAN_OFFICIAL){
         const vp=form.querySelector("#vp");let tm;
@@ -1752,6 +1754,7 @@ document.addEventListener("change",async e=>{
     try{PG.status="Loading photo…";const im=await pgLoad(file);if(PG[k]&&PG[k].url)try{URL.revokeObjectURL(PG[k].url);}catch(_){}PG[k]={im,url:im.url};PG.status="";}catch(err){PG.status=err.message||"Couldn't read that photo.";}
     render();return;
   }
+  if(e.target.name==="readwith"){try{localStorage.setItem("tl-readwith",e.target.value);}catch(_){}toast(e.target.value==="phone"?"Cards will be read on the phone (free, offline).":"Cards will be read by Claude when you have signal.");return;}
   if(e.target.name==="pgview"&&PG.report){PG.report.view=e.target.value;render();return;}
   if(e.target.id==="bk-file"){
     const file=e.target.files[0];if(!file)return;const st=document.getElementById("bk-status");
@@ -2772,7 +2775,7 @@ async function scanOnPhone(form,file){
   finally{if(btn)btn.disabled=false;
     // if it didn't simply work, offer the details so they can be sent for a fix
     if(SC_LOG&&!(SC_LOG.result&&SC_LOG.result.code)){const d=document.createElement("button");d.type="button";d.className="btn sm";d.style.marginTop="6px";d.textContent="Save scan details";
-      d.title="Saves what the reader saw, so you can send it for a fix";const log=SC_LOG;
+      d.title="Saves what the reader saw, so you can send it for a fix";const log={...SC_LOG,claude:CL_LAST};
       d.addEventListener("click",async()=>{try{await S.downloads.save({filename:`treasure-log-scan-${today()}.json`,data:new Blob([JSON.stringify(log)],{type:"application/json"})});}catch(_){}});
       const old=form.querySelector("#f-scandbg");if(old)old.remove();d.id="f-scandbg";box.after(d);}}
 }
@@ -2821,13 +2824,17 @@ Read the code exactly as printed. Use null for anything you can't read; never gu
   return {...r,code};
 }
 /* scanning: Claude first when a key is set and there's signal; the on-phone reader otherwise or as a fallback */
-async function scanIntoForm(form,file){
-  if(!file)return;
-  if(S.sample&&S.sampleImg&&navigator.onLine!==false&&S.pendingPhoto){
-    const st=form.querySelector("#f-readst"),btn=form.querySelector("#f-scan");const box=form.querySelector("#f-cands");if(box)box.innerHTML="";
-    if(btn)btn.disabled=true;st.textContent="Reading the card with Claude…";
+let CL_LAST=null;
+async function scanIntoForm(form,file,mode){
+  if(!file)return;mode=mode||"auto";
+  const canClaude=S.sample&&S.sampleImg&&S.pendingPhoto;
+  const useClaude=mode==="claude"||(mode==="auto"&&getReadWith()!=="phone");
+  let note="";
+  if(useClaude&&canClaude&&!(mode==="auto"&&navigator.onLine===false)){
+    const st=form.querySelector("#f-readst"),btns=[form.querySelector("#f-scan"),form.querySelector("#f-claude")];const box=form.querySelector("#f-cands");if(box)box.innerHTML="";
+    btns.forEach(b=>b&&(b.disabled=true));st.textContent="Reading the card with Claude…";CL_LAST={when:new Date().toISOString()};
     try{
-      const r=await clReadCard(file,S.pendingPhoto.blob);
+      const r=await clReadCard(file,S.pendingPhoto.blob);CL_LAST.reply=r;
       const label=r.graded&&GRADERS.includes(r.grader)?{grader:r.grader,grade:r.grade!=null?String(r.grade):"",cert:r.cert!=null?String(r.cert).replace(/\D/g,""):""}:null;
       const lang=r.lang==="JP"||r.lang==="EN"?r.lang:null;
       if(r.code&&(CARDDB[r.code]||(/^(OP|ST|EB|PRB)\d{2}-\d{3}$|^P-\d{3}$/.test(r.code)&&r.confidence==="high"))){
@@ -2835,12 +2842,16 @@ async function scanIntoForm(form,file){
         if(VARIANTS.includes(r.variant)&&r.variant!=="Regular")form.variant.value=r.variant;
         const e=CARDDB[r.code];const slab=label?` · ${label.grader.split(" ")[0]} ${label.grade||"?"}${label.cert?` · cert ${label.cert}`:""}`:"";
         st.textContent=`Claude read ${r.code} · ${(e&&(e[0]||e[1]))||r.name||""}${e&&e[1]&&lang==="JP"?` (${e[1]})`:""} · ${lang==="JP"?"Japanese":"English"}${slab}.${e?"":" It isn't in the card list yet, so check the name."}${r.confidence==="low"?" Claude wasn't sure, so double-check the code.":""} Then pick your version below.`;
-        if(btn)btn.disabled=false;return;}
-      st.textContent="Claude couldn't read the code for sure. Trying the on-phone reader…";
-    }catch(err){st.textContent=err&&err.code==="bad_key"?"Your Claude API key was rejected (check it in Tools). Using the on-phone reader…":"Couldn't reach Claude. Using the on-phone reader…";}
-    if(btn)btn.disabled=false;await new Promise(r=>setTimeout(r,600));
-  }
-  return scanOnPhone(form,file);
+        btns.forEach(b=>b&&(b.disabled=false));return;}
+      note=`Claude read ${r.code?`"${r.code}"`:"no code"}${r.name?` (${r.name})`:""}, which isn't a card in the list.`;
+    }catch(err){CL_LAST.error={code:err&&err.code,message:String(err&&err.message||err)};
+      note=err&&err.code==="bad_key"?"Claude rejected your API key (check it in Tools).":err&&err.code==="rate_limited"?"Claude is rate-limited right now.":`Couldn't use Claude (${String(err&&err.message||"no connection").slice(0,140)}).`;}
+    btns.forEach(b=>b&&(b.disabled=false));
+    if(mode==="claude"){form.querySelector("#f-readst").textContent=note+" Tap Read on phone to try the on-phone reader.";return;}
+    form.querySelector("#f-readst").textContent=note+" Trying the on-phone reader…";
+  }else if(mode==="claude"){form.querySelector("#f-readst").textContent=canClaude?"No connection, so Claude can't read it right now.":"Add your Claude API key in Tools to read cards with Claude.";return;}
+  await scanOnPhone(form,file);
+  if(note){const st=form.querySelector("#f-readst");st.textContent=note+" On-phone reader: "+st.textContent;}
 }
 /* ---- price check: Claude searches the web for recent prices of this exact card ---- */
 function pcDescribe(c){const e=CARDDB[String(c.code||"").toUpperCase()]||[];
