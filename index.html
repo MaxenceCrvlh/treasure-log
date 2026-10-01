@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="200485dd";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="7db32779";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -2879,6 +2879,10 @@ async function scanIntoForm(form,file,mode){
   await scanOnPhone(form,file);
   if(note){const st=form.querySelector("#f-readst");st.textContent=note+" On-phone reader: "+st.textContent;}
 }
+function pcDiagText(r){const d=r&&r.diag;if(!d)return "";const bits=[];
+  bits.push(d.plan==="web_fetch"||/web_fetch/.test(d.plan||"")?`read ${d.fetched.length} PriceCharting page${d.fetched.length===1?"":"s"}`:"couldn't open pages, used web search");
+  if(d.fetchErrors.length)bits.push("page errors: "+d.fetchErrors.join(", "));if(d.searchErrors.length)bits.push("search errors: "+d.searchErrors.join(", "));
+  if(d.planErrors.length)bits.push("note: "+d.planErrors[0]);return bits.join(" · ");}
 /* ---- new card form: price it right after Claude reads it ---- */
 function formCard(form){const g=n=>{const el=form.elements[n];if(!el)return"";if(el instanceof RadioNodeList)return ([...el].find(x=>x.checked)||{}).value||"";return el.value;};
   return {code:g("code").trim().toUpperCase(),name:g("name"),lang:g("lang")||"EN",variant:g("variant"),variantNote:g("variantNote"),imgSuffix:g("imgSuffix"),rarity:g("rarity"),kind:g("kind")||"raw",grader:g("grader"),grade:g("grade"),cond:g("cond"),pcUrl:S.pcLink||null};}
@@ -2900,10 +2904,10 @@ async function formPrice(form,pcUrl){
     S.pendingPC={code:card.code,result:r};const mk=form.elements.market;
     if(r.value&&!mk.value){mk.value=r.value;}
     const conf={high:"ok",medium:"",low:"warn"}[r.confidence]||"warn";
-    box.innerHTML=`<div class="panel pad" style="margin:0">${r.value?`<b>${money(r.value)}</b> <span class="chip ${conf}">${esc(r.confidence)}</span> <span class="hint">${esc(r.basis||"")}${r.value&&mk.value==r.value?" · filled in as market value":""}</span>`:`<span class="hint">No reliable price found on PriceCharting for this exact card.</span>`}
+    box.innerHTML=`<div class="panel pad" style="margin:0">${r.value?`<b>${money(r.value)}</b> <span class="chip ${conf}">${esc(r.confidence)}</span> <span class="hint">${esc(r.basis||"")}${r.value&&mk.value==r.value?" · filled in as market value":""}</span>`:`<span class="hint">No reliable price found on PriceCharting for this exact card.${r.doubt?" Claude says: "+esc(r.doubt):""}</span>`}
       ${(!r.matched||r.doubt)&&r.value?`<div class="hint" style="margin-top:4px">⚠ ${esc(r.doubt||"Not sure it's the exact version; check the link.")}</div>`:""}
       ${r.choices&&r.choices.length&&!r.value?`<p class="hint" style="margin:6px 0 4px">Several possible matches on PriceCharting. Tap yours (about 1¢):</p><div class="bar">${r.choices.map(x=>`<button type="button" class="btn sm" data-pcpick="${esc(x.url)}">${esc(x.title)}</button>`).join("")}</div>`:""}
-      <div class="hint" style="margin-top:4px">${r.pcUrl?`<a href="${esc(r.pcUrl)}" target="_blank" rel="noopener">PriceCharting page</a> · `:""}about $${r.cost.toFixed(3)} · <button type="button" class="btn sm" data-pcagain="1">Check again</button></div></div>`;
+      <div class="hint" style="margin-top:4px;font-size:11.5px">${esc(pcDiagText(r))}</div><div class="hint" style="margin-top:4px">${r.pcUrl?`<a href="${esc(r.pcUrl)}" target="_blank" rel="noopener">PriceCharting page</a> · `:""}about $${r.cost.toFixed(3)} · <button type="button" class="btn sm" data-pcagain="1">Check again</button></div></div>`;
     box.querySelectorAll("[data-pcpick]").forEach(b=>b.onclick=()=>{S.pcLink=b.dataset.pcpick;formPrice(form,b.dataset.pcpick);});
     const ag=box.querySelector("[data-pcagain]");if(ag)ag.onclick=()=>formPrice(form);
   }catch(e){if(form._pcTok!==tok)return;
@@ -2929,21 +2933,26 @@ PriceCharting product pages list prices by condition: "Ungraded" (raw), "Grade 7
 ${deep?"If PriceCharting has no price for this grade, do ONE web search for recent eBay sold prices of the same exact version, language and grade.":"Don't search the web; use only the PriceCharting pages."} Keep your answer short.
 Finish with only a JSON block:
 {"value": market value in USD for ${grade} or null, "low": number or null, "high": number or null, "confidence": "high, medium or low", "matched": true only if the page clearly is the exact version, language and grade, "doubt": "short note if unsure, else null", "basis": "one short line, e.g. PSA 10 · PriceCharting (12 sales)", "pricecharting_url": "the product page you used or null", "choices": [{"title": "product title", "url": "product page"}] ONLY if several PriceCharting products could be this card and you can't tell which (then leave value null), else [], "sources": [{"site": "PriceCharting, eBay...", "url": "...", "price": number, "date": "YYYY-MM-DD or null", "sales": number or null, "what": "e.g. PSA 10 price"}]}`;
-  const fetchTool={type:"web_fetch_20250910",name:"web_fetch",max_uses:c.pcUrl?1:2,allowed_domains:["pricecharting.com","www.pricecharting.com"],max_content_tokens:6000};
+  const fetchTool={type:"web_fetch_20250910",name:"web_fetch",max_uses:c.pcUrl?1:2,allowed_domains:["pricecharting.com","www.pricecharting.com"],max_content_tokens:10000};
   const searchTool={type:"web_search_20250305",name:"web_search",max_uses:1,allowed_domains:PC_DOMAINS};
   const model=CL_PRICE_MODELS[0];
   // page reading first; if this model can't read pages, one search limited to price sites
   const plans=[deep?[fetchTool,searchTool]:[fetchTool],[searchTool]];
-  let lastErr=null;
+  let lastErr=null;const diag={planErrors:[]};
   for(const tools of plans){
     const messages=[{role:"user",content:prompt}];let use={inp:0,out:0,searches:0},resp=null;
+    diag.plan=tools.map(t=>t.name).join("+");diag.fetched=[];diag.fetchErrors=[];diag.searchErrors=[];
+    const note=content=>{for(const b of content||[]){
+      if(b.type==="web_fetch_tool_result"){const c=b.content||{};if(c.type==="web_fetch_tool_error"||c.error_code)diag.fetchErrors.push(c.error_code||"error");else diag.fetched.push(c.url||"page");}
+      if(b.type==="web_search_tool_result"){const c=b.content;if(c&&!Array.isArray(c)&&c.error_code)diag.searchErrors.push(c.error_code);}}};
     try{
       for(let turn=0;turn<3;turn++){
         resp=await clApi({model,max_tokens:1200,messages,tools});
         const u=resp.usage||{};use.inp+=(u.input_tokens||0)+(u.cache_read_input_tokens||0)+(u.cache_creation_input_tokens||0);use.out+=u.output_tokens||0;use.searches+=(u.server_tool_use&&u.server_tool_use.web_search_requests)||0;
+        note(resp.content);
         if(resp.stop_reason==="pause_turn"){messages.push({role:"assistant",content:resp.content});continue;}
         break;}
-    }catch(e){lastErr=e;if(e.code==="bad_request"&&/tool|web_fetch|web_search|not support|domain/i.test(e.message))continue;throw e;}
+    }catch(e){lastErr=e;if(e.code==="bad_request"&&/tool|web_fetch|web_search|not support|domain/i.test(e.message)){diag.planErrors.push(String(e.message).slice(0,160));continue;}throw e;}
     const p=CL_MODELS[model]||{inp:1,out:5};const cost=Math.round(((use.inp*p.inp+use.out*p.out)/1e6+use.searches*0.01)*1000)/1000;clSpendAdd(cost);
     const text=(resp.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
     const j=parseLooseJson(text);
@@ -2955,7 +2964,7 @@ Finish with only a JSON block:
       doubt:j.doubt?String(j.doubt).slice(0,300):null,basis:j.basis?String(j.basis).slice(0,160):"",pcUrl:pcu,deep:!!deep,
       choices:(Array.isArray(j.choices)?j.choices:[]).filter(x=>x&&/^https?:\/\/(www\.)?pricecharting\.com\/game\//.test(x.url||"")).slice(0,6).map(x=>({title:String(x.title||x.url).slice(0,90),url:String(x.url)})),
       sources:(Array.isArray(j.sources)?j.sources:[]).slice(0,8).map(s=>({site:String(s.site||"").slice(0,40),url:/^https?:\/\//.test(s.url||"")?String(s.url):"",price:num(s.price),date:/^\d{4}-\d{2}-\d{2}$/.test(s.date||"")?s.date:null,sales:Number.isFinite(+s.sales)&&s.sales!==null&&s.sales!==""?+s.sales:null,what:String(s.what||"").slice(0,120)})),
-      cited:cited.slice(0,8),model:p.name||model,searches:use.searches,cost,checked:today(),forKind:c.kind==="graded"?`${c.grader||""} ${c.grade||""}`.trim():"raw"};
+      cited:cited.slice(0,8),model:p.name||model,searches:use.searches,cost,diag,checked:today(),forKind:c.kind==="graded"?`${c.grader||""} ${c.grade||""}`.trim():"raw"};
   }
   throw lastErr||clErr("bad_request","Claude couldn't look up prices.");
 }
@@ -3014,7 +3023,7 @@ function pcSection(c){
       ${!r.matched||r.doubt?`<div class="note" style="display:block;margin-top:8px"><b>Check the version.</b> ${esc(r.doubt||"Claude couldn't confirm the sources are this exact version, language and grade.")} Open the links before using this price.</div>`:""}
       ${stale?`<div class="note" style="display:block;margin-top:8px">This check was for <b>${esc(r.forKind)}</b>, but the card is now <b>${esc(c.kind==="graded"?`${c.grader} ${c.grade}`:"raw")}</b>. Check again.</div>`:""}
       ${r.sources.length?`<div class="scroll" style="margin-top:8px"><table class="t num"><tbody>${r.sources.map(s=>`<tr><td>${s.url?`<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.site||"Link")}</a>`:esc(s.site)}<div class="hint" style="font-size:11.5px">${esc(s.what)}${s.sales!=null?` · ${s.sales} sale${s.sales===1?"":"s"}`:""}</div></td><td>${s.date?fdate(s.date):""}</td><td class="r"><b>${s.price?money(s.price):"—"}</b></td></tr>`).join("")}</tbody></table></div>`:""}
-      <p class="hint" style="margin:6px 0 0">Checked ${fdate(String(r.checked).slice(0,10))} by Claude ${esc(r.model)} · ${r.searches} search${r.searches===1?"":"es"} · about $${r.cost.toFixed(3)}. Prices from the web can be wrong; open the links for big buys.</p>
+      ${pcDiagText(r)?`<p class="hint" style="margin:6px 0 0;font-size:11.5px">${esc(pcDiagText(r))}</p>`:""}<p class="hint" style="margin:6px 0 0">Checked ${fdate(String(r.checked).slice(0,10))} by Claude ${esc(r.model)} · ${r.searches} search${r.searches===1?"":"es"} · about $${r.cost.toFixed(3)}. Prices from the web can be wrong; open the links for big buys.</p>
       ${r.choices&&r.choices.length&&!r.value?`<p class="hint" style="margin:8px 0 4px">PriceCharting has several possible matches. Tap yours (about 1¢ to read it):</p><div class="bar">${r.choices.map(x=>`<button class="btn sm" data-act="pc-pick" data-id="${esc(c.id)}" data-v="${esc(x.url)}">${esc(x.title)}</button>`).join("")}</div>`:""}
       ${!r.deep&&(!r.value||r.confidence==="low")&&!(r.choices&&r.choices.length)?`<div class="bar" style="margin-top:8px"><button class="btn sm" data-act="pc-deep" data-id="${esc(c.id)}">Search eBay too (about 3–6¢ more)</button></div>`:""}
       ${r.value&&!pc.applied?`<div class="bar" style="margin-top:8px"><button class="btn sm pri" data-act="pc-use" data-id="${esc(c.id)}">Use ${money(r.value)} and log these comps</button></div>`:pc.applied?`<p class="hint" style="margin:6px 0 0">Applied to this card's market value and comps.</p>`:""}
