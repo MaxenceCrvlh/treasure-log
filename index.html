@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="aa13e01b";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="b8331a37";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -2365,11 +2365,28 @@ function pgFrameStep(s){const {n,dep,d,px}=s;const nseg=16,a=Math.round(n*.12),b
   let f=pgFitLine(uu,vv);
   if(Math.abs(Math.atan(f.a)*180/Math.PI)>0.6){const mv=pgMedian(vv);f={a:0,b:mv,sd:pgMAD(vv,mv),inl:vv.filter(x=>Math.abs(x-mv)<2.5*Math.max(0.5,pgMAD(vv,mv))).length/vv.length};} // implausible tilt: pattern lines fooled some segments, use the median
   return {mm:(f.a*n/2+f.b)/px,tilt:Math.atan(f.a)*180/Math.PI,res:f.sd/px,inl:f.inl,strength:med,fit:f};}
+/* a thin printed frame line has two edges; whichever one a detector locked onto, measure to the line's outer edge (the side facing the card edge) so all four sides measure the same thing */
+function pgFrameOuter(s,m){if(!m||!m.fit)return m;const {n,dep,d,px}=s;const R=Math.round(1.2*px),a=m.fit.a,b=m.fit.b;
+  const prof=[];for(let t=-R-3;t<=R+3;t++){const c=[[],[],[]];for(let i=Math.round(n*.1);i<n*.9;i+=2){const x=a*i+b+t,j=Math.floor(x),f=x-j;if(j<0||j>=dep-1)continue;for(let k=0;k<3;k++)c[k].push(d[(i*dep+j)*3+k]*(1-f)+d[(i*dep+j+1)*3+k]*f);}
+    prof.push(c[0].length?c.map(pgMedian):null);}
+  if(prof.some(x=>!x))return m;const at=t=>prof[t+R+3];
+  const D=t=>[0,1,2].map(k=>(at(t+1)[k]+at(t+2)[k]-at(t-1)[k]-at(t-2)[k])/2),mag=v=>Math.hypot(v[0],v[1],v[2]);
+  let t0=0;for(let t=-2;t<=2;t++)if(mag(D(t))>mag(D(t0)))t0=t;const g0=D(t0),G=mag(g0);if(G<3)return m;
+  let best=null;for(let t=t0-3;t>=-R;t--){const v=D(t),M=mag(v);if(M<0.45*G||mag(D(t-1))>M||mag(D(t+1))>M)continue;
+    if(v[0]*g0[0]+v[1]*g0[1]+v[2]*g0[2]>=-0.3*M*G)continue;
+    // it's a line only if the colour just outside it matches the colour just inside it, and the band between differs from both
+    const avg=(t1,t2)=>{const o=[0,0,0];for(let q=t1;q<=t2;q++)for(let k=0;k<3;k++)o[k]+=at(q)[k]/(t2-t1+1);return o;},dE=(x,y)=>Math.hypot(x[0]-y[0],x[1]-y[1],x[2]-y[2]);
+    const out=avg(Math.max(-R-3,t-5),t-2),inn=avg(t0+3,Math.min(R+3,t0+5)),band=avg(t+2,t0-1);
+    if(dE(out,inn)<0.5*Math.min(dE(band,inn),dE(band,out))){best=t;break;}}
+  if(best===null)return m;
+  const y0=mag(D(best-1)),y1=mag(D(best)),y2=mag(D(best+1)),den=y0-2*y1+y2,tt=best+(den?0.5*(y0-y2)/den:0);
+  return {...m,mm:m.mm+tt/px,outer:tt/px};}
 function pgCentering(wp){const strips={};for(const k of "LRTB")strips[k]=pgStrip(wp,k,7.5);
   const M={A:{},B:{}};for(const k of "LRTB"){M.A[k]=pgFrameGradient(strips[k]);M.B[k]=pgFrameStep(strips[k]);}
   // per side: keep whichever detector found the straighter, more consistent edge
   const sq=x=>x?x.res+0.08*Math.abs(x.tilt)+(x.inl<0.6?1:0):1e9;const m={},used={};
   for(const k of "LRTB"){const a=M.A[k],b=M.B[k];const pickA=sq(a)<=1.3*sq(b);m[k]=pickA?a:b;used[k]=pickA?"A":"B";}
+  for(const k of "LRTB")m[k]=pgFrameOuter(strips[k],m[k]);
   const use=Object.values(used).join("");
   if(Object.values(m).some(x=>!x))return {ok:false,why:"No clear printed border found. This looks like a full-art card; front centering for full-art cards is coming later."};
   const quality=pgMedian(Object.values(m).map(sq));
@@ -2522,7 +2539,6 @@ function pgImages(r,im){const out={};
   const mid={T:[Math.round(wp.w/2-len/2),0,len,d],B:[Math.round(wp.w/2-len/2),wp.h-d,len,d],L:[0,Math.round(wp.h/2-len/2),d,len],R:[wp.w-d,Math.round(wp.h/2-len/2),d,len]};
   for(const s in mid){const [x,y,w,h]=mid[s];const cv=pgWpCanvas(wp,x,y,w,h);const horiz=s==="T"||s==="B";const OW=horiz?240:30,OH=horiz?30:240;out.edges[s]=pgToURL(OW,OH,cx=>cx.drawImage(cv,0,0,OW,OH));}
   return out;}
-
 /* ================= PRE-GRADE: tab + report ================= */
 const PG_SIDES=[["front","Front"],["back","Back"]];
 const pgF=v=>Math.round(v);
@@ -2557,7 +2573,7 @@ function pgReport(R){
   </div>
   ${sides.length>1?`<div class="seg" style="margin-top:14px">${sides.map(([k,l])=>`<label><input type="radio" name="pgview" value="${k}" ${k===tab?"checked":""}>${l}</label>`).join("")}</div>`:""}
   <h3 style="margin-top:14px">${tab==="front"?"Front":"Back"}</h3>
-  ${R.img[tab].photo?`<div class="pg-map" style="margin-bottom:10px"><figure style="margin:0"><img src="${R.img[tab].photo}" alt="Your photo with the detected card outline" class="pg-cardimg"><figcaption class="hint" style="text-align:center">Your photo · card found</figcaption></figure><figure style="margin:0"><img src="${R.img[tab].card}" alt="Straightened card" class="pg-cardimg"><figcaption class="hint" style="text-align:center">Straightened to 63 × 88 mm · <span style="color:#ef4444">card edge in red</span>, <span style="color:#22c55e">printed border in green</span>. Centering is measured between the two.</figcaption></figure></div>`:""}
+  ${R.img[tab].photo?`<div class="pg-map" style="margin-bottom:10px"><figure style="margin:0"><img src="${R.img[tab].photo}" alt="Your photo with the detected card outline" class="pg-cardimg"><figcaption class="hint" style="text-align:center">Your photo · card found</figcaption></figure><figure style="margin:0"><img src="${R.img[tab].card}" alt="Straightened card" class="pg-cardimg"><figcaption class="hint" style="text-align:center">Straightened to 63 × 88 mm · <span style="color:#ef4444">card edge in red</span>, <span style="color:#22c55e">printed frame in green</span>, on the frame line's outer side. Centering compares these gaps on opposite sides.</figcaption></figure></div>`:""}
   <div class="pg-map" ${R.img[tab].photo?'style="grid-template-columns:1fr;max-width:62%;margin-inline:auto"':""}>
     ${R.img[tab].photo?"":`<img src="${R.img[tab].card}" alt="Straightened ${tab} with detected border" class="pg-cardimg">`}
     <div class="pg-mapbox num">${m?`<div class="pg-c t">${m.tb.toFixed(2)}</div><div class="pg-c b">${(100-m.tb).toFixed(2)}</div><div class="pg-c l">${m.lr.toFixed(2)}</div><div class="pg-c r">${(100-m.lr).toFixed(2)}</div>
