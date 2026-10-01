@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="794228a7";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="ff0cb8a6";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -924,8 +924,8 @@ function vTools(){
     <div class="bar"><button class="btn pri" data-act="backup-make" id="bk-make">Create backup</button><button class="btn" data-act="backup-save" id="bk-save" hidden>Save backup file</button><label class="btn" for="bk-file" style="cursor:pointer">Restore from a file</label><input id="bk-file" type="file" accept="application/json,.json" hidden></div>
     <div id="bk-status" class="hint" style="margin-top:8px"></div>
   </div>
-  ${window.TL_STANDALONE?`<h2>Claude features (optional)</h2><div class="panel pad"><p class="hint" style="margin:0 0 8px">With your own Claude API key (from platform.claude.com), Claude reads every card photo you scan (about $0.002 each) and can check prices online for any card (roughly 3–15 cents each, in the background). The key stays on this phone. Without a key, the app reads cards and pasted comps on its own.</p>
-    <form data-form="apikey" class="bar"><input id="k-key" name="key" type="password" autocomplete="off" class="search" placeholder="${getApiKey()?"Key saved ••••"+esc(getApiKey().slice(-4)):"sk-ant-…"}" aria-label="Anthropic API key"><button class="btn" type="submit">Save key</button>${getApiKey()?`<button class="btn danger" type="button" data-act="key-remove">Remove</button>`:""}</form>${getApiKey()?`<div class="field" style="margin-top:12px"><label>Read scanned cards with</label>${seg("readwith",[["claude","Claude when online"],["phone","Phone only (free, offline)"]],getReadWith())}<span class="hint">Either way, both buttons stay on the Log a card screen so you can pick per card.</span></div><div class="bar" style="margin-top:10px"><button class="btn" data-act="pc-bulk">Price check cards with no market value</button></div>`:""}</div>`:""}
+  ${window.TL_STANDALONE?`<h2>Claude features (optional)</h2><div class="panel pad"><p class="hint" style="margin:0 0 8px">With your own Claude API key (from platform.claude.com), Claude reads every card photo you scan (about $0.002 each) and can check prices online from PriceCharting (about 1–3 cents each, in the background). The key stays on this phone. Without a key, the app reads cards and pasted comps on its own.</p>
+    <form data-form="apikey" class="bar"><input id="k-key" name="key" type="password" autocomplete="off" class="search" placeholder="${getApiKey()?"Key saved ••••"+esc(getApiKey().slice(-4)):"sk-ant-…"}" aria-label="Anthropic API key"><button class="btn" type="submit">Save key</button>${getApiKey()?`<button class="btn danger" type="button" data-act="key-remove">Remove</button>`:""}</form>${getApiKey()?`<div class="field" style="margin-top:12px"><label>Read scanned cards with</label>${seg("readwith",[["claude","Claude when online"],["phone","Phone only (free, offline)"]],getReadWith())}<span class="hint">Either way, both buttons stay on the Log a card screen so you can pick per card.</span></div><div class="bar" style="margin-top:10px"><button class="btn" data-act="pc-bulk">Price check cards with no market value</button></div><p class="hint" style="margin:6px 0 0">Price checks this month: ${clSpend().n} · about $${clSpend().total.toFixed(2)}. Your exact balance is on platform.claude.com.</p>`:""}</div>`:""}
   <h2>Export</h2><div class="panel pad bar"><button class="btn" data-act="export" data-what="cards">Cards CSV</button><button class="btn" data-act="export" data-what="sales">Sales CSV</button><button class="btn" data-act="export" data-what="shows">Shows CSV</button><button class="btn" data-act="export" data-what="items">Side items CSV</button><button class="btn" data-act="export" data-what="trades">Trades CSV</button><span class="hint">Opens in Excel or Google Sheets. Handy for taxes.</span></div>
   <h2>Pricing a lot</h2><div class="panel pad guide">
     <p>A lot's value starts as the sum of its cards' market values. Cards with no market value count at what you paid, so add comps to each card first.</p>
@@ -1713,8 +1713,9 @@ document.addEventListener("click",async e=>{
     case"expense":if(exBlock())return;openSheet("expenseForm",{id});break;
     case"del-expense":{if(!confirmTap(el,"de"+id,"Tap again to delete"))return;const e0=byId("expenses",id);if(e0&&e0.supplyId&&n(e0.qty)){const s0=byId("supplies",e0.supplyId);if(s0)await put("supplies",{...s0,onHand:Math.max(0,n(s0.onHand)-n(e0.qty))});}await del("expenses",id);closeSheet();break;}
     case"pc-run":{if(exBlock())return;await pcEnqueue([id]);break;}
+    case"pc-deep":{if(exBlock())return;PC.deep[id]=true;await pcEnqueue([id]);break;}
     case"pc-use":{if(exBlock())return;await pcApply(id);break;}
-    case"pc-bulk":{if(exBlock())return;const ids=D("cards").filter(c=>c.status!=="sold"&&n(c.qty)>0&&!(n(c.market)>0)&&!(c.priceCheck&&["queued","running","waiting"].includes(c.priceCheck.status))).map(c=>c.id).slice(0,40);if(!ids.length){toast("Every card in stock already has a market value.");break;}if(!confirm(`Check prices for ${ids.length} card${ids.length>1?"s":""} with no market value? About $${(ids.length*0.08).toFixed(2)} in Claude credit, roughly 30 seconds each in the background.`))break;await pcEnqueue(ids);break;}
+    case"pc-bulk":{if(exBlock())return;const ids=D("cards").filter(c=>c.status!=="sold"&&n(c.qty)>0&&!(n(c.market)>0)&&!(c.priceCheck&&["queued","running","waiting"].includes(c.priceCheck.status))).map(c=>c.id).slice(0,40);if(!ids.length){toast("Every card in stock already has a market value.");break;}if(!confirm(`Check prices for ${ids.length} card${ids.length>1?"s":""} with no market value? About $${(ids.length*0.025).toFixed(2)} in Claude credit, roughly 30 seconds each in the background.`))break;await pcEnqueue(ids);break;}
     case"use-avg":{if(exBlock())return;const col=el.dataset.col||"cards";const c=byId(col,id);const v=Math.round(n(el.dataset.v)*100)/100;await put(col,{...c,market:v,marketDate:today()});toast((col==="lots"?"Lot value set to ":"Market value set to ")+money(v));break;}
     case"del-comp":{if(exBlock())return;const col=el.dataset.col||"cards";const c=byId(col,id);const comps=[...(c.comps||[])];comps.splice(+el.dataset.i,1);await put(col,{...c,comps});break;}
     case"lot-clear-market":{if(exBlock())return;const L=byId("lots",id);await put("lots",{...L,market:null,marketDate:""});toast("Lot now priced by its cards");break;}
@@ -2787,7 +2788,9 @@ async function scanOnPhone(form,file){
 
 /* ================= CLAUDE: card reading and price checks (uses your own API key) ================= */
 const CL_MODELS={"claude-haiku-4-5-20251001":{name:"Haiku 4.5",inp:1,out:5},"claude-sonnet-5-5":{name:"Sonnet 5.5",inp:2,out:10}};
-const CL_PRICE_MODELS=["claude-haiku-4-5-20251001","claude-sonnet-5-5"];
+const CL_PRICE_MODELS=["claude-haiku-4-5-20251001"]; // cheap model only: reading a price table doesn't need more
+function clSpendAdd(v){if(!(v>0))return;try{const m=today().slice(0,7);const s=JSON.parse(localStorage.getItem("tl-clspend")||"{}");const t=s.m===m?s:{m,total:0,n:0};t.total=Math.round((t.total+v)*1000)/1000;t.n++;localStorage.setItem("tl-clspend",JSON.stringify(t));}catch(_){}}
+function clSpend(){try{const s=JSON.parse(localStorage.getItem("tl-clspend")||"{}");return s.m===today().slice(0,7)?s:{total:0,n:0};}catch(_){return{total:0,n:0};}}
 function clErr(code,msg){const e=new Error(msg||code);e.code=code;return e;}
 async function clApi(body){
   const key=getApiKey();if(!key)throw clErr("no_key");
@@ -2874,46 +2877,42 @@ function pcSearchUrl(c){const e=CARDDB[String(c.code||"").toUpperCase()]||[];con
   const words=["one piece",c.lang==="JP"?"japanese":"",c.name||e[0]||"",/manga/i.test(v)?"manga":/alt|parallel|special|SP/i.test(v)||/^_p/.test(c.imgSuffix||"")?"alternate art":"",c.code].filter(Boolean).join(" ");
   return "https://www.pricecharting.com/search-products?type=prices&q="+encodeURIComponent(words);}
 const PC_DOMAINS=["pricecharting.com","www.pricecharting.com","ebay.com","www.ebay.com","tcgplayer.com","www.tcgplayer.com","130point.com"];
-async function pcRunCheck(c){
+async function pcRunCheck(c,deep){
   const grade=c.kind==="graded"?`${c.grader||"PSA"} ${c.grade||""}`.trim():"Ungraded";
   const prompt=`Today is ${today()}. Find the current market price in USD of this exact One Piece Card Game card:
 ${pcDescribe(c)}
 
-1. ${c.pcUrl?`Read this PriceCharting page for the card first: ${c.pcUrl}`:`Read PriceCharting's search results for it: ${pcSearchUrl(c)} . Open the product page that is this exact card (same code, same language, same version: regular vs alternate art / manga / special), not a similar one.`}
-   PriceCharting product pages list prices by condition: "Ungraded" (raw), "Grade 7", "Grade 8", "Grade 9", "Grade 9.5", "PSA 10", and sometimes BGS 10 / CGC 10. Use the line for ${grade}. Also note how many recent sales the page shows, if it does.
-2. If PriceCharting has nothing for this grade, or you need confirmation, do at most two quick web searches for recent sold prices (eBay, TCGplayer, 130point) of the same exact version, language and grade. Don't search for the cert number; it doesn't affect the price.
-3. Ignore other versions, the other language and other grades. If unsure whether a result is the same version, say so.
+${c.pcUrl?`Read this PriceCharting page for the card: ${c.pcUrl}`:`Read PriceCharting's search results: ${pcSearchUrl(c)} then open the product page that is this exact card (same code, same language, same version: regular vs alternate art / manga / special).`}
+PriceCharting product pages list prices by condition: "Ungraded" (raw), "Grade 7", "Grade 8", "Grade 9", "Grade 9.5", "PSA 10", sometimes BGS 10 / CGC 10. Use the line for ${grade}, and note the number of recent sales if shown.
+${deep?"If PriceCharting has no price for this grade, do ONE web search for recent eBay sold prices of the same exact version, language and grade.":"Don't search the web; use only the PriceCharting pages."} Keep your answer short.
 Finish with only a JSON block:
-{"value": best market value in USD for ${grade} or null, "low": number or null, "high": number or null, "confidence": "high, medium or low", "matched": true only if the sources clearly match the exact version, language and grade, "doubt": "short note if unsure, else null", "basis": "one short line, e.g. PSA 10 · PriceCharting (12 sales)", "pricecharting_url": "the product page you used or null", "sources": [{"site": "PriceCharting, eBay, TCGplayer...", "url": "...", "price": number, "date": "YYYY-MM-DD or null", "sales": number of sales behind this price or null, "what": "e.g. PSA 10 price"}]}`;
-  const fetchTool={type:"web_fetch_20250910",name:"web_fetch",max_uses:4,allowed_domains:PC_DOMAINS,max_content_tokens:12000};
-  const searchTool={type:"web_search_20250305",name:"web_search",max_uses:2,allowed_domains:PC_DOMAINS};
-  let pref="";try{pref=localStorage.getItem("tl-pcmodel")||"";}catch(_){}
-  const models=pref&&CL_PRICE_MODELS.includes(pref)?[pref,...CL_PRICE_MODELS.filter(m=>m!==pref)]:CL_PRICE_MODELS;
-  // reading the PriceCharting page matters most: try every model with page reading before falling back to search only
-  const plans=[...models.map(m=>({model:m,tools:[fetchTool,searchTool]})),...models.map(m=>({model:m,tools:[{...searchTool,max_uses:4}]}))];
+{"value": market value in USD for ${grade} or null, "low": number or null, "high": number or null, "confidence": "high, medium or low", "matched": true only if the page clearly is the exact version, language and grade, "doubt": "short note if unsure, else null", "basis": "one short line, e.g. PSA 10 · PriceCharting (12 sales)", "pricecharting_url": "the product page you used or null", "sources": [{"site": "PriceCharting, eBay...", "url": "...", "price": number, "date": "YYYY-MM-DD or null", "sales": number or null, "what": "e.g. PSA 10 price"}]}`;
+  const fetchTool={type:"web_fetch_20250910",name:"web_fetch",max_uses:c.pcUrl?1:2,allowed_domains:["pricecharting.com","www.pricecharting.com"],max_content_tokens:6000};
+  const searchTool={type:"web_search_20250305",name:"web_search",max_uses:1,allowed_domains:PC_DOMAINS};
+  const model=CL_PRICE_MODELS[0];
+  // page reading first; if this model can't read pages, one search limited to price sites
+  const plans=[deep?[fetchTool,searchTool]:[fetchTool],[searchTool]];
   let lastErr=null;
-  for(const plan of plans){
-    const model=plan.model;const messages=[{role:"user",content:prompt}];let use={inp:0,out:0,searches:0},resp=null;
+  for(const tools of plans){
+    const messages=[{role:"user",content:prompt}];let use={inp:0,out:0,searches:0},resp=null;
     try{
-      for(let turn=0;turn<5;turn++){
-        resp=await clApi({model,max_tokens:2500,messages,tools:plan.tools});
+      for(let turn=0;turn<3;turn++){
+        resp=await clApi({model,max_tokens:1200,messages,tools});
         const u=resp.usage||{};use.inp+=(u.input_tokens||0)+(u.cache_read_input_tokens||0)+(u.cache_creation_input_tokens||0);use.out+=u.output_tokens||0;use.searches+=(u.server_tool_use&&u.server_tool_use.web_search_requests)||0;
         if(resp.stop_reason==="pause_turn"){messages.push({role:"assistant",content:resp.content});continue;}
         break;}
-    }catch(e){lastErr=e;if(e.code==="bad_request"&&/tool|web_fetch|web_search|not support|model|domain/i.test(e.message))continue;throw e;}
-    try{localStorage.setItem("tl-pcmodel",model);}catch(_){}
+    }catch(e){lastErr=e;if(e.code==="bad_request"&&/tool|web_fetch|web_search|not support|domain/i.test(e.message))continue;throw e;}
+    const p=CL_MODELS[model]||{inp:1,out:5};const cost=Math.round(((use.inp*p.inp+use.out*p.out)/1e6+use.searches*0.01)*1000)/1000;clSpendAdd(cost);
     const text=(resp.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
     const j=parseLooseJson(text);
     const cited=[];for(const b of resp.content||[])for(const ct of (b.citations||[]))if(ct.url&&!cited.includes(ct.url))cited.push(ct.url);
     if(!j||typeof j!=="object")throw clErr("bad_reply","Claude's answer couldn't be read.");
     const num=v=>{const x=parseFloat(String(v??"").replace(/[$,]/g,""));return isFinite(x)&&x>0?Math.round(x*100)/100:null;};
-    const p=CL_MODELS[model]||{inp:2,out:10};
     const pcu=/^https?:\/\/(www\.)?pricecharting\.com\/game\//.test(j.pricecharting_url||"")?String(j.pricecharting_url):null;
     return {value:num(j.value),low:num(j.low),high:num(j.high),confidence:["high","medium","low"].includes(j.confidence)?j.confidence:"low",matched:j.matched===true,
-      doubt:j.doubt?String(j.doubt).slice(0,300):null,basis:j.basis?String(j.basis).slice(0,160):"",pcUrl:pcu,
+      doubt:j.doubt?String(j.doubt).slice(0,300):null,basis:j.basis?String(j.basis).slice(0,160):"",pcUrl:pcu,deep:!!deep,
       sources:(Array.isArray(j.sources)?j.sources:[]).slice(0,8).map(s=>({site:String(s.site||"").slice(0,40),url:/^https?:\/\//.test(s.url||"")?String(s.url):"",price:num(s.price),date:/^\d{4}-\d{2}-\d{2}$/.test(s.date||"")?s.date:null,sales:Number.isFinite(+s.sales)&&s.sales!==null&&s.sales!==""?+s.sales:null,what:String(s.what||"").slice(0,120)})),
-      cited:cited.slice(0,8),model:p.name||model,searches:use.searches,cost:Math.round(((use.inp*p.inp+use.out*p.out)/1e6+use.searches*0.01)*1000)/1000,
-      checked:today(),forKind:c.kind==="graded"?`${c.grader||""} ${c.grade||""}`.trim():"raw"};
+      cited:cited.slice(0,8),model:p.name||model,searches:use.searches,cost,checked:today(),forKind:c.kind==="graded"?`${c.grader||""} ${c.grade||""}`.trim():"raw"};
   }
   throw lastErr||clErr("bad_request","Claude couldn't look up prices.");
 }
@@ -2921,14 +2920,15 @@ Finish with only a JSON block:
 async function pcPictureFrom(url){
   const prompt=`Fetch this PriceCharting page: ${url}
 Reply with only JSON: {"image_url": "the full URL of the card's main product picture on that page (usually on storage.googleapis.com/images.pricecharting.com) or null", "title": "the product title or null"}`;
-  for(const model of ["claude-haiku-4-5-20251001","claude-sonnet-5-5"]){
-    try{const resp=await clApi({model,max_tokens:400,messages:[{role:"user",content:prompt}],tools:[{type:"web_fetch_20250910",name:"web_fetch",max_uses:1,allowed_domains:["pricecharting.com","www.pricecharting.com"],max_content_tokens:8000}]});
+  for(const model of CL_PRICE_MODELS){
+    try{const resp=await clApi({model,max_tokens:300,messages:[{role:"user",content:prompt}],tools:[{type:"web_fetch_20250910",name:"web_fetch",max_uses:1,allowed_domains:["pricecharting.com","www.pricecharting.com"],max_content_tokens:5000}]});
+      {const u=resp.usage||{};clSpendAdd(Math.round(((u.input_tokens||0)+(u.output_tokens||0)*5)/1e6*1000)/1000);}
       const j=parseLooseJson((resp.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n"));
       const u=j&&j.image_url&&String(j.image_url);return /^https:\/\/\S+\.(jpe?g|png|webp)(\?\S*)?$/i.test(u||"")?u:null;}
     catch(e){if(e.code==="bad_request")continue;throw e;}}
   return null;}
 /* background queue: checks run one after another while you keep using the app; waits for signal if offline */
-const PC={queue:[],running:false};
+const PC={queue:[],running:false,deep:{}};
 async function pcPatch(id,patch){const c=byId("cards",id);if(!c)return;await put("cards",{...c,priceCheck:{...(c.priceCheck||{}),...patch}});}
 async function pcEnqueue(ids){
   if(!getApiKey()){toast("Add your Claude API key in Tools first.");return;}
@@ -2941,7 +2941,7 @@ async function pcLoop(){
     if(navigator.onLine===false){await pcPatch(id,{status:"waiting"});await new Promise(r=>window.addEventListener("online",r,{once:true}));}
     await pcPatch(id,{status:"running",startedAt:new Date().toISOString()});
     let tries=0;
-    for(;;){try{const res=await pcRunCheck(byId("cards",id)||c);await pcPatch(id,{status:"done",result:res,error:null});if(res.pcUrl){const cc=byId("cards",id);if(cc&&!cc.pcUrl)await put("cards",{...cc,pcUrl:res.pcUrl});}toast(`Price check ready: ${c.code}${res.value?" · "+money(res.value):""}`);break;}
+    for(;;){try{const res=await pcRunCheck(byId("cards",id)||c,!!PC.deep[id]);delete PC.deep[id];await pcPatch(id,{status:"done",result:res,error:null});if(res.pcUrl){const cc=byId("cards",id);if(cc&&!cc.pcUrl)await put("cards",{...cc,pcUrl:res.pcUrl});}toast(`Price check ready: ${c.code}${res.value?" · "+money(res.value):""}`);break;}
       catch(e){tries++;
         if(["offline","overloaded","rate_limited"].includes(e.code)&&tries<5){await pcPatch(id,{status:"waiting",error:null});await new Promise(r=>setTimeout(r,(e.code==="rate_limited"?30:10)*1000*tries));
           if(navigator.onLine===false)await new Promise(r=>window.addEventListener("online",r,{once:true}));await pcPatch(id,{status:"running"});continue;}
@@ -2957,7 +2957,7 @@ function pcSection(c){
   if(!window.TL_STANDALONE&&!getApiKey())return "";
   const pc=c.priceCheck||{},r=pc.result,key=!!getApiKey();
   const head=`<div class="bar spread"><h3 style="margin:0">Price check</h3>${key&&!["queued","running","waiting"].includes(pc.status)?`<button class="btn sm ${r?"":"pri"}" data-act="pc-run" data-id="${esc(c.id)}">${r?"Check again":"Check price online"}</button>`:""}</div>`;
-  if(!key)return `<div class="section">${head}<p class="hint">Claude can look up recent prices for this exact card (PriceCharting first, then eBay and others) in about 15–30 seconds, for roughly 3–15 cents. Add your Claude API key in Tools to turn it on.</p></div>`;
+  if(!key)return `<div class="section">${head}<p class="hint">Claude can read this card's PriceCharting prices in about 15–30 seconds, for about 1–3 cents. Add your Claude API key in Tools to turn it on.</p></div>`;
   let body="";
   if(pc.status==="queued"||pc.status==="running")body=`<p class="hint">${pc.status==="running"?"Claude is searching prices…":"Queued…"} This takes about 15–30 seconds. You can close this and keep logging; the result will appear here.</p>`;
   else if(pc.status==="waiting")body=`<p class="hint">Waiting for a connection or for Claude to be free. It will continue on its own.</p>`;
@@ -2972,6 +2972,7 @@ function pcSection(c){
       ${stale?`<div class="note" style="display:block;margin-top:8px">This check was for <b>${esc(r.forKind)}</b>, but the card is now <b>${esc(c.kind==="graded"?`${c.grader} ${c.grade}`:"raw")}</b>. Check again.</div>`:""}
       ${r.sources.length?`<div class="scroll" style="margin-top:8px"><table class="t num"><tbody>${r.sources.map(s=>`<tr><td>${s.url?`<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.site||"Link")}</a>`:esc(s.site)}<div class="hint" style="font-size:11.5px">${esc(s.what)}${s.sales!=null?` · ${s.sales} sale${s.sales===1?"":"s"}`:""}</div></td><td>${s.date?fdate(s.date):""}</td><td class="r"><b>${s.price?money(s.price):"—"}</b></td></tr>`).join("")}</tbody></table></div>`:""}
       <p class="hint" style="margin:6px 0 0">Checked ${fdate(String(r.checked).slice(0,10))} by Claude ${esc(r.model)} · ${r.searches} search${r.searches===1?"":"es"} · about $${r.cost.toFixed(3)}. Prices from the web can be wrong; open the links for big buys.</p>
+      ${!r.deep&&(!r.value||r.confidence==="low")?`<div class="bar" style="margin-top:8px"><button class="btn sm" data-act="pc-deep" data-id="${esc(c.id)}">Search eBay too (about 3–6¢ more)</button></div>`:""}
       ${r.value&&!pc.applied?`<div class="bar" style="margin-top:8px"><button class="btn sm pri" data-act="pc-use" data-id="${esc(c.id)}">Use ${money(r.value)} and log these comps</button></div>`:pc.applied?`<p class="hint" style="margin:6px 0 0">Applied to this card's market value and comps.</p>`:""}
     </div>`;}
   if(c.pcUrl)body+=`<p class="hint" style="margin:6px 0 0">PriceCharting page: <a href="${esc(c.pcUrl)}" target="_blank" rel="noopener">open</a> · used for price checks</p>`;
