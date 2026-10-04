@@ -19,7 +19,7 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="b8331a37";</script>
+<script>document.documentElement.classList.add("standalone");window.TL_STANDALONE=true;window.TL_VERSION="ec456701";</script>
 <title>Treasure Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -926,6 +926,11 @@ function vTools(){
     <div class="bar"><button class="btn pri" data-act="backup-make" id="bk-make">Create backup</button><button class="btn" data-act="backup-save" id="bk-save" hidden>Save backup file</button><label class="btn" for="bk-file" style="cursor:pointer">Restore from a file</label><input id="bk-file" type="file" accept="application/json,.json" hidden></div>
     <div id="bk-status" class="hint" style="margin-top:8px"></div>
   </div>
+  <h2>Import cards</h2><div class="panel pad">
+    <p class="hint" style="margin:0 0 10px">Add cards from a card list file, like one Claude makes after pricing your cards in a chat. They're added to your log; nothing already in it is changed.</p>
+    <div class="bar"><label class="btn" for="imp-file" style="cursor:pointer">Choose a card list file</label><input id="imp-file" type="file" accept="application/json,.json,.txt" hidden></div>
+    <div id="imp-box" style="margin-top:10px">${impPreview()}</div>
+  </div>
   ${window.TL_STANDALONE?`<h2>Claude features (optional)</h2><div class="panel pad"><p class="hint" style="margin:0 0 8px">With your own Claude API key (from <a href="https://platform.claude.com/settings/keys" target="_blank" rel="noopener">platform.claude.com</a>), Claude reads every card photo you scan (about $0.002 each) and can check prices online from PriceCharting (about 1–3 cents each, in the background). The key stays on this phone. Without a key, the app reads cards and pasted comps on its own.</p>
     <form data-form="apikey" class="bar"><input id="k-key" name="key" type="password" autocomplete="off" class="search" placeholder="${getApiKey()?"Key saved ••••"+esc(getApiKey().slice(-4)):"sk-ant-…"}" aria-label="Anthropic API key"><button class="btn" type="submit">Save key</button>${getApiKey()?`<button class="btn danger" type="button" data-act="key-remove">Remove</button>`:""}</form>${getApiKey()?`<div class="field" style="margin-top:12px"><label>Read scanned cards with</label>${seg("readwith",[["ask","Ask each time"],["claude","Claude automatically"],["phone","Phone automatically (free)"]],getReadWith())}<span class="hint">With “Ask each time”, adding a photo reads nothing until you tap Read with Claude or Read on phone.</span></div><div class="field" style="margin-top:12px"><label>When Claude reads a new card</label>${seg("autoprice",[["on","Also check its price (≈2¢)"],["off","Just read it (≈0.2¢)"]],getAutoPrice()?"on":"off")}</div><div class="bar" style="margin-top:10px"><button class="btn" data-act="pc-bulk">Price check cards with no market value</button></div><p class="hint" style="margin:6px 0 0">Price checks this month: ${clSpend().n} · about $${clSpend().total.toFixed(2)}. Your exact balance: <a href="https://platform.claude.com/settings/billing" target="_blank" rel="noopener">platform.claude.com → Billing</a>.</p>`:""}</div>`:""}
   <h2>Export</h2><div class="panel pad bar"><button class="btn" data-act="export" data-what="cards">Cards CSV</button><button class="btn" data-act="export" data-what="sales">Sales CSV</button><button class="btn" data-act="export" data-what="shows">Shows CSV</button><button class="btn" data-act="export" data-what="items">Side items CSV</button><button class="btn" data-act="export" data-what="trades">Trades CSV</button><span class="hint">Opens in Excel or Google Sheets. Handy for taxes.</span></div>
@@ -1743,6 +1748,15 @@ document.addEventListener("click",async e=>{
       try{await S.downloads.save({filename:`treasure-log-backup-${today()}.json`,data:new Blob([b.json],{type:"application/json"})});S.settings.lastBackup=today();await saveSettings();toast("Backup saved");}
       catch(err){if(!err||err.code!=="declined")toast("Backup wasn't saved ("+((err&&err.code)||"error")+")");}
       break;}
+    case"imp-go":{const I=S.pendingImport;if(!I||!I.rows)break;el.disabled=true;
+      const box=document.getElementById("imp-box");const rows=I.rows.filter((x,i)=>{const cb=document.querySelector(`[data-imp-on="${i}"]`);return !cb||cb.checked;});
+      document.querySelectorAll("[data-imp-cost]").forEach(inp=>{const x=I.rows[+inp.dataset.impCost];if(x)x.cost=inp.value===""?null:n(inp.value);});
+      const tot=document.getElementById("imp-total");impSplit(rows,tot&&tot.value!==""?n(tot.value):null);
+      if(isEx())S.exampleOff=true;let k=0;
+      try{for(const x of rows){await put("cards",impCard(x));k++;}S.pendingImport=null;toast(`Added ${k} card${k===1?"":"s"} to your log`);render();}
+      catch(err){if(box)box.insertAdjacentHTML("beforeend",`<p class="hint">Stopped after ${k}: ${esc(err.message||err)}</p>`);el.disabled=false;}
+      break;}
+    case"imp-cancel":S.pendingImport=null;{const box=document.getElementById("imp-box");if(box)box.innerHTML="";}break;
     case"backup-restore":{
       const b=S.pendingRestore;if(!b)break;
       if(!confirmTap(el,"rs","Tap again: this replaces everything"))return;
@@ -1766,8 +1780,12 @@ document.addEventListener("change",async e=>{
     render();return;
   }
   if(e.target.name==="autoprice"){try{localStorage.setItem("tl-autoprice",e.target.value);}catch(_){}toast(e.target.value==="on"?"New cards read by Claude get priced too.":"Claude will only read new cards; check prices from the card when you want.");return;}
-  if(e.target.name==="readwith"){try{localStorage.setItem("tl-readwith",e.target.value);}catch(_){}toast(e.target.value==="phone"?"Cards will be read on the phone (free, offline).":"Cards will be read by Claude when you have signal.");return;}
+  if(e.target.name==="readwith"){try{localStorage.setItem("tl-readwith",e.target.value);}catch(_){}toast(e.target.value==="phone"?"Cards will be read on the phone (free, offline).":e.target.value==="ask"?"Adding a photo will ask which reader to use.":"Cards will be read by Claude when you have signal.");return;}
   if(e.target.name==="pgview"&&PG.report){PG.report.view=e.target.value;render();return;}
+  if(e.target.id==="imp-file"){
+    const file=e.target.files[0];if(!file)return;
+    try{S.pendingImport=impParse(JSON.parse(await file.text()),file.name);}catch(err){S.pendingImport={error:err.message||String(err)};}
+    e.target.value="";const box=document.getElementById("imp-box");if(box)box.innerHTML=impPreview();return;}
   if(e.target.id==="bk-file"){
     const file=e.target.files[0];if(!file)return;const st=document.getElementById("bk-status");
     try{const b=JSON.parse(await file.text());if(b.app!=="treasure-log"||!b.collections)throw new Error("not a Treasure Log backup");
@@ -3051,6 +3069,41 @@ async function pcApply(id){const c=byId("cards",id);const r=c&&c.priceCheck&&c.p
   const add=r.sources.filter(s=>s.price>0).map(s=>({src:PC_SRC(s.site),price:s.price,date:s.date||today(),kind:"sold",note:"Claude price check"}));
   await put("cards",{...c,market:r.value,marketDate:today(),comps:[...(c.comps||[]),...add],priceCheck:{...c.priceCheck,applied:true}});toast(`Market value set to ${money(r.value)}`);}
 
+/* ---------- import a card list file (e.g. one Claude writes after pricing cards in a chat) ---------- */
+function impParse(j,fname){
+  const list=Array.isArray(j)?j:(j&&Array.isArray(j.cards)?j.cards:null);
+  if(!list)throw new Error(j&&j.app==="treasure-log"?"that's a full backup; use Restore from a file":"no card list found in this file");
+  const rows=[],skipped=[];
+  list.forEach((x,i)=>{const code=String(x.code||"").trim().toUpperCase();if(!codeOk(code)){skipped.push(x.code||("row "+(i+1)));return;}
+    const lang=String(x.lang||x.language||"EN").toUpperCase().startsWith("J")?"JP":"EN";const e=CARDDB[code];
+    const graded=!!(x.grader||x.grade||String(x.kind||"").toLowerCase()==="graded");
+    rows.push({...x,code,lang,name:x.name||(e&&(e[0]||e[1]))||"",rarity:x.rarity||(e&&e[2])||"",variant:VARIANTS.includes(x.variant)?x.variant:"Regular",
+      kind:graded?"graded":"raw",qty:Math.max(1,Math.round(n(x.qty)||1)),cost:x.cost==null||x.cost===""?null:n(x.cost),market:x.market==null||x.market===""?null:n(x.market),list:x.list==null||x.list===""?null:n(x.list)});});
+  return {rows,skipped,title:(j&&j.title)||fname||"Card list",note:(j&&j.note)||""};}
+function impHave(x){return D("cards").filter(c=>c.status!=="sold"&&c.code===x.code&&(c.lang||"EN")===x.lang&&(c.variant||"Regular")===x.variant&&(c.kind||"raw")===x.kind).reduce((a,c)=>a+n(c.qty),0);}
+function impSplit(rows,total){ // a lump sum paid for the batch is shared out by market value among cards with no price paid
+  const open=rows.filter(x=>x.cost==null);if(total==null||!open.length)return;
+  const w=open.reduce((a,x)=>a+(n(x.market)||1)*x.qty,0);open.forEach(x=>{x.cost=Math.round(total*(n(x.market)||1)/w*100)/100;});}
+function impCard(x){
+  const graded=x.kind==="graded";const comps=Array.isArray(x.comps)?x.comps.filter(c=>c&&n(c.price)>0).map(c=>({src:c.src||"eBay",price:n(c.price),date:c.date||today(),kind:c.kind||"sold",note:c.note||""})):[];
+  const c={code:x.code,name:x.name,variant:x.variant,variantNote:x.variantNote||"",rarity:x.rarity,lang:x.lang,kind:x.kind,
+    cond:graded?"":(x.cond||"NM"),grader:graded?(GRADERS.find(g=>g.startsWith(String(x.grader||"PSA").split(" ")[0]))||"Other"):"",grade:graded?String(x.grade||""):"",cert:graded?String(x.cert||"").replace(/\D/g,""):"",
+    qty:x.qty,qtyBought:x.qty,cost:x.cost==null?0:x.cost,buyDate:x.buyDate||today(),source:x.source||"",showId:"",
+    market:x.market,list:x.list,location:x.location||"",status:"stock",lotId:"",tags:x.tags||"",notes:x.notes||"",comps};
+  if(c.market!=null)c.marketDate=x.marketDate||today();
+  if(x.pcUrl&&/^https:\/\/www\.pricecharting\.com\//.test(x.pcUrl))c.pcUrl=x.pcUrl;
+  const suf={"Regular":""}[c.variant];if(suf!==undefined){c.officialImg=officialUrl(c.code,c.lang,suf);c.imgSuffix=suf;}
+  return c;}
+function impPreview(){const I=S.pendingImport;if(!I)return "";
+  if(I.error)return `<p class="hint">Couldn't read that file: ${esc(I.error)}</p>`;
+  const R=I.rows;const mk=R.reduce((a,x)=>a+n(x.market)*x.qty,0),nq=R.reduce((a,x)=>a+x.qty,0);
+  return `<p style="margin:0 0 6px"><b>${esc(I.title)}</b> · ${nq} card${nq===1?"":"s"}${mk?` · market ${money(mk)}`:""}</p>${I.note?`<p class="hint" style="margin:0 0 8px">${esc(I.note)}</p>`:""}
+  ${I.skipped.length?`<p class="hint">Skipped (no valid card code): ${esc(I.skipped.join(", "))}</p>`:""}
+  <div class="panel">${R.map((x,i)=>{const h=impHave(x);return `<div class="row" style="cursor:default;gap:8px"><input type="checkbox" data-imp-on="${i}" checked aria-label="Import ${esc(x.code)}" style="width:20px;height:20px;flex:none">
+    <div class="main"><div class="t"><span class="mono">${esc(x.code)}</span> ${esc(x.name)}${x.qty>1?` ×${x.qty}`:""}</div><div class="s">${x.lang==="JP"?"Japanese":"English"} · ${esc(x.variant)} · ${x.kind==="graded"?esc((x.grader||"PSA")+" "+(x.grade||"")):"Raw "+esc(x.cond||"NM")}${x.market!=null?` · market ${money(x.market)}`:""}${h?` · <b>you already have ${h}</b>`:""}</div></div>
+    <input type="number" inputmode="decimal" step="0.01" min="0" class="search" data-imp-cost="${i}" value="${x.cost!=null?esc(x.cost):""}" placeholder="Paid $" aria-label="Price paid for ${esc(x.code)}" style="width:84px;flex:none"></div>`;}).join("")}</div>
+  <div class="field" style="margin-top:10px"><label for="imp-total">Or what you paid for all of them together</label><input id="imp-total" type="number" inputmode="decimal" step="0.01" min="0" class="search" placeholder="Total $"><span class="hint">Shared out by market value among cards with no price paid. Leave everything blank to log them at $0 cost.</span></div>
+  <div class="bar" style="margin-top:10px"><button class="btn pri" data-act="imp-go">Add these cards to my log</button><button class="btn" data-act="imp-cancel">Cancel</button></div>`;}
 /* ---------- boot ---------- */
 render();
 (async()=>{
